@@ -72,17 +72,17 @@ The final output must include:
 
 Use the TypeScript OpenAI Codex SDK as the primary agent-control layer:
 
-- `@openai/codex-sdk` in the server-side agent host.
+- `@openai/codex-sdk` in the macOS host local agent runtime.
 - One Codex thread per user-facing research run.
 - Role-scoped prompts for each specialist agent inside the run plan.
 - Repeated `thread.run()` calls for plan, specialist work, debate, validation, and final reporting stages.
-- `runStreamed()` for progress events, intermediate items, file-change notifications, and mobile/macOS live status.
-- `resumeThread(threadId)` for long-running research, app restarts, and cross-device continuity.
+- `runStreamed()` for progress events, intermediate items, file-change notifications, macOS live status, and mobile remote-control status forwarded by the Mac host.
+- `resumeThread(threadId)` for long-running research and macOS host app restarts.
 - JSON-schema structured output for run plans, specialist findings, risk reviews, strategy specs, and final run cards.
 - Zod schemas converted to OpenAI-compatible JSON Schema for runtime validation.
 - Working-directory controls so Codex operates inside a per-run Git workspace.
 - Codex CLI `config` and `env` controls to enforce sandbox, model, approval, network, and secret boundaries.
-- MCP configuration for market data, portfolio, backtest, report, and document tools when those tools need to be callable by Codex.
+- Local stdio MCP adapter configuration for market data, portfolio, backtest, report, and document tools when those tools need to be callable by Codex. The adapter runs on the Mac host and delegates to the same local tool router used by the app.
 - Project-scoped custom agents in `.codex/agents/` for finance specialist roles.
 - Native Codex subagent workflows for parallel specialist work when determinism requirements allow.
 - Plutus-orchestrated multi-thread execution as a strict deterministic mode for workflows that need per-agent retries, budgets, or database records.
@@ -102,9 +102,9 @@ Each specialist role must have a project-scoped custom agent file:
 - `.codex/agents/risk-manager.toml`
 - `.codex/agents/report-writer.toml`
 
-Each custom agent must define `name`, `description`, and `developer_instructions`. Role-specific files may also define model, reasoning effort, sandbox mode, MCP servers, and skills configuration.
+Each custom agent must define `name`, `description`, and `developer_instructions`. Role-specific files may also define model, reasoning effort, sandbox mode, local tool namespaces, and skills configuration.
 
-Each custom agent must also declare an explicit MCP allowlist. Use [Agent MCP Map](./09-agent-mcp-map.md) as the source of truth for which MCP servers and write capabilities each role receives.
+Each custom agent must also declare an explicit local tool allowlist. Use [Agent MCP Map](./09-agent-mcp-map.md) as the source of truth for which local tool namespaces and write capabilities each role receives.
 
 ## 8. Acceptance Criteria
 
@@ -114,4 +114,4 @@ Each custom agent must also declare an explicit MCP allowlist. Use [Agent MCP Ma
 - The system fetches portfolio positions, current market data, historical returns, and correlation.
 - The risk manager can veto weak recommendations.
 - The final answer contains a no-action/research/rebalance category, citations, and a risk summary.
-- The run is saved and visible on macOS and mobile.
+- The run is saved in the macOS host app and visible/controllable from mobile through the paired remote-control session.

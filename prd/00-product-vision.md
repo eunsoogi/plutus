@@ -2,16 +2,22 @@
 
 ## 1. Summary
 
-Plutus is a multi-agent portfolio workspace for managing crypto and stock research, portfolio decisions, simulations, and personal trading discipline. The product should feel like a small investment desk: the user asks a natural-language question, specialist agents gather evidence, debate, validate, and return an inspectable recommendation package.
+Plutus is a multi-agent portfolio workspace for managing crypto and stock research, portfolio decisions, simulations, and personal trading discipline.
 
-The product should borrow the strongest ideas from HKUDS/Vibe-Trading while being designed as a TypeScript-first product using the OpenAI Codex SDK as the agent-control layer. Vibe-Trading frames itself as an open-source research workspace that connects natural-language prompts to market-data loaders, strategy generation, backtest engines, reports, exports, and persistent research memory. It explicitly focuses on research, simulation, and backtesting rather than live execution. Plutus should keep the same safety boundary for MVP.
+The product should feel like a small investment desk: the user asks a natural-language question, specialist agents gather evidence, debate, validate, and return an inspectable recommendation package.
+
+The product should borrow the strongest ideas from HKUDS/Vibe-Trading while being designed as a TypeScript-first product using the OpenAI Codex SDK as the agent-control layer.
+
+Vibe-Trading frames itself as an open-source research workspace that connects natural-language prompts to market-data loaders, strategy generation, backtest engines, reports, exports, and persistent research memory.
+
+It explicitly focuses on research, simulation, and backtesting rather than live execution. Plutus should keep the same safety boundary for MVP.
 
 ## 2. Product Goals
 
 - Manage crypto and stock portfolios from one agent-assisted workspace.
 - Turn natural-language requests into structured research runs, strategy drafts, portfolio analysis, and backtest reports.
 - Provide multi-agent teams for investment, quant, crypto, macro, technical analysis, and risk workflows.
-- Support macOS and mobile apps from the beginning with a shared TypeScript domain layer.
+- Support a macOS host app and a mobile remote-control app from the beginning with a shared TypeScript domain layer.
 - Preserve the user's preferences, watchlists, strategies, research notes, and prior decisions across sessions.
 - Produce auditable outputs: data sources, tool traces, assumptions, decision rationale summaries, risk checks, and generated artifacts.
 
@@ -28,7 +34,7 @@ The product should borrow the strongest ideas from HKUDS/Vibe-Trading while bein
 - Individual investors managing a mixed stock and crypto portfolio.
 - Technical users who want agent-assisted research, simulations, and strategy generation.
 - Power users who want reusable workflows similar to a personal research desk.
-- Future users who may later connect broker/exchange accounts for read-only portfolio sync.
+- Future users who may later connect broker/exchange accounts for read-only portfolio import into the macOS host.
 
 ## 5. Core Product Principles
 
@@ -36,7 +42,7 @@ The product should borrow the strongest ideas from HKUDS/Vibe-Trading while bein
 - Debate before decision: major recommendations should pass through specialist disagreement and risk review.
 - Simulation before action: strategy outputs must be backtestable and reportable before any future execution feature.
 - Human final control: the user always approves portfolio decisions and any future trade execution.
-- Multi-platform consistency: macOS and mobile must expose the same run history, watchlists, portfolios, and reports.
+- Mac-hosted source of truth: the macOS app owns local portfolio state, agent runs, backtests, and artifacts. The mobile app controls and views the Mac app through a paired remote-control session.
 
 ## 6. Vibe-Trading Concepts To Adopt
 
@@ -54,7 +60,7 @@ The product should borrow the strongest ideas from HKUDS/Vibe-Trading while bein
 - First useful research run completed in under 5 minutes after onboarding.
 - At least 90% of agent recommendations include data-source provenance and a risk summary.
 - At least 80% of generated strategies produce a runnable backtest artifact or a clear validation failure.
-- User can open the same research run on macOS and mobile with identical state.
+- User can start or inspect a Mac-hosted research run from mobile through a paired remote-control session.
 - User can create, track, and review at least one portfolio, one watchlist, and one strategy without manual file editing.
 
 ## 8. Source Notes

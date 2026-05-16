@@ -1,34 +1,31 @@
-# Plutus PRD: macOS And Mobile Apps
+# Plutus PRD: macOS Host And Mobile Remote Control
 
 ## 1. Objective
 
-Deliver a coherent cross-platform product where macOS is the deep research workstation and mobile is the portfolio review, notification, and lightweight agent interaction surface.
+Deliver Plutus as a local-first macOS research workstation with a mobile app that remotely controls and views the Mac app.
+
+The macOS app owns the portfolio database, Codex runtime, market-data adapters, backtest execution, reports, and artifacts. The mobile app is not an independent sync peer for MVP; it is a paired controller for the Mac host.
 
 ## 2. Platform Strategy
 
-Use a shared TypeScript monorepo and Tauri 2 as the single app shell for macOS, iOS, and Android.
+Use a shared TypeScript monorepo and Tauri 2 for the macOS host and mobile remote-control clients.
 
-- Shared domain models, validation schemas, agent contracts, and API client.
-- Shared design tokens and chart configuration.
-- Shared React/Vite frontend compiled into Tauri.
-- Platform-specific Rust, Swift, and Kotlin bindings only where native capabilities require them.
-
-Recommended app stack:
-
-- App shell: Tauri 2 for macOS, iOS, and Android.
-- Frontend: React + Vite with responsive layouts for desktop and mobile.
-- Browser preview/admin surface: Vite React route set reused from the Tauri frontend for development and operations only; it is not a second product app shell.
-- Shared UI primitives: a small internal component system built for webview rendering.
-- Native capabilities: official Tauri plugins first, custom Tauri mobile plugins only when required.
+- Shared domain models, validation schemas, agent contracts, remote-control message schemas, and UI primitives.
+- Shared React/Vite frontend where practical, with platform-specific routes for desktop host and mobile controller.
+- macOS host app contains the local SQLite store, local tool router, Codex runtime bridge, backtest engine, artifact store, and remote-control service.
+- Mobile app connects to the Mac host over a paired encrypted remote-control session.
+- Browser preview/admin surface reuses the Tauri frontend routes for development only; it is not a product runtime.
 
 Preferred choice:
 
-- Use Tauri-only for the product architecture. Tauri officially targets major desktop and mobile platforms from one codebase, can use any frontend that compiles to HTML/CSS/JavaScript, and provides Rust plus Swift/Kotlin bindings for native capability gaps.
-- Keep an explicit mobile proof-of-capability checkpoint before beta for biometric lock, deep links, file import, app lifecycle, and store submission. Verify OS push notifications before the Phase 2 push-notification release. If any mobile capability requires additional work, solve it through Tauri configuration, official Tauri plugins, or custom Tauri mobile plugins.
+- Use Tauri-only for the product app shells.
+- Keep all MVP product data local to the Mac host.
+- Use mobile as a companion controller: start runs, cancel runs, inspect progress, review summaries, open artifacts, edit watchlist notes, and request portfolio views from the Mac host.
+- Avoid server-managed sync in MVP. Remote use outside the local network can be handled by user-managed networking such as VPN/Tailscale-like access in a later phase, not by a Plutus hosted backend.
 
-## 3. macOS Requirements
+## 3. macOS Host Requirements
 
-macOS app must support:
+macOS host app must support:
 
 - Multi-pane research workspace.
 - Portfolio dashboard.
@@ -37,66 +34,80 @@ macOS app must support:
 - Streaming run progress.
 - Artifact viewer for reports, charts, strategy specs, and run cards.
 - Local secure credential storage through macOS Keychain.
-- Optional local sandbox worker for previewing generated strategy artifacts. Canonical backtest jobs run server-side for reproducibility and cross-device consistency.
+- Local SQLite product database.
+- Local artifact storage in the app data directory.
+- Local sandbox worker for generated strategy artifacts and MVP backtests.
+- Remote-control service with explicit user enablement.
+- Pairing flow for mobile devices using QR code or short-lived pairing code.
+- Session approval, session revocation, and visible connected-device status.
 
-## 4. Mobile Requirements
+## 4. Mobile Remote-Control Requirements
 
 Mobile app must support:
 
-- Portfolio overview.
-- Watchlist overview.
-- Instrument detail summary.
-- Research run history.
-- Lightweight agent chat.
-- In-app notification inbox for completed runs and alerts.
-- OS push notifications for completed runs and alerts in Phase 2.
-- Read-only artifact viewing for reports and run cards.
-- Biometric lock for sensitive portfolio data.
-- Deep links into run details, instruments, and watchlists.
-- File import for trade CSVs where platform rules allow.
+- Pair with the Mac host through QR code or short-lived pairing code.
+- Show connection status and the active Mac host identity.
+- View Mac-hosted portfolio overview.
+- View Mac-hosted watchlist overview.
+- View instrument detail summary fetched from the Mac host.
+- View Mac-hosted research run history.
+- Start a Mac-hosted research run from a lightweight composer.
+- Cancel or pause a running Mac-hosted research run when allowed.
+- Show live Mac-hosted run progress.
+- View compact run summaries and full artifacts streamed from the Mac host.
+- Edit watchlist notes and position thesis notes on the Mac host.
+- Receive in-app remote notifications from the Mac host while connected.
+- Use biometric lock before opening sensitive remote-control sessions.
 
-Mobile should not launch heavyweight local backtests. It should submit jobs to the backend and show progress/results.
+Mobile should not run Codex, market-data jobs, or heavyweight backtests locally in MVP. Those operations run on the Mac host.
 
-## 5. Tauri Mobile Requirements
+## 5. Remote-Control Transport Requirements
 
-Tauri mobile builds must support:
+MVP remote-control transport must support:
 
-- iOS and Android builds from the same Tauri project.
-- Responsive webview layouts with touch-first controls.
-- Platform-specific capability declarations for each window/webview.
-- Official Tauri plugins for biometric, notifications, deep linking, file system, HTTP, SQL/store, and websocket where available.
-- Custom mobile plugins only after an official plugin is unavailable or insufficient.
-- App Store and Google Play signing/release pipelines.
-- Device smoke tests for cold start, navigation, auth, in-app notification inbox, run streaming, and artifact viewing.
-- Push notification receipt smoke tests before the Phase 2 push-notification release.
-- A proof-of-capability milestone before MVP UI freeze.
+- Mac host discovery on a local network where platform rules allow.
+- Manual host address entry as a fallback.
+- Encrypted session transport.
+- Short-lived pairing tokens.
+- Device-specific session keys.
+- Command authorization per paired device.
+- Local event stream from Mac host to mobile.
+- Request/response commands for portfolio, watchlist, run, artifact, and settings views.
+- Heartbeat, reconnect, and stale-session detection.
+- Host-side kill switch to disable remote control immediately.
+
+The MVP should not require a Plutus-hosted relay server. If direct connectivity is not available, the mobile app should explain that the Mac host is unreachable and let the user retry or enter a reachable host address.
 
 ## 6. Cross-Platform UX Requirements
 
-- Same portfolios, watchlists, strategies, and run history across devices.
-- All agent outputs must be responsive and readable on mobile.
-- Charts must degrade gracefully on small screens.
-- Risk warnings must never be hidden behind hover-only UI.
-- Mobile summaries should be shorter, but full artifacts must remain accessible.
+- macOS remains the full workstation.
+- Mobile presents compact controls that map to Mac-hosted state.
+- All risk warnings must remain visible on mobile.
+- Mobile summaries should be shorter, but full Mac-hosted artifacts must remain accessible while connected.
+- The mobile UI must make clear when it is connected, disconnected, or viewing stale cached data.
 
-## 7. Offline And Sync
+## 7. Offline And Connection Behavior
 
 MVP:
 
-- Read cached portfolios, watchlists, and latest run summaries offline.
-- Queue note edits locally and sync when online.
+- Mobile can show a small cached snapshot of the last connected portfolio/watchlist/run summaries.
+- Mobile cannot mutate Mac-hosted state while disconnected.
+- Disconnected edits are not queued in MVP; the user must reconnect before editing.
+- Mac host remains fully usable offline except for market-data provider calls and model/network calls required by Codex.
 
 Post-MVP:
 
-- Offline local research notes.
-- Background market refresh.
-- Conflict resolution for simultaneous edits.
+- Optional user-managed remote access outside the local network.
+- Optional encrypted backup/export bundles.
+- Optional push notifications routed through platform services after a separate design.
 
 ## 8. Acceptance Criteria
 
-- User starts a research run on macOS and later reads the completed run on mobile.
-- User edits a watchlist note on mobile and sees it on macOS after sync.
-- macOS can render a full backtest report while mobile renders a compact summary with the full report link.
-- The same Tauri codebase can produce a macOS app, an iOS build, and an Android build.
-- Before beta, the team verifies Tauri mobile support for biometric lock, deep links, file import, and run streaming on real devices.
-- Before the Phase 2 push-notification release, the team verifies Tauri mobile push notification support on real iOS and Android devices.
+- User enables remote control in the macOS host app and pairs a mobile device.
+- User starts a research run on macOS and watches live progress on mobile.
+- User starts a research run from mobile and the Mac host executes it.
+- User cancels a running Mac-hosted research run from mobile.
+- User views a Mac-hosted backtest report on mobile.
+- User edits a watchlist note from mobile and sees the change in the Mac app.
+- Remote control can be revoked from the Mac host.
+- The MVP works without a Plutus-hosted backend, PostgreSQL, Redis, or server-managed sync.

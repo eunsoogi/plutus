@@ -35,6 +35,7 @@ Sensitive data:
 - Trade history.
 - Research notes.
 - Generated strategy code.
+- Remote-control pairing keys.
 
 Requirements:
 
@@ -43,6 +44,7 @@ Requirements:
 - Keep provider secrets out of model-visible context.
 - Redact secrets from traces and logs.
 - Store audit logs for agent run inputs, tool calls, and output artifacts.
+- Store audit logs for remote-control pairing, connection, revocation, and denied commands.
 - Support account deletion and export.
 
 ## 5. Prompt Injection And Tool Security
@@ -58,7 +60,21 @@ Requirements:
 - Run generated strategy code in sandboxed execution.
 - Disable shell access for ordinary research agents.
 
-## 6. Future Broker/Exchange Integration Boundary
+## 6. Remote-Control Security
+
+Mobile remote control must require:
+
+- Explicit enablement from the macOS host app.
+- Pairing by QR code or short-lived pairing code.
+- Encrypted session transport.
+- Device-specific session keys.
+- Host-visible connected-device status.
+- Host-side session revocation.
+- Host-side remote-control kill switch.
+- Command authorization by device and command type.
+- No mobile mutations while disconnected or stale.
+
+## 7. Future Broker/Exchange Integration Boundary
 
 Phase 1:
 
@@ -67,7 +83,7 @@ Phase 1:
 
 Phase 2:
 
-- Read-only broker/exchange sync.
+- Read-only broker/exchange import.
 
 Phase 3:
 
@@ -86,10 +102,11 @@ Live trading must require:
 - Full audit trail.
 - Exchange/broker permission scoping.
 
-## 7. Acceptance Criteria
+## 8. Acceptance Criteria
 
 - Agent refuses to execute or simulate a hidden high-leverage trade as a guaranteed profit.
 - Uploaded prompt-injection text is flagged and does not override system rules.
 - Backtest reports show that past performance does not guarantee future returns.
 - Traces and logs do not contain raw API keys.
 - Generated code runs only in a sandboxed context.
+- Revoked mobile devices cannot control the Mac host.

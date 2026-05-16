@@ -95,4 +95,4 @@ Core entities:
 - User can create a portfolio containing AAPL, NVDA, BTC, ETH, USDC, and USD cash.
 - User can ask for allocation by asset class and receive a table plus risk notes.
 - User can ask for a BTC/NVDA correlation check and receive a data freshness warning if provider data is stale.
-- User can open the same portfolio state from macOS and mobile.
+- User can open the same Mac-hosted portfolio state from mobile through a paired remote-control session.

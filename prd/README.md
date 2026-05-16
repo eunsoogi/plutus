@@ -17,10 +17,10 @@ This folder contains requirement-level PRDs for Plutus, a TypeScript-first multi
 
 ## Core Decisions
 
-- Use TypeScript across agent orchestration, backend, macOS, mobile, and shared domain packages.
+- Use TypeScript across agent orchestration, macOS host, mobile remote-control app, and shared domain packages.
 - Use the OpenAI Codex SDK TypeScript package, `@openai/codex-sdk`, as the primary agent-control layer, isolated behind a Plutus `CodexRunHost` adapter.
 - Implement the finance agent team through Codex threads, project-scoped `.codex/agents/*.toml` custom agents, Codex subagent prompts, MCP domain tools, streamed events, and structured output schemas.
-- Restrict each finance custom agent to an explicit MCP allowlist: market data, portfolio, backtest, risk, research, reports, memory, and audit servers are separated by responsibility.
+- Restrict each finance custom agent to an explicit local tool allowlist: market data, portfolio, backtest, risk, research, reports, memory, and audit namespaces are separated by responsibility.
 - Borrow Vibe-Trading's strongest concepts: plan-ground-execute-validate-deliver runs, specialist agent teams, research memory, backtests, run cards, Phase 2 Shadow Account analysis, and no live trading in MVP.
-- Use Tauri 2 as the single macOS/iOS/Android app shell, with macOS as the deep research workstation and mobile layouts as the lightweight portfolio, watchlist, notification, and run-history surface.
+- Use Tauri 2 as the shared app shell, with macOS as the deep research workstation and source-of-truth host, and mobile as a paired remote-control surface for the Mac app.
 - Start with research, portfolio management, and simulation. Reserve live trading for a separate future PRD.
