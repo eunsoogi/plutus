@@ -354,3 +354,10 @@ Expected result:
 - final category is one of the allowed categories;
 - run card and mobile summary artifacts are persisted on the Mac host;
 - run can be reopened by ID from the Mac host database and inspected from mobile while connected through remote control.
+
+Agent-runtime test automation requirements:
+
+- Unit tests validate run state transitions, structured output schemas, retry limits, and final run card category rules.
+- Integration tests use a mocked Codex SDK stream by default and must not call real models unless an explicit real-smoke environment variable is set.
+- MCP adapter integration tests prove each specialist receives only the local tool namespaces allowed in [Local Tool Surface](./03-local-tool-surface.md).
+- The BTC/NVDA scenario must be runnable through `pnpm test:agent` with deterministic fixtures from [Codex Development Automation](./08-codex-development-automation.md).

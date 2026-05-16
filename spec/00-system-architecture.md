@@ -32,6 +32,7 @@ plutus/
           remote_control/
     web-preview/
       src/
+      tests/
   packages/
     domain/
       src/
@@ -74,6 +75,10 @@ plutus/
         primitives/
         charts/
         layouts/
+    test-fixtures/
+      src/
+  tests/
+    e2e/
   .codex/
     agents/
 ```
@@ -83,7 +88,7 @@ plutus/
 | Package/App | Responsibility |
 | --- | --- |
 | `apps/tauri` | macOS host shell and mobile remote-control shell; responsive React webview; native capability bridge; local runtime commands |
-| `apps/web-preview` | Development/admin browser preview using the same frontend route set as Tauri |
+| `apps/web-preview` | Development/admin browser preview using the same frontend route set as Tauri; Codex in-app browser verification surface |
 | `packages/domain` | Zod schemas, TypeScript types, domain invariants, ID formats, enum contracts |
 | `packages/data` | Provider adapters, symbol resolution, candle normalization, freshness warnings |
 | `packages/agents` | `CodexRunHost`, workflow planner, structured output schemas, role prompts, agent guardrails, local event stream |
@@ -93,6 +98,7 @@ plutus/
 | `packages/command-client` | Typed local command client shared by Tauri and web preview |
 | `packages/remote-control` | Pairing protocol, encrypted session messages, remote command schemas, host/mobile event contracts |
 | `packages/ui` | Webview-safe UI primitives, chart wrappers, design tokens |
+| `packages/test-fixtures` | Deterministic MVP seed fixtures shared by unit, integration, E2E, Tauri smoke, and agent harness tests |
 
 ## 5. Runtime Components
 
@@ -174,6 +180,8 @@ MVP local development:
 - SQLite database in the app data directory
 - Tauri dev tools
 - Codex CLI configured locally for development agent runs
+- root scripts from [Codex Development Automation](./08-codex-development-automation.md) for typecheck, lint, unit, integration, E2E, MCP, agent, Tauri, and acceptance verification
+- `apps/web-preview` dev server for Codex in-app browser inspection of desktop and mobile routes
 
 MVP production:
 
@@ -193,6 +201,7 @@ MVP production:
 | SQLite-backed local queue | Supports resumable backtests and agent jobs without Redis |
 | Local event stream | Gives progress updates inside the app without SSE infrastructure |
 | Mobile remote control | Avoids multi-device sync while still letting the user inspect and command Mac-hosted runs from mobile |
+| Codex-verifiable development surface | Keeps implementation work reproducible by exposing deterministic fixtures, stable root scripts, mocked agent harnesses, and a browser-preview surface that Codex can inspect |
 
 ## 9. Open Implementation Choices
 

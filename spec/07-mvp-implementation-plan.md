@@ -10,6 +10,8 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 
 **Tech Stack:** Node.js 22+, pnpm, Turborepo, TypeScript strict mode, Zod v4, SQLite, Tauri 2, Rust command bridge, React, Vite, Vitest, Playwright, `@openai/codex-sdk`.
 
+**Codex Development Contract:** Each phase must expose deterministic scripts, fixtures, tests, and browser-preview surfaces described in [Codex Development Automation](./08-codex-development-automation.md). Codex should be able to implement a phase, run its local gate, inspect UI changes through the in-app browser when relevant, and report exact blockers when a higher-level gate cannot run locally.
+
 ---
 
 ## Phase 0: Repository Scaffold
@@ -20,6 +22,8 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - Create: `pnpm-workspace.yaml`
 - Create: `turbo.json`
 - Create: `tsconfig.base.json`
+- Create: `vitest.config.ts`
+- Create: `playwright.config.ts`
 - Create: `.env.example`
 - Create: `apps/tauri/package.json`
 - Create: `apps/web-preview/package.json`
@@ -32,13 +36,21 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - Create: `packages/remote-control/package.json`
 - Create: `packages/command-client/package.json`
 - Create: `packages/ui/package.json`
+- Create: `packages/test-fixtures/package.json`
+- Create: `packages/test-fixtures/src/*.ts`
+- Create: `tests/e2e/package.json`
 
 - [ ] Create pnpm workspace and Turborepo config.
 - [ ] Add strict TypeScript base config with path aliases.
-- [ ] Add package-level build, typecheck, lint, and test scripts.
+- [ ] Add package-level build, typecheck, lint, unit, integration, and E2E scripts.
+- [ ] Add root scripts from [Codex Development Automation](./08-codex-development-automation.md).
+- [ ] Configure Vitest projects for package unit and integration tests.
+- [ ] Configure Playwright projects for desktop web preview and mobile remote-control viewports.
 - [ ] Add `.env.example` for market-data providers, Codex runtime config, and local app data overrides only.
+- [ ] Add deterministic MVP fixtures package scaffold.
+- [ ] Add root test scripts for persistence, commands, MCP, agent, remote-control, Tauri, and acceptance gates.
 - [ ] Run `pnpm install`.
-- [ ] Run `pnpm typecheck` and verify all empty packages compile.
+- [ ] Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm format:check` and verify all empty packages compile and test runners execute.
 
 ## Phase 1: Domain Schemas
 
@@ -75,8 +87,10 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - [ ] Add local repository functions for instruments, portfolios, watchlists, research runs, artifacts, strategies, paired remote devices, and audit events.
 - [ ] Add app data directory layout for SQLite database, run workspaces, artifacts, and backups.
 - [ ] Add seed data for AAPL, NVDA, BTC, ETH, USDC, USD cash, SPY, QQQ.
+- [ ] Reuse seed data through `packages/test-fixtures` so Codex tests and Playwright scenarios share the same MVP state.
 - [ ] Add repository tests against a temporary SQLite database.
 - [ ] Run migrations and seed locally through a Tauri dev command.
+- [ ] Run `pnpm test:persistence`.
 
 ## Phase 3: Local Commands
 
@@ -92,6 +106,7 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - [ ] Add TypeScript command client wrappers.
 - [ ] Add tests or smoke commands for portfolio create/list, watchlist edit, run lookup, artifact lookup, and remote-control-safe payloads.
 - [ ] Verify command responses do not expose raw secrets or unrestricted prompt context.
+- [ ] Run `pnpm test:commands`.
 
 ## Phase 4: Market Data And Portfolio Services
 
@@ -184,7 +199,9 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - [ ] Implement stage state machine and local event mapping.
 - [ ] Add project custom-agent TOML files with explicit local stdio MCP adapter allowlists.
 - [ ] Add integration test with a mocked Codex SDK for the BTC/NVDA portfolio review request.
+- [ ] Add a scripted Codex SDK test harness for deterministic streamed events and structured-turn failures.
 - [ ] Document that full Codex runs execute on the Mac host and mobile controls them remotely.
+- [ ] Run `pnpm test:agent`.
 
 ## Phase 9: Remote Control
 
@@ -205,6 +222,7 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - [ ] Implement local network discovery where available and manual host address fallback.
 - [ ] Forward allowed run progress events from Mac host to mobile.
 - [ ] Add tests for revoked-device command rejection and stale-session handling.
+- [ ] Run `pnpm test:remote`.
 
 ## Phase 10: Tauri App UI
 
@@ -225,6 +243,9 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - [ ] Render risk warnings visibly on desktop and mobile remote-control widths.
 - [ ] Add remote watchlist note and position thesis edits while connected.
 - [ ] Add Playwright tests for core webview flows.
+- [ ] Run `pnpm dev:web` and inspect the app with the Codex in-app browser at desktop and mobile widths.
+- [ ] Verify charts render nonblank content, text does not overlap, and connected/disconnected/revoked states are visible.
+- [ ] Run `pnpm test:e2e:ui`.
 
 ## Phase 11: Security And Proof-Of-Capability
 
@@ -261,12 +282,16 @@ BTC and NVDA exposure together looks risky. Review my portfolio and suggest what
 - [ ] Verify run card, report, chart data, and mobile summary artifacts persist locally.
 - [ ] Verify mobile receives run progress and can open the Mac-hosted report artifact.
 - [ ] Revoke the mobile device and verify further remote commands fail.
+- [ ] Run `pnpm test:acceptance`.
+- [ ] Run Codex in-app browser inspection for the complete seeded scenario.
 
 ## Definition Of Done
 
 - All PRD acceptance criteria marked MVP are covered by implemented tests or documented manual proof checks adjusted for local-first MVP.
+- Every phase-specific completion gate in [Codex Development Automation](./08-codex-development-automation.md) passes or has an exact documented environment blocker.
 - All final run cards include source refs, assumptions, data freshness, risk checklist, dissenting views, artifacts, and approval requirement.
 - No MVP path can execute live trades.
 - No MVP path requires PostgreSQL, Redis, BullMQ, S3, or a hosted API server.
 - Mobile MVP controls the Mac host through pairing and remote commands instead of owning a separate synced database.
-- `pnpm typecheck`, `pnpm test`, and relevant Playwright/Tauri smoke tests pass.
+- `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm test:acceptance`, and `pnpm test:tauri` pass.
+- UI changes have been inspected through `apps/web-preview` in the Codex in-app browser before completion.

@@ -18,6 +18,8 @@ The macOS host app owns the source of truth: SQLite database, Codex runtime, loc
 
 The mobile app is a paired controller and viewer for the Mac host.
 
+`apps/web-preview` must render the same route components behind a browser development server so Codex can inspect desktop and mobile layouts through the in-app browser before UI work is considered complete.
+
 ## 3. Primary Routes
 
 macOS host routes:
@@ -225,3 +227,5 @@ Post-MVP options:
 - Mobile edits a watchlist note and the Mac app reflects it.
 - Mac host revokes the mobile device and subsequent mobile commands fail.
 - MVP works without a Plutus-hosted backend, PostgreSQL, Redis, or server-managed sync.
+- Playwright covers the route flows above through `apps/web-preview` at desktop and phone viewports.
+- Codex in-app browser inspection confirms risk warnings, stale/disconnected states, artifacts, charts, and primary actions render without layout overlap.
