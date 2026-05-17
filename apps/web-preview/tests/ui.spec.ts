@@ -69,6 +69,7 @@ const mobileRoutes = [
   ["/remote/dashboard", "Remote Dashboard"],
   ["/remote/portfolios/portfolio-core", "Remote Core Portfolio"],
   ["/remote/watchlists/watchlist-default", "Remote Default Watchlist"],
+  ["/remote/instruments/instrument-btc", "Remote BTC Instrument"],
   ["/remote/runs", "Remote Runs"],
   ["/remote/runs/run-btc-nvda", "Remote Run Detail"],
   ["/remote/artifacts/artifact-risk-report", "Remote Artifact"],
@@ -102,6 +103,10 @@ test("memory, wiki, and remote-control surfaces expose MVP controls", async ({
   await expect(
     page.getByRole("button", { name: "Archive memory" }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Archive memory" }).click();
+  await expect(page.getByTestId("memory-command-status")).toContainText(
+    "Web preview fallback",
+  );
   await expect(
     page.getByRole("button", { name: "Forget memory" }),
   ).toBeVisible();
@@ -113,6 +118,10 @@ test("memory, wiki, and remote-control surfaces expose MVP controls", async ({
   await expect(
     page.getByRole("button", { name: "Revert revision" }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Revert revision" }).click();
+  await expect(page.getByTestId("wiki-command-status")).toContainText(
+    "Web preview fallback",
+  );
   await expect(page.getByTestId("source-link-drawer")).toContainText(
     "run-btc-nvda",
   );
@@ -122,4 +131,59 @@ test("memory, wiki, and remote-control surfaces expose MVP controls", async ({
   await expect(
     page.getByRole("button", { name: "Revoke Eunsoo iPhone" }),
   ).toBeVisible();
+});
+
+test("mobile remote route exposes connected-only note and thesis mutation controls", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  await page.goto(
+    "/remote/portfolios/portfolio-core?scenario=mvp&remote=connected",
+  );
+  await expect(page.getByLabel("BTC thesis note")).toBeEnabled();
+  await page.getByLabel("BTC thesis note").fill("Trim only after risk review");
+  await expect(
+    page.getByRole("button", { name: "Save thesis to Mac" }),
+  ).toBeEnabled();
+
+  await page.goto(
+    "/remote/watchlists/watchlist-default?scenario=mvp&remote=connected",
+  );
+  await expect(page.getByLabel("NVDA watchlist note")).toBeEnabled();
+  await page.getByLabel("NVDA watchlist note").fill("Watch AI capex risk");
+  await expect(
+    page.getByRole("button", { name: "Save watchlist note to Mac" }),
+  ).toBeEnabled();
+
+  await page.goto(
+    "/remote/portfolios/portfolio-core?scenario=mvp&remote=stale",
+  );
+  await expect(page.getByLabel("BTC thesis note")).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Save thesis to Mac" }),
+  ).toBeDisabled();
+});
+
+test("wiki detail exposes diff and revision metadata", async ({ page }) => {
+  await page.goto("/wiki/wiki-btc-nvda-concentration?scenario=mvp");
+  await expect(page.getByTestId("wiki-diff-view")).toContainText(
+    "stale quote warning",
+  );
+  await expect(page.getByTestId("wiki-revision-timeline")).toContainText(
+    "audit",
+  );
+});
+
+test("web preview start review falls back when no command bridge is provided", async ({
+  page,
+}) => {
+  await page.goto("/runs?scenario=mvp");
+  await page.getByRole("button", { name: "Start BTC/NVDA Review" }).click();
+  await expect(page.getByTestId("run-progress")).toContainText(
+    "Risk review complete",
+  );
+  await expect(page.getByTestId("command-source")).toHaveText(
+    "Web preview fallback",
+  );
 });

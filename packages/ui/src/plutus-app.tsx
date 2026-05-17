@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   formatCurrency,
   remoteStateLabel,
@@ -62,6 +62,50 @@ export type PlutusScenario = {
 export type HostShellProps = {
   children: ReactNode;
 };
+
+export type PlutusCommandClient = {
+  researchRuns: {
+    start: (input: {
+      portfolioId?: string;
+      symbols?: string[];
+      selectedTeam?: string;
+      userRequest?: string;
+    }) => Promise<{ id?: string; status?: string }>;
+  };
+  artifacts: {
+    get: (artifactId: string) => Promise<{
+      id?: string;
+      name?: string;
+      title?: string;
+      type?: string;
+    }>;
+  };
+  memory?: {
+    update: (
+      memoryId: string,
+      patch: Record<string, unknown>,
+    ) => Promise<Record<string, unknown>>;
+    archive: (memoryId: string, reason: string) => Promise<void>;
+    forget: (memoryId: string) => Promise<void>;
+    setCategoryEnabled: (category: string, enabled: boolean) => Promise<void>;
+  };
+  wiki?: {
+    revertRevision: (
+      pageId: string,
+      revisionId: string,
+      reason: string,
+    ) => Promise<Record<string, unknown>>;
+  };
+};
+
+function commandStatusLabel(status: string | undefined, fallback: string) {
+  if (!status || status === "completed") return fallback;
+  return status;
+}
+
+function commandErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Command failed";
+}
 
 export function HostShell({ children }: HostShellProps) {
   return (
@@ -328,18 +372,66 @@ export function InstrumentDetailPage({
   );
 }
 
-export function RunsPage({ scenario }: { scenario: PlutusScenario }) {
+export function RunsPage({
+  scenario,
+  commandClient,
+}: {
+  scenario: PlutusScenario;
+  commandClient?: PlutusCommandClient;
+}) {
   const [started, setStarted] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [runStatus, setRunStatus] = useState(scenario.run.status);
+  const [commandSource, setCommandSource] = useState<
+    "Command bridge" | "Web preview fallback"
+  >("Web preview fallback");
+  const [commandError, setCommandError] = useState<string | null>(null);
+
+  async function startReview() {
+    setCommandError(null);
+    if (!commandClient) {
+      setStarted(true);
+      setRunStatus(scenario.run.status);
+      setCommandSource("Web preview fallback");
+      return;
+    }
+
+    setPending(true);
+    try {
+      const run = await commandClient.researchRuns.start({
+        portfolioId: scenario.portfolio.id,
+        symbols: ["BTC", "NVDA"],
+        selectedTeam: "portfolio_review_committee",
+        userRequest: "Start BTC/NVDA Review",
+      });
+      setStarted(true);
+      setRunStatus(commandStatusLabel(run.status, scenario.run.status));
+      setCommandSource("Command bridge");
+    } catch (error) {
+      setCommandError(commandErrorMessage(error));
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
     <HostShell>
       <h1>BTC/NVDA Risk Review</h1>
       <h2>Research Runs</h2>
-      <button className="primary" onClick={() => setStarted(true)}>
-        Start BTC/NVDA Review
+      <button className="primary" onClick={startReview} disabled={pending}>
+        {pending ? "Starting BTC/NVDA Review" : "Start BTC/NVDA Review"}
       </button>
+      {commandError ? (
+        <section className="risk-warning" data-testid="command-error">
+          {commandError}
+        </section>
+      ) : null}
       <section className="panel run-panel">
         {started ? (
-          <div data-testid="run-progress">{scenario.run.status}</div>
+          <>
+            <div data-testid="run-progress">{runStatus}</div>
+            <div data-testid="command-source">{commandSource}</div>
+          </>
         ) : (
           <RunStageList />
         )}
@@ -393,11 +485,49 @@ export function RunDetailPage({ scenario }: { scenario: PlutusScenario }) {
   );
 }
 
-export function ArtifactDetailPage() {
+export function ArtifactDetailPage({
+  scenario,
+  commandClient,
+  artifactId = scenario.run.artifacts[0].id,
+}: {
+  scenario: PlutusScenario;
+  commandClient?: PlutusCommandClient;
+  artifactId?: string;
+}) {
+  const fallbackArtifact =
+    scenario.run.artifacts.find((artifact) => artifact.id === artifactId) ??
+    scenario.run.artifacts[0];
+  const [artifactName, setArtifactName] = useState(fallbackArtifact.name);
+  const [commandSource, setCommandSource] = useState<
+    "Command bridge" | "Web preview fallback"
+  >("Web preview fallback");
+
+  useEffect(() => {
+    if (!commandClient) return;
+    let active = true;
+    commandClient.artifacts
+      .get(artifactId)
+      .then((artifact) => {
+        if (!active) return;
+        setArtifactName(
+          artifact.title ?? artifact.name ?? fallbackArtifact.name,
+        );
+        setCommandSource("Command bridge");
+      })
+      .catch(() => {
+        if (active) setCommandSource("Web preview fallback");
+      });
+    return () => {
+      active = false;
+    };
+  }, [artifactId, commandClient, fallbackArtifact.name]);
+
   return (
     <HostShell>
       <h1>BTC NVDA Risk Report</h1>
       <RiskWarning />
+      <p data-testid="artifact-command-source">{commandSource}</p>
+      <p data-testid="artifact-command-title">{artifactName}</p>
       <p>
         Generated locally in the Mac app data directory and opened through the
         typed artifact command.
@@ -418,7 +548,53 @@ export function StrategiesPage() {
   );
 }
 
-export function MemoryPage({ scenario }: { scenario: PlutusScenario }) {
+export function MemoryPage({
+  scenario,
+  commandClient,
+}: {
+  scenario: PlutusScenario;
+  commandClient?: PlutusCommandClient;
+}) {
+  const [commandStatus, setCommandStatus] = useState("Ready");
+  async function runMemoryCommand(
+    action: "edit" | "pin" | "archive" | "forget",
+  ) {
+    if (!commandClient?.memory) {
+      setCommandStatus("Web preview fallback");
+      return;
+    }
+    try {
+      if (action === "edit") {
+        await commandClient.memory.update(scenario.memory.id, {
+          summary: scenario.memory.summary,
+        });
+      } else if (action === "pin") {
+        await commandClient.memory.setCategoryEnabled("research_memory", true);
+      } else if (action === "archive") {
+        await commandClient.memory.archive(
+          scenario.memory.id,
+          "Archived from memory activity surface.",
+        );
+      } else {
+        await commandClient.memory.forget(scenario.memory.id);
+      }
+      setCommandStatus(`Command bridge: memory.${action}`);
+    } catch (error) {
+      setCommandStatus(commandErrorMessage(error));
+    }
+  }
+  async function toggleMemoryCategory(category: string, enabled: boolean) {
+    if (!commandClient?.memory) {
+      setCommandStatus("Web preview fallback");
+      return;
+    }
+    try {
+      await commandClient.memory.setCategoryEnabled(category, enabled);
+      setCommandStatus(`Command bridge: memory.${category}.${enabled}`);
+    } catch (error) {
+      setCommandStatus(commandErrorMessage(error));
+    }
+  }
   return (
     <HostShell>
       <h1>Memory Activity</h1>
@@ -428,21 +604,60 @@ export function MemoryPage({ scenario }: { scenario: PlutusScenario }) {
           <p>
             {scenario.memory.activity}: {scenario.memory.summary}
           </p>
+          <p data-testid="memory-command-status">{commandStatus}</p>
           <div className="button-row">
-            <button className="secondary">Edit memory</button>
-            <button className="secondary">Pin memory</button>
-            <button className="secondary">Archive memory</button>
-            <button className="secondary">Forget memory</button>
+            <button
+              className="secondary"
+              onClick={() => void runMemoryCommand("edit")}
+            >
+              Edit memory
+            </button>
+            <button
+              className="secondary"
+              onClick={() => void runMemoryCommand("pin")}
+            >
+              Pin memory
+            </button>
+            <button
+              className="secondary"
+              onClick={() => void runMemoryCommand("archive")}
+            >
+              Archive memory
+            </button>
+            <button
+              className="secondary"
+              onClick={() => void runMemoryCommand("forget")}
+            >
+              Forget memory
+            </button>
           </div>
         </article>
         <article className="panel">
           <h2>Category Toggles</h2>
           <label className="toggle-row">
-            <input type="checkbox" defaultChecked />
+            <input
+              type="checkbox"
+              defaultChecked
+              onChange={(event) =>
+                void toggleMemoryCategory(
+                  "research_memory",
+                  event.currentTarget.checked,
+                )
+              }
+            />
             Research memory capture
           </label>
           <label className="toggle-row">
-            <input type="checkbox" defaultChecked />
+            <input
+              type="checkbox"
+              defaultChecked
+              onChange={(event) =>
+                void toggleMemoryCategory(
+                  "wiki_pointer",
+                  event.currentTarget.checked,
+                )
+              }
+            />
             Wiki pointer memory
           </label>
         </article>
@@ -454,10 +669,29 @@ export function MemoryPage({ scenario }: { scenario: PlutusScenario }) {
 export function WikiPage({
   scenario,
   detail,
+  commandClient,
 }: {
   scenario: PlutusScenario;
   detail: boolean;
+  commandClient?: PlutusCommandClient;
 }) {
+  const [commandStatus, setCommandStatus] = useState("Ready");
+  async function revertRevision() {
+    if (!commandClient?.wiki) {
+      setCommandStatus("Web preview fallback");
+      return;
+    }
+    try {
+      await commandClient.wiki.revertRevision(
+        scenario.wiki.id,
+        scenario.wiki.revision,
+        "Reverted from wiki history surface.",
+      );
+      setCommandStatus("Command bridge: wiki.revertRevision");
+    } catch (error) {
+      setCommandStatus(commandErrorMessage(error));
+    }
+  }
   return (
     <HostShell>
       <h1>{detail ? scenario.wiki.title : "Wiki Browser"}</h1>
@@ -469,13 +703,17 @@ export function WikiPage({
         <article className="panel" data-testid="wiki-revision-timeline">
           <h2>Revision Timeline</h2>
           <p>Revision: {scenario.wiki.revision}</p>
-          <button className="secondary">Revert revision</button>
+          <p>audit: audit-wiki-btc-nvda-revision</p>
+          <p data-testid="wiki-command-status">{commandStatus}</p>
+          <button className="secondary" onClick={() => void revertRevision()}>
+            Revert revision
+          </button>
         </article>
         <article className="panel" data-testid="source-link-drawer">
           <h2>Source Links</h2>
           <p>{scenario.wiki.sourceRef}</p>
         </article>
-        <article className="panel">
+        <article className="panel" data-testid="wiki-diff-view">
           <h2>Diff View</h2>
           <p>Added concentration lesson and stale quote warning.</p>
         </article>
@@ -566,11 +804,40 @@ export function ConnectionPage({ remote }: { remote: RemoteVisualState }) {
 export function RemoteDashboardPage({
   scenario,
   remote,
+  commandClient,
 }: {
   scenario: PlutusScenario;
   remote: RemoteVisualState;
+  commandClient?: PlutusCommandClient;
 }) {
   const disabled = remote !== "connected";
+  const [pending, setPending] = useState(false);
+  const [commandSource, setCommandSource] = useState<string | null>(null);
+  const [commandError, setCommandError] = useState<string | null>(null);
+
+  async function startRemoteReview() {
+    setCommandError(null);
+    if (!commandClient) {
+      setCommandSource("Web preview fallback");
+      return;
+    }
+
+    setPending(true);
+    try {
+      await commandClient.researchRuns.start({
+        portfolioId: scenario.portfolio.id,
+        symbols: ["BTC", "NVDA"],
+        selectedTeam: "portfolio_review_committee",
+        userRequest: "Start Remote BTC/NVDA Review",
+      });
+      setCommandSource("Command bridge");
+    } catch (error) {
+      setCommandError(commandErrorMessage(error));
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
     <MobileShell>
       <h1>Remote Dashboard</h1>
@@ -587,12 +854,21 @@ export function RemoteDashboardPage({
           className="primary"
           data-testid="remote-command"
           aria-label="Start Remote BTC/NVDA Review"
-          disabled={disabled}
+          disabled={disabled || pending}
+          onClick={startRemoteReview}
         >
-          {remote === "revoked"
-            ? "Remote command denied"
-            : "Start Mac-hosted run"}
+          {pending
+            ? "Starting Mac-hosted run"
+            : remote === "revoked"
+              ? "Remote command denied"
+              : "Start Mac-hosted run"}
         </button>
+        {commandSource ? (
+          <p data-testid="remote-command-status">{commandSource}</p>
+        ) : null}
+        {commandError ? (
+          <p data-testid="remote-command-status">{commandError}</p>
+        ) : null}
       </article>
     </MobileShell>
   );
@@ -605,6 +881,7 @@ export function RemotePortfolioPage({
   scenario: PlutusScenario;
   remote: RemoteVisualState;
 }) {
+  const disabled = remote !== "connected";
   return (
     <MobileShell>
       <h1>Remote Core Portfolio</h1>
@@ -612,7 +889,17 @@ export function RemotePortfolioPage({
       <PortfolioSummary scenario={scenario} />
       <section className="panel">
         <h2>Remote Thesis Edit</h2>
-        <p>Position thesis notes are editable only while connected.</p>
+        <label className="field-row">
+          BTC thesis note
+          <textarea
+            aria-label="BTC thesis note"
+            defaultValue="BTC diversifies but increases volatility."
+            disabled={disabled}
+          />
+        </label>
+        <button className="secondary" disabled={disabled}>
+          Save thesis to Mac
+        </button>
       </section>
     </MobileShell>
   );
@@ -625,6 +912,7 @@ export function RemoteWatchlistPage({
   scenario: PlutusScenario;
   remote: RemoteVisualState;
 }) {
+  const disabled = remote !== "connected";
   return (
     <MobileShell>
       <h1>Remote Default Watchlist</h1>
@@ -632,9 +920,39 @@ export function RemoteWatchlistPage({
       <WatchlistPanel scenario={scenario} title={scenario.watchlist.name} />
       <section className="panel">
         <h2>Remote Note Edit</h2>
-        <p>
-          Watchlist notes are disabled when the host is stale or disconnected.
-        </p>
+        <label className="field-row">
+          NVDA watchlist note
+          <textarea
+            aria-label="NVDA watchlist note"
+            defaultValue="Validate AI capex assumptions before next run."
+            disabled={disabled}
+          />
+        </label>
+        <button className="secondary" disabled={disabled}>
+          Save watchlist note to Mac
+        </button>
+      </section>
+    </MobileShell>
+  );
+}
+
+export function RemoteInstrumentPage({
+  scenario,
+  remote,
+}: {
+  scenario: PlutusScenario;
+  remote: RemoteVisualState;
+}) {
+  return (
+    <MobileShell>
+      <h1>Remote BTC Instrument</h1>
+      <RemoteStateBanner remote={remote} />
+      <section className="panel">
+        <h2>
+          {scenario.instrument.symbol} - {scenario.instrument.name}
+        </h2>
+        <p>{scenario.instrument.summary}</p>
+        <RiskChart />
       </section>
     </MobileShell>
   );

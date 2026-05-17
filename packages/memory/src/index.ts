@@ -361,6 +361,17 @@ export class MemoryStore {
       .map((record) => ({ ...record }));
   }
 
+  importRecords(records: MemoryRecord[]): void {
+    for (const record of records) {
+      if (record.profileId !== (this.options.profileId ?? "default")) continue;
+      this.records.set(record.id, {
+        ...record,
+        tags: [...record.tags],
+        sourceRefs: [...record.sourceRefs],
+      });
+    }
+  }
+
   update(
     id: string,
     patch: Partial<

@@ -1,4 +1,12 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  closeSync,
+  fsyncSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { createHash } from "node:crypto";
 import { z } from "zod";
@@ -80,6 +88,18 @@ export interface WikiPageBundle {
   markdown: string;
 }
 
+interface WikiRepositoryState {
+  pages: WikiPage[];
+  revisions: Array<[string, WikiRevision[]]>;
+  activity: WikiActivity[];
+  links: Array<{
+    fromPageId: string;
+    toPageId: string;
+    linkType: string;
+    reason: string;
+  }>;
+}
+
 export class WikiRepository {
   readonly activity: WikiActivity[] = [];
   private readonly pages = new Map<string, WikiPage>();
@@ -93,6 +113,7 @@ export class WikiRepository {
 
   constructor(private readonly options: { rootDir: string }) {
     mkdirSync(this.options.rootDir, { recursive: true });
+    this.loadState();
   }
 
   createPage(input: {
@@ -377,7 +398,7 @@ export class WikiRepository {
   private write(storageKey: string, markdown: string): void {
     const path = join(this.options.rootDir, storageKey);
     mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, markdown, "utf8");
+    atomicWrite(path, markdown);
   }
 
   private read(storageKey: string): string {
@@ -390,6 +411,50 @@ export class WikiRepository {
       id: createId(),
       createdAt: new Date().toISOString(),
     });
+    this.saveState();
+  }
+
+  private saveState(): void {
+    const state: WikiRepositoryState = {
+      pages: [...this.pages.values()],
+      revisions: [...this.revisions.entries()],
+      activity: this.activity,
+      links: this.links,
+    };
+    atomicWrite(
+      join(this.options.rootDir, "wiki-index.json"),
+      `${JSON.stringify(state, null, 2)}\n`,
+    );
+  }
+
+  private loadState(): void {
+    try {
+      const parsed = JSON.parse(
+        readFileSync(join(this.options.rootDir, "wiki-index.json"), "utf8"),
+      ) as WikiRepositoryState;
+      for (const page of parsed.pages ?? []) {
+        this.pages.set(page.id, {
+          ...page,
+          tags: [...page.tags],
+          sourceRefs: [...page.sourceRefs],
+          memoryRefs: [...page.memoryRefs],
+        });
+      }
+      for (const [pageId, revisions] of parsed.revisions ?? []) {
+        this.revisions.set(
+          pageId,
+          revisions.map((revision) => ({
+            ...revision,
+            sourceRefs: [...revision.sourceRefs],
+            contradictionRefs: [...revision.contradictionRefs],
+          })),
+        );
+      }
+      this.activity.push(...(parsed.activity ?? []));
+      this.links.push(...(parsed.links ?? []));
+    } catch {
+      return;
+    }
   }
 }
 
@@ -397,6 +462,7 @@ export type WikiMaintenancePlan = z.infer<typeof WikiMaintenancePlanSchema>;
 
 export const WikiMaintenancePlanSchema = z.object({
   runId: z.string().uuid(),
+  profileId: z.string().uuid().optional(),
   actions: z.array(
     z.discriminatedUnion("type", [
       z.object({
@@ -467,7 +533,7 @@ export class WikiCuratorService {
       if (action.type === "create") {
         pages.push(
           this.repo.createPage({
-            profileId: "default",
+            profileId: parsed.profileId ?? "default",
             category: action.category,
             title: action.title,
             slug: action.slug,
@@ -718,6 +784,18 @@ function unique(values: string[]): string[] {
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function atomicWrite(path: string, content: string): void {
+  const tmp = `${path}.${process.pid}.tmp`;
+  writeFileSync(tmp, content, "utf8");
+  const fd = openSync(tmp, "r");
+  try {
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+  renameSync(tmp, path);
 }
 
 function createId(): string {
