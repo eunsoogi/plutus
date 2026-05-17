@@ -1,7 +1,20 @@
 name = "technical_analyst"
 description = "Reviews trend, regime, support, resistance, and volatility context."
 model_reasoning_effort = "medium"
-sandbox_mode = "workspace-write"
+sandbox_mode = "read-only"
 developer_instructions = "Use chart data and risk tools; avoid price targets without caveats."
-allowed_mcp_servers = ["plutus-local-stdio"]
+allowed_mcp_servers = ["plutus_market_data", "plutus_risk", "plutus_audit"]
 allowed_namespaces = ["plutus_market_data", "plutus_risk", "plutus_audit"]
+write_scopes = ["plutus_audit.log_agent_event"]
+
+[mcp_servers.plutus_market_data]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_market_data", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_risk]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_risk", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_audit]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_audit", "--stdio"]

@@ -7,8 +7,10 @@ import {
 import { LocalToolRouter, makeRunContext } from "@plutus/local-tools";
 import { MockCodexRunHost as ScenarioCodexRunHost } from "./test-harness/mock-codex-sdk";
 import type { ScriptedRunScenario } from "./test-harness/scripted-run-stream";
+import type { ResearchRunHandle } from "./codex-run-host/codex-run-host";
 export { btcNvdaPortfolioReviewScenario } from "./test-harness/btc-nvda-scenario";
 export { validateStructuredTurn } from "./test-harness/mock-structured-turn";
+export { CodexSdkRunHost } from "./codex-run-host/codex-sdk-run-host";
 export {
   codexRunEventSchema,
   finalRecommendationCategorySchema,
@@ -23,6 +25,8 @@ export type {
 export type {
   CodexRunRequest,
   CodexRunResult,
+  ProductCodexRunHost,
+  ResearchRunHandle,
   ValidationFailure,
 } from "./codex-run-host/codex-run-host";
 
@@ -84,11 +88,6 @@ export const CodexRunEventSchema = z.object({
 });
 export type CodexRunEvent = z.infer<typeof CodexRunEventSchema>;
 
-export interface ResearchRunHandle {
-  runId: string;
-  threadId: string;
-}
-
 export interface CodexRunHost {
   startResearchRun(input: {
     profileId: string;
@@ -139,7 +138,11 @@ export class MockCodexRunHost implements CodexRunHost {
       status: "queued",
     };
     this.runs.set(run.id, run);
-    return { runId: run.id, threadId: "mock-thread-btc-nvda" };
+    return {
+      runId: run.id,
+      threadId: "mock-thread-btc-nvda",
+      configHash: "mock-config-hash",
+    };
   }
 
   async *streamResearchRun(
@@ -200,7 +203,7 @@ export class MockCodexRunHost implements CodexRunHost {
   }
 
   async resumeResearchRun(threadId: string): Promise<ResearchRunHandle> {
-    return { runId: ids.run, threadId };
+    return { runId: ids.run, threadId, configHash: "mock-config-hash" };
   }
 
   async requestStructuredTurn<T>(

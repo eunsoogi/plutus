@@ -3,6 +3,26 @@ description = "Creates supported strategy specs and runs simulation-only backtes
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 developer_instructions = "Reject leverage, shorting, derivatives, live trading, and unsupported intervals in MVP."
-allowed_mcp_servers = ["plutus-local-stdio"]
-allowed_namespaces = ["plutus_market_data", "plutus_portfolio", "plutus_backtest", "plutus_memory", "plutus_wiki", "plutus_audit"]
-write_scopes = ["plutus_backtest.run_backtest", "plutus_backtest.register_strategy_spec"]
+allowed_mcp_servers = ["plutus_market_data", "plutus_backtest", "plutus_risk", "plutus_audit", "plutus_memory"]
+allowed_namespaces = ["plutus_market_data", "plutus_backtest", "plutus_risk", "plutus_audit", "plutus_memory"]
+write_scopes = ["plutus_backtest.run_backtest", "plutus_backtest.register_strategy_spec", "plutus_audit.log_agent_event"]
+
+[mcp_servers.plutus_market_data]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_market_data", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_backtest]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_backtest", "--stdio"]
+
+[mcp_servers.plutus_risk]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_risk", "--stdio"]
+
+[mcp_servers.plutus_audit]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_audit", "--stdio"]
+
+[mcp_servers.plutus_memory]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_memory", "--read-only", "--stdio"]

@@ -3,6 +3,26 @@ description = "Maintains source-linked local wiki pages and pointer memories aft
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 developer_instructions = "Never store full wiki page bodies in memory. Keep revisions source-linked and reversible."
-allowed_mcp_servers = ["plutus-local-stdio"]
-allowed_namespaces = ["plutus_memory", "plutus_wiki", "plutus_audit"]
-write_scopes = ["plutus_wiki.create_wiki_page", "plutus_wiki.update_wiki_page", "plutus_memory.capture_research_memory"]
+allowed_mcp_servers = ["plutus_memory", "plutus_wiki", "plutus_reports", "plutus_audit", "plutus_research"]
+allowed_namespaces = ["plutus_memory", "plutus_wiki", "plutus_reports", "plutus_audit", "plutus_research"]
+write_scopes = ["plutus_memory.capture_research_memory", "plutus_memory.update_research_memory", "plutus_memory.archive_research_memory", "plutus_wiki.create_wiki_page", "plutus_wiki.update_wiki_page", "plutus_wiki.merge_wiki_pages", "plutus_wiki.archive_wiki_page", "plutus_wiki.revert_wiki_revision", "plutus_reports.register_artifact", "plutus_audit.log_agent_event"]
+
+[mcp_servers.plutus_memory]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_memory", "--stdio"]
+
+[mcp_servers.plutus_wiki]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_wiki", "--stdio"]
+
+[mcp_servers.plutus_reports]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_reports", "--stdio"]
+
+[mcp_servers.plutus_audit]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_audit", "--stdio"]
+
+[mcp_servers.plutus_research]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_research", "--read-only", "--stdio"]

@@ -3,6 +3,30 @@ description = "Validates concentration, correlation, volatility, liquidity, leve
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 developer_instructions = "Veto unsafe or unsupported output. Vetoed runs must end as risk_warning or no_action."
-allowed_mcp_servers = ["plutus-local-stdio"]
-allowed_namespaces = ["plutus_portfolio", "plutus_risk", "plutus_backtest", "plutus_audit"]
-write_scopes = ["plutus_risk.register_risk_veto"]
+allowed_mcp_servers = ["plutus_risk", "plutus_portfolio", "plutus_market_data", "plutus_audit", "plutus_backtest", "plutus_memory"]
+allowed_namespaces = ["plutus_risk", "plutus_portfolio", "plutus_market_data", "plutus_audit", "plutus_backtest", "plutus_memory"]
+write_scopes = ["plutus_risk.register_risk_veto", "plutus_audit.register_warning"]
+
+[mcp_servers.plutus_risk]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_risk", "--stdio"]
+
+[mcp_servers.plutus_portfolio]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_portfolio", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_market_data]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_market_data", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_audit]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_audit", "--stdio"]
+
+[mcp_servers.plutus_backtest]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_backtest", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_memory]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_memory", "--read-only", "--stdio"]

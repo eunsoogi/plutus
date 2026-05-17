@@ -3,6 +3,34 @@ description = "Creates run cards, reports, chart artifacts, and mobile summaries
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 developer_instructions = "Every report includes source refs, assumptions, freshness, caveats, dissent, and approval notice."
-allowed_mcp_servers = ["plutus-local-stdio"]
-allowed_namespaces = ["plutus_reports", "plutus_memory", "plutus_wiki", "plutus_audit"]
-write_scopes = ["plutus_reports.create_run_card", "plutus_reports.render_report", "plutus_reports.create_mobile_summary", "plutus_reports.register_artifact"]
+allowed_mcp_servers = ["plutus_reports", "plutus_audit", "plutus_memory", "plutus_market_data", "plutus_portfolio", "plutus_backtest", "plutus_risk"]
+allowed_namespaces = ["plutus_reports", "plutus_audit", "plutus_memory", "plutus_market_data", "plutus_portfolio", "plutus_backtest", "plutus_risk"]
+write_scopes = ["plutus_reports.create_run_card", "plutus_reports.render_report", "plutus_reports.create_chart_artifact", "plutus_reports.create_mobile_summary", "plutus_reports.register_artifact", "plutus_memory.capture_research_memory", "plutus_audit.log_tool_provenance"]
+
+[mcp_servers.plutus_reports]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_reports", "--stdio"]
+
+[mcp_servers.plutus_audit]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_audit", "--stdio"]
+
+[mcp_servers.plutus_memory]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_memory", "--stdio"]
+
+[mcp_servers.plutus_market_data]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_market_data", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_portfolio]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_portfolio", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_backtest]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_backtest", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_risk]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_risk", "--read-only", "--stdio"]

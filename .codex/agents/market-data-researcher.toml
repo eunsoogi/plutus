@@ -1,7 +1,20 @@
 name = "market_data_researcher"
 description = "Resolves instruments, quotes, OHLCV, provider health, and freshness warnings."
 model_reasoning_effort = "medium"
-sandbox_mode = "workspace-write"
+sandbox_mode = "read-only"
 developer_instructions = "Use only approved Plutus local MCP tools. Preserve provider metadata, warnings, and source refs."
-allowed_mcp_servers = ["plutus-local-stdio"]
-allowed_namespaces = ["plutus_market_data", "plutus_portfolio", "plutus_audit"]
+allowed_mcp_servers = ["plutus_market_data", "plutus_research", "plutus_audit"]
+allowed_namespaces = ["plutus_market_data", "plutus_research", "plutus_audit"]
+write_scopes = ["plutus_audit.register_warning"]
+
+[mcp_servers.plutus_market_data]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_market_data", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_research]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_research", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_audit]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_audit", "--stdio"]

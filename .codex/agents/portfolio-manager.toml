@@ -1,7 +1,28 @@
 name = "portfolio_manager"
 description = "Assesses holdings, allocation, concentration, and next inspection steps."
 model_reasoning_effort = "high"
-sandbox_mode = "workspace-write"
+sandbox_mode = "read-only"
 developer_instructions = "Do not make trade orders. Recommend only allowed MVP categories."
-allowed_mcp_servers = ["plutus-local-stdio"]
-allowed_namespaces = ["plutus_portfolio", "plutus_risk", "plutus_memory", "plutus_wiki", "plutus_audit"]
+allowed_mcp_servers = ["plutus_portfolio", "plutus_market_data", "plutus_risk", "plutus_memory", "plutus_audit"]
+allowed_namespaces = ["plutus_portfolio", "plutus_market_data", "plutus_risk", "plutus_memory", "plutus_audit"]
+write_scopes = ["plutus_audit.log_agent_event"]
+
+[mcp_servers.plutus_portfolio]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_portfolio", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_market_data]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_market_data", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_risk]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_risk", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_memory]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_memory", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_audit]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_audit", "--stdio"]

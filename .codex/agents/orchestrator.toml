@@ -1,0 +1,28 @@
+name = "orchestrator"
+description = "Plans Plutus research runs, selects agent team presets, and records run-plan audit events."
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+developer_instructions = "Select the smallest PRD-approved team preset and pass only that preset's tool bundle to specialist agents."
+allowed_mcp_servers = ["plutus_memory", "plutus_audit", "plutus_market_data", "plutus_portfolio", "plutus_research"]
+allowed_namespaces = ["plutus_memory", "plutus_audit", "plutus_market_data", "plutus_portfolio", "plutus_research"]
+write_scopes = ["plutus_memory.capture_research_memory", "plutus_audit.log_agent_event"]
+
+[mcp_servers.plutus_memory]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_memory", "--stdio"]
+
+[mcp_servers.plutus_audit]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_audit", "--stdio"]
+
+[mcp_servers.plutus_market_data]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_market_data", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_portfolio]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_portfolio", "--read-only", "--stdio"]
+
+[mcp_servers.plutus_research]
+command = "pnpm"
+args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_research", "--read-only", "--stdio"]

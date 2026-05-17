@@ -9,11 +9,13 @@
     "build": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
+    "start-research-run": "tsx src/runtime-cli.ts",
     "test": "cd ../.. && vitest run packages/agents/src",
     "test:unit": "cd ../.. && vitest run packages/agents/src",
     "test:integration": "cd ../.. && vitest run packages/agents/src"
   },
   "dependencies": {
+    "@openai/codex-sdk": "0.130.0",
     "@plutus/domain": "workspace:*",
     "@plutus/local-tools": "workspace:*",
     "@plutus/test-fixtures": "workspace:*",
