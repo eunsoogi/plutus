@@ -63,7 +63,7 @@ Post-MVP local tool namespaces:
 - `get_position_history(portfolioId, instrumentId, start, end)`: position changes and cost basis history.
 - `get_watchlists()`: watchlist metadata and items for the active Mac-host profile only.
 - `get_instrument_notes(instrumentId, portfolioId)`: user notes and thesis snippets.
-- `compute_allocation(portfolioId, groupBy)`: allocation by asset class, sector/category, currency, account, or tag.
+- `compute_allocation(portfolioId, groupBy)`: allocation by asset class, sector/category, currency, account, risk bucket, or tag.
 - `compute_performance(portfolioId, start, end, benchmarkId)`: portfolio return and benchmark comparison.
 
 ### `plutus_backtest`
@@ -114,7 +114,7 @@ Post-MVP local tool namespaces:
 
 The backing implementation should use Mem0 through `packages/memory`, while the tool contract remains Plutus-owned for audit, retention, sensitivity, and deletion semantics.
 
-`plutus_memory` stores atomic recall records and wiki pointers. It must not store full wiki page bodies.
+`plutus_memory` stores atomic recall records, wiki source memories, and wiki pointers. It must not store full wiki page bodies.
 
 ### `plutus_wiki`
 
@@ -183,7 +183,7 @@ In MVP, `plutus_wiki` is an autonomous maintenance workflow. Wiki writes do not 
 - Tool namespaces: `plutus_market_data`, `plutus_risk`, `plutus_reports`, `plutus_audit`.
 - Required final checks: trend, momentum, volatility, support/resistance, invalidation level.
 
-### Shadow Account Review Team
+### Shadow Account Review Team (Phase 2)
 
 - Agents: `quant_strategy_researcher`, `portfolio_manager`, `risk_manager`, `report_writer`.
 - Tool namespaces: `plutus_portfolio`, `plutus_market_data`, `plutus_backtest`, `plutus_risk`, `plutus_reports`, `plutus_research`, `plutus_audit`.

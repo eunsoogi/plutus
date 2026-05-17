@@ -87,7 +87,7 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - Create: `apps/tauri/src-tauri/src/storage/remote_devices.rs`
 - Create: `apps/tauri/src-tauri/src/seed/mvp_scenario.rs`
 
-- [ ] Define SQLite tables matching `spec/01-domain-model-and-persistence.md`.
+- [ ] Define SQLite tables matching [Domain Model And Persistence](./01-domain-model-and-persistence.md).
 - [ ] Add local repository functions for instruments, portfolios, watchlists, research runs, artifacts, strategies, memory records, wiki pages, paired remote devices, and audit events.
 - [ ] Add app data directory layout for SQLite database, run workspaces, artifacts, and backups.
 - [ ] Add seed data for AAPL, NVDA, BTC, ETH, USDC, USD cash, SPY, QQQ.
@@ -108,7 +108,7 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 
 - [ ] Implement typed local commands from [Apps, Local Commands, And Remote Control](./05-apps-local-commands-and-remote-control.md).
 - [ ] Add TypeScript command client wrappers.
-- [ ] Add tests or smoke commands for portfolio create/list, watchlist edit, run lookup, artifact lookup, and remote-control-safe payloads.
+- [ ] Add tests or smoke commands for portfolio create/list, position thesis edit, watchlist edit, run lookup, artifact lookup, and remote-control-safe payloads.
 - [ ] Verify command responses do not expose raw secrets or unrestricted prompt context.
 - [ ] Run `pnpm test:commands`.
 
@@ -125,6 +125,7 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - Create: `packages/local-tools/src/services/market-data-service.ts`
 
 - [ ] Implement provider interface with source metadata and freshness warnings.
+- [ ] Implement free-provider failover policy with provider health, quota, stale-data, and missing-field warnings.
 - [ ] Implement symbol resolution and normalized quote/OHLCV responses.
 - [ ] Implement allocation and performance service methods over local SQLite repositories.
 - [ ] Add stale-data warning tests.
@@ -200,7 +201,7 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - [ ] Implement local Markdown wiki storage, metadata, revision history, activity feed, and revert.
 - [ ] Implement `plutus_memory` and `plutus_wiki` local tool namespaces against the memory/wiki packages.
 - [ ] Implement wiki maintenance planner interfaces and contradiction checks.
-- [ ] Add tests proving automatic memory capture, recall, wiki page create/update, wiki pointer memory, and no full wiki page body stored in Mem0.
+- [ ] Add tests proving automatic memory capture, recall, wiki page create/update, wiki source memory, wiki pointer memory, and no full wiki page body stored in Mem0.
 - [ ] Run memory/wiki unit and integration tests.
 
 ## Phase 9: Codex Agent Runtime
@@ -250,6 +251,7 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - [ ] Implement encrypted session key creation and storage.
 - [ ] Implement Mac host device list, revoke, and kill switch.
 - [ ] Implement remote command authorization against paired-device permissions.
+- [ ] Implement connected in-app run completion notifications from Mac host to paired mobile clients.
 - [ ] Implement local network discovery where available and manual host address entry when discovery is unavailable.
 - [ ] Forward allowed run progress events from Mac host to mobile.
 - [ ] Add tests for revoked-device command rejection and stale-session handling.

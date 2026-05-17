@@ -48,7 +48,7 @@ Untrusted sources:
 - web pages;
 - news;
 - broker/export statements;
-- generated strategy code from previous runs.
+- generated strategy code from future post-MVP code-export features.
 
 Controls:
 
@@ -66,7 +66,7 @@ Sensitive data:
 - API keys;
 - trade history;
 - research notes;
-- generated strategy code;
+- generated strategy specs and any future generated strategy code;
 - Codex environment variables.
 
 Rules:
@@ -97,7 +97,7 @@ Rules:
 - Generated files cannot write outside workspace paths.
 - Ordinary analyst agents use read-only sandbox where possible.
 - `quant_strategy_researcher` can write strategy artifacts only in the run workspace.
-- Generated strategy execution runs in a sandboxed process with resource limits.
+- If generated strategy code execution is introduced after MVP, it runs in a sandboxed process with resource limits.
 - No MVP custom agent gets broad shell/database access.
 
 ## 7. Remote-Control Security

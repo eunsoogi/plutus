@@ -61,6 +61,7 @@ export const MemoryKind = z.enum([
   "research_memory",
   "strategy_memory",
   "workflow_memory",
+  "wiki_source_memory",
   "wiki_pointer",
 ]);
 
@@ -124,6 +125,7 @@ Represents current and historical holdings. MVP can model current positions plus
 - `cost_currency`
 - `fees_total`
 - `acquired_at`
+- `risk_bucket`
 - `tags`: text array
 - `thesis`
 - `created_at`
@@ -138,6 +140,8 @@ Canonical tradable or trackable asset identity.
 - `canonical_symbol`
 - `display_symbol`
 - `name`
+- `sector`
+- `category`
 - `market`
 - `region`
 - `currency`
@@ -286,7 +290,7 @@ Product-owned metadata for Mem0-backed automatic memory.
 - `id`
 - `profile_id`
 - `mem0_id`
-- `kind`: `user_preference`, `research_memory`, `strategy_memory`, `workflow_memory`, `wiki_pointer`
+- `kind`: `user_preference`, `research_memory`, `strategy_memory`, `workflow_memory`, `wiki_source_memory`, `wiki_pointer`
 - `summary`
 - `tags`
 - `source_refs`
@@ -450,8 +454,10 @@ SQLite is the MVP database. Do not require PostgreSQL, Redis, or a hosted databa
 MVP should compute these in the local runtime and expose them through Tauri commands and local tools:
 
 - allocation by asset class;
+- allocation by sector/category;
 - allocation by currency;
 - allocation by account;
+- allocation by risk bucket;
 - allocation by tag;
 - instrument exposure table;
 - cash/stablecoin exposure;
@@ -499,7 +505,7 @@ BTC and NVDA exposure together looks risky. Review my portfolio and suggest what
 - Trade import rows for CSV uploads.
 - Shadow Account behavior diagnostics.
 - Broker/exchange read-only account references.
-- Automatic memory capture controls for saved theses and user preferences.
-- LLM-maintained wiki history and knowledge-base review tools.
+- Advanced memory governance beyond MVP category toggles.
+- Periodic wiki review jobs and advanced contradiction review workflows.
 - Provider health history and quota tracking.
-- Optional remote-control device metadata for paired mobile controllers.
+- Expanded remote-control device metadata beyond MVP pairing and revocation fields.

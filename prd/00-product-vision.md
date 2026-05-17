@@ -54,7 +54,7 @@ It explicitly focuses on research, simulation, and backtesting rather than live 
 - LLM-maintained local wiki pages for theses, strategy lessons, risk lessons, instrument notes, and workflow knowledge.
 - Shadow-account concept for comparing user behavior against extracted rule-based strategies.
 - Run cards and persisted artifacts for reproducibility.
-- Exportable reports and strategy code, with live trading excluded from MVP.
+- Exportable reports and strategy specs, with live trading excluded from MVP.
 
 ## 7. Success Metrics
 

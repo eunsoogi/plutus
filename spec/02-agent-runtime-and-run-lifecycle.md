@@ -248,7 +248,7 @@ Every file must define:
 - `developer_instructions`
 - role-appropriate `model_reasoning_effort`
 - `sandbox_mode`
-- explicit local stdio MCP adapter allowlists from `spec/03-local-tool-surface.md`
+- explicit local stdio MCP adapter allowlists from [Local Tool Surface](./03-local-tool-surface.md)
 
 ## 7. CodexRunHost Adapter
 
@@ -305,7 +305,7 @@ This maintenance step must not change the final run recommendation or risk-manag
 - pass a JSON Schema derived from Zod;
 - validate SDK output again with Zod;
 - store validation failures;
-- retry only when the failure is schema-format related and within run budget.
+- retry only when the failure is schema-format related and within run retry/time limits.
 
 ### Resume
 
@@ -324,7 +324,7 @@ MVP default: native Codex subagent workflow through project custom agents.
 Use deterministic multi-thread mode when:
 
 - per-agent retries are required;
-- strict budgets are required;
+- strict per-agent time or retry limits are required;
 - every specialist output must map one-to-one to a database row;
 - native subagent behavior is not deterministic enough for a regulated workflow.
 

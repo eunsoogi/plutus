@@ -11,7 +11,7 @@ MVP must:
 - State that outputs are research assistance, not guaranteed financial advice.
 - Avoid direct live trading execution.
 - Require user approval for any future broker/exchange write action.
-- Mark all recommendations as observe, research more, rebalance candidate, strategy candidate, risk warning, or no-action.
+- Mark all recommendations as `observe`, `research_more`, `rebalance_candidate`, `strategy_candidate`, `risk_warning`, or `no_action`.
 - Show assumptions, data freshness, and risk caveats.
 
 ## 3. Agent Safety Guardrails
@@ -34,7 +34,7 @@ Sensitive data:
 - API keys.
 - Trade history.
 - Research notes.
-- Generated strategy code.
+- Generated strategy specs and any future generated strategy code.
 - Remote-control pairing keys.
 
 Requirements:
@@ -57,7 +57,7 @@ Requirements:
 - Summarize untrusted content before passing it into decision agents.
 - Add source-level warnings when content asks the agent to ignore rules or leak secrets.
 - Restrict file access to approved workspace paths.
-- Run generated strategy code in sandboxed execution.
+- If generated strategy code is introduced after MVP, run it only in sandboxed execution.
 - Disable shell access for ordinary research agents.
 
 ## 6. Remote-Control Security

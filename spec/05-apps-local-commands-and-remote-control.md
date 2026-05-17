@@ -73,6 +73,7 @@ export interface PlutusLocalCommands {
     getSnapshot(input: GetPortfolioSnapshotInput): Promise<PortfolioSnapshot>;
     addPosition(input: AddPositionInput): Promise<Position>;
     updatePosition(input: UpdatePositionInput): Promise<Position>;
+    updatePositionThesis(input: UpdatePositionThesisInput): Promise<Position>;
   };
   watchlists: {
     list(): Promise<Watchlist[]>;
@@ -113,6 +114,7 @@ Mobile sends typed commands to the Mac host. The Mac host executes them against 
 export const RemoteCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("portfolio.list") }),
   z.object({ type: z.literal("portfolio.snapshot"), portfolioId: z.string().uuid() }),
+  z.object({ type: z.literal("portfolio.update_position_thesis"), payload: UpdatePositionThesisInputSchema }),
   z.object({ type: z.literal("watchlist.list") }),
   z.object({ type: z.literal("watchlist.update_item"), payload: UpdateWatchlistItemInputSchema }),
   z.object({ type: z.literal("run.start"), payload: StartResearchRunInputSchema }),
@@ -203,6 +205,7 @@ tool.call_started
 tool.call_completed
 warning.registered
 artifact.created
+notification.created
 run.completed
 run.failed
 remote.device_connected

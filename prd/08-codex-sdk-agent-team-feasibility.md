@@ -68,7 +68,7 @@ Risks:
 
 - Programmatic subagent control is prompt-mediated rather than a typed SDK method such as `spawnAgent()`.
 - More care is needed to make outputs deterministic enough for product records.
-- Token and latency costs can rise quickly because each subagent does its own work.
+- Latency and local runtime load can rise quickly because each subagent does its own work.
 - Product-level audit logging must capture streamed items and final artifacts.
 
 ### Option B: Plutus-Orchestrated Multi-Thread Team
@@ -86,7 +86,7 @@ Flow:
 Strengths:
 
 - More deterministic scheduling and persistence.
-- Easier to set hard timeouts, retries, and per-agent budgets.
+- Easier to set hard timeouts, retries, and per-agent execution limits.
 - Easier to map one specialist output to one database row.
 
 Risks:
@@ -103,7 +103,7 @@ MVP should use native Codex subagents for specialist teamwork, but keep every re
 
 The adapter must expose product-level methods such as `startResearchRun`, `streamRunEvents`, `resumeResearchRun`, and `cancelResearchRun`, rather than leaking raw SDK calls across the app.
 
-If a workflow needs strict per-agent retry, budget, or persistence semantics, implement it with Plutus-orchestrated multi-thread execution.
+If a workflow needs strict per-agent retry, timeout, or persistence semantics, implement it with Plutus-orchestrated multi-thread execution.
 
 ## 4. Required Custom Agents
 
@@ -161,7 +161,7 @@ It must persist:
 - Do not expose raw Codex prompts, secrets, or environment variables to the React UI or paired mobile clients.
 - Do not rely on Codex subagents for live trading decisions.
 - Keep `agents.max_depth = 1` unless a separate design justifies recursive delegation.
-- Cap `agents.max_threads` for predictable cost and latency.
+- Cap `agents.max_threads` for predictable local runtime load and latency.
 - Require structured output for product records.
 - Treat streamed output as observability, not as the final source of truth.
 - Use MCP tools for market data and portfolio access instead of pasting large private datasets into prompts.

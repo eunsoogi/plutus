@@ -36,11 +36,13 @@ The data layer must support:
 
 ## 4. Suggested Providers
 
-MVP free/low-friction providers:
+MVP market data must use free or no-required-subscription providers by default:
 
 - Yahoo Finance-compatible provider for US equities and ETFs.
 - CoinGecko for crypto metadata and broad market data.
 - CCXT for exchange-specific crypto OHLCV where API access is available.
+
+MVP must not require paid market-data subscriptions. If a free provider is rate-limited, stale, unavailable, or missing fields, Plutus should fail over to another free provider where possible and clearly show the limitation when no free source can satisfy the request.
 
 Production/premium provider options:
 

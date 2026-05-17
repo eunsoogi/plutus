@@ -23,7 +23,7 @@ This folder contains requirement-level PRDs for Plutus, a TypeScript-first multi
 - Implement the finance agent team through Codex threads, project-scoped `.codex/agents/*.toml` custom agents, Codex subagent prompts, MCP domain tools, streamed events, and structured output schemas.
 - Restrict each finance custom agent to an explicit local tool allowlist: market data, portfolio, backtest, risk, research, reports, memory, and audit namespaces are separated by responsibility.
 - Use Mem0 as the runtime memory layer behind a Plutus-owned `packages/memory` adapter and first-party `plutus_memory` tools.
-- Use the LLM Wiki Curator as a separate agent-maintained knowledge workflow: it autonomously creates, updates, cross-links, and archives local Markdown wiki pages through `plutus_wiki`, while Mem0 stores only atomic recall records and wiki pointers.
+- Use the LLM Wiki Curator as a separate agent-maintained knowledge workflow: it autonomously creates, updates, cross-links, and archives local Markdown wiki pages through `plutus_wiki`, while Mem0 stores only atomic recall records, wiki source memories, and wiki pointers.
 - Borrow Vibe-Trading's strongest concepts: plan-ground-execute-validate-deliver runs, specialist agent teams, research memory, backtests, run cards, Phase 2 Shadow Account analysis, and no live trading in MVP.
 - Use Tauri 2 as the shared app shell, with macOS as the deep research workstation and source-of-truth host, and mobile as a paired remote-control surface for the Mac app.
 - Start with research, portfolio management, and simulation. Reserve live trading for a separate future PRD.

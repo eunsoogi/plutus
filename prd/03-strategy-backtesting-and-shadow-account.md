@@ -65,7 +65,7 @@ Phase 2 behavior:
 
 - Generated strategies must default to simulation only.
 - Any strategy with leverage, shorting, derivatives, or illiquid assets must trigger additional risk warnings.
-- Strategy code must run in a sandboxed environment.
+- If generated strategy code is introduced after MVP, it must run in a sandboxed environment.
 - Reports must clearly show assumptions and data limitations.
 - Agents must not present backtest performance as a guarantee.
 

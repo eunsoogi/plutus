@@ -225,6 +225,6 @@ MVP production:
 ## 9. Open Implementation Choices
 
 - Charting library: validate TradingView Lightweight Charts and ECharts on real Tauri mobile webviews before UI freeze.
-- Equity data provider: start with Yahoo-compatible adapter but keep provider interface explicit for Polygon/Tiingo migration.
-- Crypto OHLCV provider: start with CoinGecko metadata and CCXT exchange candles where credentials/limits permit.
+- Equity data provider: start with a free Yahoo-compatible adapter and do not require a paid market-data subscription for MVP.
+- Crypto OHLCV provider: start with free CoinGecko metadata and CCXT exchange candles where no paid subscription is required.
 - Remote-control transport: choose the simplest encrypted local-network transport that works across Tauri desktop/mobile, with manual host address entry when discovery fails.

@@ -149,7 +149,7 @@ The LLM Wiki Curator should use `plutus_memory`, `plutus_reports`, `plutus_resea
 - `revert_wiki_revision(pageId, revisionId, reason)`: restore a previous revision at user or system request.
 - `find_wiki_contradictions(sourceRefs, candidateClaims)`: compare proposed claims against existing wiki pages.
 
-Only the LLM Wiki Curator and Orchestrator may write wiki pages. Wiki writes are autonomous agent maintenance actions, but every write must produce revision history, source links, and audit events so the user can inspect or revert changes.
+Only the LLM Wiki Curator may write wiki pages. The Orchestrator may trigger wiki maintenance and pass source references, but wiki mutations must go through the curator workflow. Wiki writes are autonomous agent maintenance actions, but every write must produce revision history, source links, and audit events so the user can inspect or revert changes.
 
 ## 10. Workflow Contract
 

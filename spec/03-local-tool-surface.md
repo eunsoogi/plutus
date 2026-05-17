@@ -116,6 +116,7 @@ Tools:
 - `get_corporate_actions(instrumentId, start, end)`
 - `get_market_status(market)`
 - `get_provider_health()`
+- `select_provider(requestedData, providerPreference)`
 
 Required behavior:
 
@@ -123,6 +124,9 @@ Required behavior:
 - Include provider, timestamp, delay status, and currency.
 - Return `blocking` warning for unsupported symbols.
 - Return `warning` for stale or delayed data.
+- Apply an explicit free-provider failover policy when the preferred provider is unavailable, rate-limited, stale, or missing required fields.
+- Do not require paid market-data providers for MVP tool success.
+- Surface provider-health, quota, and failover reason metadata in `sourceRefs` or warnings.
 
 ### `plutus_portfolio`
 
@@ -135,7 +139,7 @@ Tools:
 - `get_position_history(portfolioId, instrumentId, start, end)`
 - `get_watchlists()`
 - `get_instrument_notes(instrumentId, portfolioId)`
-- `compute_allocation(portfolioId, groupBy)`
+- `compute_allocation(portfolioId, groupBy)` where `groupBy` supports asset class, sector/category, currency, account, risk bucket, and tag.
 - `compute_performance(portfolioId, start, end, benchmarkId)`
 
 Required behavior:

@@ -12,7 +12,7 @@ This spec implements [PRD 10: Memory And LLM Wiki](../prd/10-memory-and-llm-wiki
 - Do not let Codex agents call Mem0 directly.
 - Store product metadata, retention, activity, source links, and audit refs in SQLite.
 - Store wiki page bodies as local Markdown files managed by `packages/wiki`.
-- Store only atomic recall records and wiki pointers in Mem0, never full wiki page bodies.
+- Store only atomic recall records, wiki source memories, and wiki pointers in Mem0, never full wiki page bodies.
 - Make memory and wiki maintenance automatic after completed runs.
 - Make every automatic write source-linked, audited, visible in an activity feed, and user-editable or reversible.
 - Keep memory/wiki writes separate from finance recommendations, risk vetoes, and future trade actions.
@@ -74,7 +74,7 @@ packages/local-tools/src/namespaces/
 - `id`: UUIDv7.
 - `profile_id`.
 - `mem0_id`: nullable until the adapter confirms the write.
-- `kind`: `user_preference`, `research_memory`, `strategy_memory`, `workflow_memory`, `wiki_pointer`.
+- `kind`: `user_preference`, `research_memory`, `strategy_memory`, `workflow_memory`, `wiki_source_memory`, `wiki_pointer`.
 - `summary`: compact human-readable text.
 - `tags`: JSON array.
 - `source_refs`: JSON array of run, artifact, document, or wiki refs.
@@ -195,6 +195,7 @@ export const MemoryCandidateSchema = z.object({
     "research_memory",
     "strategy_memory",
     "workflow_memory",
+    "wiki_source_memory",
     "wiki_pointer",
   ]),
   summary: z.string().min(1),
@@ -424,7 +425,7 @@ Mac host app must expose:
 - wiki revert action;
 - source-link drawer for memory and wiki writes.
 
-Mobile remote-control app must expose read-only memory/wiki activity initially, plus revert/delete controls only if the paired device has elevated permission.
+Mobile remote-control app must expose read-only memory/wiki activity initially. Memory delete and wiki revert controls stay on the Mac host command surface for MVP unless a later remote-permission design adds elevated mobile commands.
 
 ## 13. Security And Privacy
 
@@ -454,7 +455,7 @@ Integration tests:
 - Completed research run triggers LLM Wiki Curator maintenance.
 - Wiki page update creates activity item, revision note, source refs, and audit event.
 - Recalled memory appears in a later Ground stage with source refs.
-- Wiki pointer memory is created without storing full wiki page body in Mem0.
+- Wiki source and pointer memories are created without storing full wiki page body in Mem0.
 
 MCP adapter tests:
 

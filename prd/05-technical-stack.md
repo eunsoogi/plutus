@@ -43,7 +43,7 @@ Use:
 - `resumeThread(threadId)` for app restarts and long-running workflows.
 - Project-scoped `.codex/agents/*.toml` files for finance specialist agents.
 - Codex native subagent workflows for parallel specialist work.
-- Plutus-orchestrated multi-thread execution for workflows requiring deterministic retries, budgets, or per-agent persistence.
+- Plutus-orchestrated multi-thread execution for workflows requiring deterministic retries, time limits, or per-agent persistence.
 - Structured output schemas for run plans, specialist findings, risk reviews, strategy specs, and final reports.
 - Per-run local working directories for Codex file generation, strategy artifacts, reports, and audit logs.
 - Codex CLI `config` overrides for sandbox, model, approval, and network posture.
@@ -142,7 +142,7 @@ Local development:
 - Local-first architecture avoids backend operations and keeps user portfolio state on the Mac host, but the Mac must be reachable for mobile remote control.
 - Mobile remote control is simpler than multi-device sync, but disconnected mobile edits are not available in MVP.
 - A custom MVP backtest engine is faster to ship for simple long-only flows, but advanced quant validation may eventually justify an external engine.
-- Mac-hosted Codex orchestration centralizes run history and safety controls locally, but requires careful per-run workspace isolation and cost controls.
+- Mac-hosted Codex orchestration centralizes run history and safety controls locally, but requires careful per-run workspace isolation, concurrency limits, and cancellation controls.
 
 ## 10. Acceptance Criteria
 

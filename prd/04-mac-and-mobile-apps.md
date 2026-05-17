@@ -52,7 +52,7 @@ Mobile app must support:
 - View instrument detail summary fetched from the Mac host.
 - View Mac-hosted research run history.
 - Start a Mac-hosted research run from a lightweight composer.
-- Cancel or pause a running Mac-hosted research run when allowed.
+- Cancel a running Mac-hosted research run when allowed.
 - Show live Mac-hosted run progress.
 - View compact run summaries and full artifacts streamed from the Mac host.
 - Edit watchlist notes and position thesis notes on the Mac host.

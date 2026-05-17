@@ -31,6 +31,7 @@ MVP should prove the core loop:
 - Local Markdown wiki with autonomous LLM Wiki Curator updates, source-linked revision history, activity feed, and revert controls.
 - macOS host app with research workspace, local data store, Codex runtime, and remote-control service.
 - Mobile remote-control app with portfolio summary, watchlist, run history, run composer controls, and artifact viewer backed by the Mac host.
+- Connected in-app remote-control run events and completion notifications while the mobile controller is paired and online.
 - Pairing, encrypted remote-control session, connected-device list, and revoke controls.
 
 ## 3. Phase 2
@@ -39,7 +40,7 @@ MVP should prove the core loop:
 - Shadow Account behavior report.
 - More robust backtest validation.
 - Provider health and failover dashboard.
-- Remote-control in-app notifications for completed runs while connected.
+- Richer notification preferences and notification history.
 - Read-only exchange/broker portfolio import.
 - Mobile push notifications through platform services after a separate notification design.
 - Advanced persistent agent memory controls.
@@ -66,7 +67,6 @@ MVP should prove the core loop:
 
 - Which market region matters first after US stocks and crypto: Korean equities, Hong Kong equities, or global ETFs?
 - Which broker/exchange integrations are most important for read-only import?
-- What budget should be enforced for model calls and market-data providers?
 - Which remote-control transport should be used first: local-network encrypted WebSocket, WebRTC data channel, or a Tauri-supported native transport?
 
 ## 7. Definition Of Done For PRD Phase

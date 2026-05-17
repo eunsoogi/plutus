@@ -63,7 +63,7 @@ Each agent output must include:
 The final output must include:
 
 - Plain-language summary.
-- Recommendation category: observe, research more, rebalance candidate, strategy candidate, risk warning, or no-action.
+- Recommendation category: `observe`, `research_more`, `rebalance_candidate`, `strategy_candidate`, `risk_warning`, or `no_action`.
 - Supporting evidence.
 - Dissenting views.
 - Risk checklist.
@@ -84,10 +84,10 @@ Use the TypeScript OpenAI Codex SDK as the primary agent-control layer:
 - Zod schemas converted to OpenAI-compatible JSON Schema for runtime validation.
 - Working-directory controls so Codex operates inside a per-run Git workspace.
 - Codex CLI `config` and `env` controls to enforce sandbox, model, approval, network, and secret boundaries.
-- Local stdio MCP adapter configuration for market data, portfolio, backtest, report, and document tools when those tools need to be callable by Codex. The adapter runs on the Mac host and delegates to the same local tool router used by the app.
+- Local stdio MCP adapter configuration for market data, portfolio, backtest, report, and research/document retrieval tools when those tools need to be callable by Codex. The adapter runs on the Mac host and delegates to the same local tool router used by the app.
 - Project-scoped custom agents in `.codex/agents/` for finance specialist roles.
 - Native Codex subagent workflows for parallel specialist work when determinism requirements allow.
-- Plutus-orchestrated multi-thread execution as a strict deterministic mode for workflows that need per-agent retries, budgets, or database records.
+- Plutus-orchestrated multi-thread execution as a strict deterministic mode for workflows that need per-agent retries, time limits, or database records.
 
 Plutus should model specialist "agents" as Codex-controlled role runs and workflow stages inside the Codex SDK execution model.
 
@@ -116,6 +116,6 @@ Each custom agent must also declare an explicit local tool allowlist. Use [Agent
 - The root Codex thread asks Codex to use the relevant custom agents or executes specialist Codex threads through `CodexRunHost`.
 - The system fetches portfolio positions, current market data, historical returns, and correlation.
 - The risk manager can veto weak recommendations.
-- The final answer contains a no-action/research/rebalance category, citations, and a risk summary.
+- The final answer contains one allowed recommendation category, citations, and a risk summary.
 - The run is saved in the macOS host app and visible/controllable from mobile through the paired remote-control session.
 - The LLM Wiki Curator can create or update local wiki pages from the run card without changing the finance recommendation.
