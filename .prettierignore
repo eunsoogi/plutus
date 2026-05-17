@@ -2,6 +2,7 @@ node_modules
 .turbo
 apps/web-preview/dist
 apps/tauri/src-tauri/target
+apps/tauri/src-tauri/gen
 coverage
 test-results
 tests/e2e/test-results

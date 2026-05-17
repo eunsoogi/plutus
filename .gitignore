@@ -5,7 +5,9 @@ coverage/
 test-results/
 apps/web-preview/dist/
 apps/tauri/src-tauri/target/
+apps/tauri/src-tauri/gen/
 tests/e2e/test-results/
 docs/superpowers/
 .env.local
 .plutus-data/
+.plutus-local-tools/
