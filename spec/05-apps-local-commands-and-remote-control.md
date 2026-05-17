@@ -35,6 +35,9 @@ macOS host routes:
 /runs/:runId
 /runs/:runId/artifacts/:artifactId
 /strategies
+/memory
+/wiki
+/wiki/:pageId
 /settings/security
 /settings/providers
 /settings/remote-control
@@ -52,6 +55,9 @@ Mobile controller routes:
 /remote/runs
 /remote/runs/:runId
 /remote/artifacts/:artifactId
+/remote/memory
+/remote/wiki
+/remote/wiki/:pageId
 /remote/settings
 ```
 
@@ -83,6 +89,19 @@ export interface PlutusLocalCommands {
     get(artifactId: string): Promise<ArtifactDetail>;
     openLocalFile(artifactId: string): Promise<void>;
   };
+  memory: {
+    listActivity(input: MemoryActivityQuery): Promise<MemoryActivityItem[]>;
+    update(memoryId: string, patch: MemoryPatch): Promise<MemoryRecord>;
+    archive(memoryId: string, reason: string): Promise<void>;
+    forget(memoryId: string): Promise<void>;
+    setCategoryEnabled(category: string, enabled: boolean): Promise<void>;
+  };
+  wiki: {
+    listPages(input: WikiPageQuery): Promise<WikiPageSummary[]>;
+    getPage(pageId: string): Promise<WikiPageDetail>;
+    listActivity(input: WikiActivityQuery): Promise<WikiActivityItem[]>;
+    revertRevision(pageId: string, revisionId: string, reason: string): Promise<WikiPageDetail>;
+  };
 }
 ```
 
@@ -100,6 +119,9 @@ export const RemoteCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("run.get"), runId: z.string().uuid() }),
   z.object({ type: z.literal("run.cancel"), runId: z.string().uuid() }),
   z.object({ type: z.literal("artifact.get"), artifactId: z.string().uuid() }),
+  z.object({ type: z.literal("memory.activity") }),
+  z.object({ type: z.literal("wiki.list") }),
+  z.object({ type: z.literal("wiki.get"), pageId: z.string().uuid() }),
 ]);
 ```
 
@@ -126,7 +148,7 @@ MVP remote-control flow:
 Transport requirements:
 
 - local network discovery where platform rules allow;
-- manual host address entry fallback;
+- manual host address entry when local discovery is unavailable;
 - encrypted session transport;
 - heartbeat and reconnect;
 - stale-session detection;

@@ -17,6 +17,7 @@ Use a manager-style Codex orchestration model for MVP. Plutus should expose prod
 - Portfolio Manager Agent: evaluates allocation, concentration, drift, rebalancing candidates, and cash/stablecoin exposure.
 - Risk Manager Agent: checks drawdown, volatility, correlation, liquidity, leverage, position sizing, and scenario stress.
 - Report Agent: produces final run cards, user-facing reports, mobile summaries, and export artifacts.
+- LLM Wiki Curator Agent: converts completed run artifacts and research memory into local wiki pages, detects contradictions, and autonomously maintains the knowledge base with source-linked revision history.
 
 ## 3. Workflow Contract
 
@@ -38,6 +39,7 @@ MVP must include these preset teams:
 - Quant Strategy Desk: `market_data_researcher`, `quant_strategy_researcher`, `risk_manager`, `report_writer`.
 - Technical Analysis Panel: `market_data_researcher`, `technical_analyst`, `risk_manager`, `report_writer`.
 - Portfolio Review Committee: `market_data_researcher`, `portfolio_manager`, `risk_manager`, `report_writer`.
+- Knowledge Curation Desk: `llm_wiki_curator`, `report_writer`.
 
 Post-MVP presets:
 
@@ -101,6 +103,7 @@ Each specialist role must have a project-scoped custom agent file:
 - `.codex/agents/portfolio-manager.toml`
 - `.codex/agents/risk-manager.toml`
 - `.codex/agents/report-writer.toml`
+- `.codex/agents/llm-wiki-curator.toml`
 
 Each custom agent must define `name`, `description`, and `developer_instructions`. Role-specific files may also define model, reasoning effort, sandbox mode, local tool namespaces, and skills configuration.
 
@@ -115,3 +118,4 @@ Each custom agent must also declare an explicit local tool allowlist. Use [Agent
 - The risk manager can veto weak recommendations.
 - The final answer contains a no-action/research/rebalance category, citations, and a risk summary.
 - The run is saved in the macOS host app and visible/controllable from mobile through the paired remote-control session.
+- The LLM Wiki Curator can create or update local wiki pages from the run card without changing the finance recommendation.

@@ -27,6 +27,7 @@ packages/local-tools/src/
     research.ts
     reports.ts
     memory.ts
+    wiki.ts
     audit.ts
   schemas/
   audit/
@@ -231,12 +232,36 @@ Tools:
 - `recall_user_preferences(scope)`
 - `recall_prior_runs(query, filters)`
 - `recall_saved_theses(instrumentIds)`
-- `save_research_memory(memory)`
+- `capture_research_memory(memory, sourceRefs, capturePolicy)`
+- `update_research_memory(memoryId, patch)`
+- `archive_research_memory(memoryId, reason)`
 - `forget_research_memory(memoryId)`
 
-Write restrictions:
+Required behavior:
 
-- MVP should not auto-save durable user memory without explicit user approval.
+- Automatically capture eligible durable memory from completed runs and user interactions.
+- Apply category toggles, sensitivity filters, retention class, source refs, and audit logging.
+- Never store credentials, private keys, raw account secrets, or full wiki page bodies in memory.
+- Let users edit, pin, archive, delete, and disable memory categories after capture.
+
+### `plutus_wiki`
+
+Tools:
+
+- `search_wiki(query, filters)`
+- `get_wiki_page(pageId)`
+- `create_wiki_page(page, sourceRefs)`
+- `update_wiki_page(pageId, patch, sourceRefs, revisionNote)`
+- `merge_wiki_pages(sourcePageIds, targetPage, sourceRefs)`
+- `archive_wiki_page(pageId, reason)`
+- `revert_wiki_revision(pageId, revisionId, reason)`
+- `find_wiki_contradictions(sourceRefs, candidateClaims)`
+
+Required behavior:
+
+- Let the LLM Wiki Curator maintain wiki pages autonomously.
+- Store source refs, revision notes, content hashes, and audit refs for every write.
+- Expose user-visible diffs and revert actions.
 
 ### `plutus_audit`
 
@@ -256,7 +281,7 @@ Required behavior:
 
 | Agent | Required Namespaces | Optional Namespaces | Write Tools |
 | --- | --- | --- | --- |
-| `orchestrator` | `plutus_memory`, `plutus_audit` | `plutus_market_data`, `plutus_portfolio`, `plutus_research` | run-plan audit events |
+| `orchestrator` | `plutus_memory`, `plutus_audit` | `plutus_market_data`, `plutus_portfolio`, `plutus_research` | run-plan audit events, `capture_research_memory` |
 | `market_data_researcher` | `plutus_market_data`, `plutus_audit` | `plutus_research` | data warnings through audit |
 | `equity_analyst` | `plutus_market_data`, `plutus_research`, `plutus_audit` | `plutus_memory`, `plutus_portfolio` | analysis event logs |
 | `crypto_analyst` | `plutus_market_data`, `plutus_research`, `plutus_audit` | `plutus_memory` | analysis event logs |
@@ -264,7 +289,8 @@ Required behavior:
 | `quant_strategy_researcher` | `plutus_market_data`, `plutus_backtest`, `plutus_risk`, `plutus_audit` | `plutus_memory` | `run_backtest`, `register_strategy_spec` |
 | `portfolio_manager` | `plutus_portfolio`, `plutus_market_data`, `plutus_risk`, `plutus_memory`, `plutus_audit` | none | allocation recommendation events |
 | `risk_manager` | `plutus_risk`, `plutus_portfolio`, `plutus_market_data`, `plutus_audit` | `plutus_backtest`, `plutus_memory` | `register_risk_veto`, risk warnings |
-| `report_writer` | `plutus_reports`, `plutus_audit`, `plutus_memory` | artifact/result-ID reads from market, portfolio, backtest, risk | report and artifact creation |
+| `report_writer` | `plutus_reports`, `plutus_audit`, `plutus_memory` | artifact/result-ID reads from market, portfolio, backtest, risk | report and artifact creation, `capture_research_memory` |
+| `llm_wiki_curator` | `plutus_memory`, `plutus_wiki`, `plutus_reports`, `plutus_audit` | `plutus_research` through source/result IDs | `capture_research_memory`, wiki create/update/merge/archive/cross-link |
 
 ## 7. Acceptance Tests
 
@@ -274,4 +300,6 @@ Required behavior:
 - `quant_strategy_researcher` can call `run_backtest` for long-only MVP specs.
 - `risk_manager` can register a veto and the final run card reflects it.
 - `report_writer` can create a run card and mobile summary.
+- `llm_wiki_curator` can write wiki pages and other analyst agents cannot.
+- Automatic memory capture writes source-linked memory records and activity entries.
 - Every response includes `sourceRefs`, `warnings`, and `auditRef`.

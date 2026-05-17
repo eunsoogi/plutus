@@ -31,6 +31,8 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - Create: `packages/data/package.json`
 - Create: `packages/agents/package.json`
 - Create: `packages/backtest/package.json`
+- Create: `packages/memory/package.json`
+- Create: `packages/wiki/package.json`
 - Create: `packages/local-tools/package.json`
 - Create: `packages/local-mcp-adapter/package.json`
 - Create: `packages/remote-control/package.json`
@@ -63,11 +65,13 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - Create: `packages/domain/src/strategy/schema.ts`
 - Create: `packages/domain/src/research-run/schema.ts`
 - Create: `packages/domain/src/artifact/schema.ts`
+- Create: `packages/domain/src/memory/schema.ts`
+- Create: `packages/domain/src/wiki/schema.ts`
 - Create: `packages/domain/src/remote-control/schema.ts`
 - Create: `packages/domain/src/index.ts`
 
 - [ ] Implement enum schemas from [Domain Model And Persistence](./01-domain-model-and-persistence.md).
-- [ ] Implement portfolio, position, watchlist, instrument, strategy, research run, artifact, remote-control, and freshness schemas.
+- [ ] Implement portfolio, position, watchlist, instrument, strategy, research run, artifact, memory, wiki, remote-control, and freshness schemas.
 - [ ] Add Vitest tests for enum parsing, invalid recommendation categories, remote command validation, and data freshness warnings.
 - [ ] Export types with `z.infer`.
 - [ ] Run `pnpm --filter @plutus/domain test`.
@@ -84,7 +88,7 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - Create: `apps/tauri/src-tauri/src/seed/mvp_scenario.rs`
 
 - [ ] Define SQLite tables matching `spec/01-domain-model-and-persistence.md`.
-- [ ] Add local repository functions for instruments, portfolios, watchlists, research runs, artifacts, strategies, paired remote devices, and audit events.
+- [ ] Add local repository functions for instruments, portfolios, watchlists, research runs, artifacts, strategies, memory records, wiki pages, paired remote devices, and audit events.
 - [ ] Add app data directory layout for SQLite database, run workspaces, artifacts, and backups.
 - [ ] Add seed data for AAPL, NVDA, BTC, ETH, USDC, USD cash, SPY, QQQ.
 - [ ] Reuse seed data through `packages/test-fixtures` so Codex tests and Playwright scenarios share the same MVP state.
@@ -138,7 +142,8 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 
 - [ ] Implement local tool response envelope from [Local Tool Surface](./03-local-tool-surface.md).
 - [ ] Implement authorization by run ID, profile ID, agent name, namespace, tool, and write scope.
-- [ ] Implement `plutus_market_data`, `plutus_portfolio`, `plutus_risk`, `plutus_backtest`, `plutus_reports`, `plutus_memory`, and `plutus_audit` MVP tools.
+- [ ] Implement `plutus_market_data`, `plutus_portfolio`, `plutus_risk`, `plutus_backtest`, `plutus_reports`, and `plutus_audit` MVP tools.
+- [ ] Register `plutus_memory` and `plutus_wiki` namespace placeholders; full implementations land in Phase 8.
 - [ ] Add tests proving blocked cross-profile portfolio access and blocked unauthorized write tools.
 - [ ] Verify `quant_strategy_researcher` can call `run_backtest` and `equity_analyst` cannot.
 
@@ -175,7 +180,30 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - [ ] Implement metrics and report model.
 - [ ] Add tests for valid BTC crossover, unsupported leverage rejection, queue persistence, and report caveat inclusion.
 
-## Phase 8: Codex Agent Runtime
+## Phase 8: Memory And LLM Wiki
+
+**Files:**
+
+- Create: `packages/memory/src/adapter/mem0-adapter.ts`
+- Create: `packages/memory/src/capture/*.ts`
+- Create: `packages/memory/src/recall/*.ts`
+- Create: `packages/memory/src/repositories/memory-repository.ts`
+- Create: `packages/wiki/src/curator/*.ts`
+- Create: `packages/wiki/src/storage/*.ts`
+- Create: `packages/wiki/src/schemas/*.ts`
+- Create: `packages/local-tools/src/namespaces/memory.ts`
+- Create: `packages/local-tools/src/namespaces/wiki.ts`
+
+- [ ] Implement fake Mem0 adapter for deterministic tests.
+- [ ] Implement configured Mem0 adapter behind `packages/memory`.
+- [ ] Implement sensitivity filtering, automatic capture policy, recall ranking, memory activity, edit/archive/delete, and category toggles.
+- [ ] Implement local Markdown wiki storage, metadata, revision history, activity feed, and revert.
+- [ ] Implement `plutus_memory` and `plutus_wiki` local tool namespaces against the memory/wiki packages.
+- [ ] Implement wiki maintenance planner interfaces and contradiction checks.
+- [ ] Add tests proving automatic memory capture, recall, wiki page create/update, wiki pointer memory, and no full wiki page body stored in Mem0.
+- [ ] Run memory/wiki unit and integration tests.
+
+## Phase 9: Codex Agent Runtime
 
 **Files:**
 
@@ -192,18 +220,21 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - Create: `.codex/agents/portfolio-manager.toml`
 - Create: `.codex/agents/risk-manager.toml`
 - Create: `.codex/agents/report-writer.toml`
+- Create: `.codex/agents/llm-wiki-curator.toml`
 
 - [ ] Implement `CodexRunHost` interface and SDK adapter.
 - [ ] Implement per-run workspace creation under the app data directory.
 - [ ] Implement structured turn validation with Zod-derived JSON Schema.
 - [ ] Implement stage state machine and local event mapping.
 - [ ] Add project custom-agent TOML files with explicit local stdio MCP adapter allowlists.
+- [ ] Wire `llm_wiki_curator` into the wiki maintenance planner.
+- [ ] Trigger automatic memory capture and LLM Wiki Curator maintenance after completed runs.
 - [ ] Add integration test with a mocked Codex SDK for the BTC/NVDA portfolio review request.
 - [ ] Add a scripted Codex SDK test harness for deterministic streamed events and structured-turn failures.
 - [ ] Document that full Codex runs execute on the Mac host and mobile controls them remotely.
 - [ ] Run `pnpm test:agent`.
 
-## Phase 9: Remote Control
+## Phase 10: Remote Control
 
 **Files:**
 
@@ -219,12 +250,12 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - [ ] Implement encrypted session key creation and storage.
 - [ ] Implement Mac host device list, revoke, and kill switch.
 - [ ] Implement remote command authorization against paired-device permissions.
-- [ ] Implement local network discovery where available and manual host address fallback.
+- [ ] Implement local network discovery where available and manual host address entry when discovery is unavailable.
 - [ ] Forward allowed run progress events from Mac host to mobile.
 - [ ] Add tests for revoked-device command rejection and stale-session handling.
 - [ ] Run `pnpm test:remote`.
 
-## Phase 10: Tauri App UI
+## Phase 11: Tauri App UI
 
 **Files:**
 
@@ -233,11 +264,15 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - Create: `apps/tauri/src/features/watchlist/*`
 - Create: `apps/tauri/src/features/runs/*`
 - Create: `apps/tauri/src/features/artifacts/*`
+- Create: `apps/tauri/src/features/memory/*`
+- Create: `apps/tauri/src/features/wiki/*`
 - Create: `apps/tauri/src/features/remote/*`
 - Create: `packages/ui/src/*`
 
 - [ ] Build Mac host dashboard, portfolio, watchlist, run history, run detail, and artifact routes.
 - [ ] Build macOS agent run composer.
+- [ ] Build memory activity, category controls, edit/archive/delete surfaces.
+- [ ] Build wiki browser, activity feed, diff view, revision timeline, and revert action.
 - [ ] Render run progress from local Tauri events.
 - [ ] Build mobile pairing, connection, remote dashboard, remote run detail, and remote artifact routes.
 - [ ] Render risk warnings visibly on desktop and mobile remote-control widths.
@@ -247,7 +282,7 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - [ ] Verify charts render nonblank content, text does not overlap, and connected/disconnected/revoked states are visible.
 - [ ] Run `pnpm test:e2e:ui`.
 
-## Phase 11: Security And Proof-Of-Capability
+## Phase 12: Security And Proof-Of-Capability
 
 **Files:**
 
@@ -261,9 +296,11 @@ Product state lives in Mac-hosted SQLite and artifact files. Codex is isolated b
 - [ ] Implement secure storage for remote-control pairing keys.
 - [ ] Implement per-run workspace path guard.
 - [ ] Verify no MVP tool can place trades.
+- [ ] Verify memory capture blocks credentials, private keys, API tokens, seed phrases, and unrestricted account history.
+- [ ] Verify wiki maintenance writes are source-linked, audited, versioned, and reversible.
 - [ ] Run Tauri mobile proof-of-capability checks for biometric lock, remote pairing, app lifecycle, remote event delivery, artifact viewing, and secure storage.
 
-## Phase 12: MVP Acceptance Scenario
+## Phase 13: MVP Acceptance Scenario
 
 **Scenario:**
 
@@ -280,6 +317,8 @@ BTC and NVDA exposure together looks risky. Review my portfolio and suggest what
 - [ ] Verify risk manager warning or veto is reflected in final run card.
 - [ ] Verify final category is allowed.
 - [ ] Verify run card, report, chart data, and mobile summary artifacts persist locally.
+- [ ] Verify eligible safe memory is captured automatically and appears in the memory activity feed.
+- [ ] Verify LLM Wiki Curator creates or updates a source-linked wiki page and that the revision can be reverted.
 - [ ] Verify mobile receives run progress and can open the Mac-hosted report artifact.
 - [ ] Revoke the mobile device and verify further remote commands fail.
 - [ ] Run `pnpm test:acceptance`.

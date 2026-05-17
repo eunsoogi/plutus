@@ -56,6 +56,7 @@ export const RunPlanSchema = z.object({
     "strategy_backtest",
     "technical_analysis",
     "watchlist_review",
+    "knowledge_curation",
   ]),
   selectedTeam: z.enum([
     "portfolio_review_committee",
@@ -63,6 +64,7 @@ export const RunPlanSchema = z.object({
     "crypto_research_desk",
     "quant_strategy_desk",
     "technical_analysis_panel",
+    "knowledge_curation_desk",
   ]),
   requiredInstruments: z.array(z.string()),
   requiredPortfolioIds: z.array(z.string().uuid()),
@@ -83,6 +85,8 @@ Fetch data through local tools only:
 - allocation;
 - watchlist notes;
 - prior run summaries;
+- recalled memories;
+- relevant wiki page summaries;
 - provider freshness.
 
 Output:
@@ -212,6 +216,15 @@ Agents:
 
 Use for chart/regime/support/resistance questions.
 
+### Knowledge Curation Desk
+
+Agents:
+
+- `llm_wiki_curator`
+- `report_writer`
+
+Use after completed runs and for explicit knowledge-base maintenance commands. This team does not make portfolio recommendations.
+
 ## 6. Custom Agent Files
 
 Create these files under `.codex/agents/`:
@@ -225,6 +238,7 @@ technical-analyst.toml
 portfolio-manager.toml
 risk-manager.toml
 report-writer.toml
+llm-wiki-curator.toml
 ```
 
 Every file must define:
@@ -261,6 +275,18 @@ packages/agents/src/codex-run-host/
 5. call `startThread({ workingDirectory, ...config })`;
 6. persist `codex_thread_id`;
 7. enqueue/enter the plan stage.
+
+### Post-Run Memory And Wiki Maintenance
+
+After a run reaches `completed`, the local runtime must:
+
+1. run automatic memory capture through `packages/memory`;
+2. write eligible atomic memories through `plutus_memory`;
+3. trigger the LLM Wiki Curator when the run created durable lessons, strategy notes, or thesis changes;
+4. write wiki changes through `plutus_wiki` with source links, revision notes, and audit refs;
+5. emit memory/wiki activity events to the Mac host UI and paired mobile clients.
+
+This maintenance step must not change the final run recommendation or risk-manager decision.
 
 ### Stream
 

@@ -59,6 +59,17 @@ plutus/
         strategies/
         metrics/
         reports/
+    memory/
+      src/
+        adapter/
+        capture/
+        recall/
+        repositories/
+    wiki/
+      src/
+        curator/
+        storage/
+        schemas/
     local-tools/
       src/
         namespaces/
@@ -93,6 +104,8 @@ plutus/
 | `packages/data` | Provider adapters, symbol resolution, candle normalization, freshness warnings |
 | `packages/agents` | `CodexRunHost`, workflow planner, structured output schemas, role prompts, agent guardrails, local event stream |
 | `packages/backtest` | Strategy spec validation, long-only simulation, metrics, chart/report data models |
+| `packages/memory` | Mem0-backed automatic memory capture, recall, sensitivity filtering, retention, and user controls |
+| `packages/wiki` | Local Markdown wiki storage, autonomous curator workflows, revision history, diffs, and revert support |
 | `packages/local-tools` | MCP-shaped local namespace tools with per-agent allowlists and audit hooks |
 | `packages/local-mcp-adapter` | Local stdio MCP adapter exposing approved local tool namespaces to Codex |
 | `packages/command-client` | Typed local command client shared by Tauri and web preview |
@@ -144,6 +157,8 @@ MVP implements one local tool router with MCP-shaped namespace contracts:
 pnpm --filter @plutus/local-tools test plutus_market_data
 pnpm --filter @plutus/local-tools test plutus_portfolio
 pnpm --filter @plutus/local-tools test plutus_backtest
+pnpm --filter @plutus/local-tools test plutus_memory
+pnpm --filter @plutus/local-tools test plutus_wiki
 ```
 
 The router must enforce:
@@ -164,12 +179,14 @@ The Mac host starts a local stdio MCP adapter that exposes approved namespaces t
 2. Tauri command creates a `research_runs` row in local SQLite and a per-run workspace in the app data directory.
 3. `CodexRunHost` starts a Codex thread in the per-run workspace on desktop builds.
 4. Orchestrator classifies intent and selects a team preset.
-5. Specialist agents use allowed local tools through the stdio MCP adapter for market data, portfolio, risk, backtest, research, memory, audit, and reports.
+5. Specialist agents use allowed local tools through the stdio MCP adapter for market data, portfolio, risk, backtest, research, memory, wiki, audit, and reports.
 6. The local runtime emits run events to the macOS webview and paired mobile controllers.
 7. Risk manager validates the recommendation and can register warnings or vetoes.
 8. Report writer creates a run card, report artifact, chart artifacts, and mobile summary.
 9. The app validates structured final output, persists artifacts, and marks run complete.
-10. Mobile views and controls the same Mac-hosted state through the paired remote-control session.
+10. Memory capture service stores eligible atomic memories through `plutus_memory`.
+11. LLM Wiki Curator maintains local wiki pages through `plutus_wiki`.
+12. Mobile views and controls the same Mac-hosted state through the paired remote-control session.
 
 ## 7. Deployment Shape
 
@@ -197,6 +214,8 @@ MVP production:
 | Local-first app runtime | Avoids requiring users to run or trust a backend for MVP |
 | Codex runtime behind adapter | Keeps Codex thread control, workspaces, model config, and audit logging isolated from UI code |
 | Local tool router plus stdio MCP adapter | Limits private data exposure while giving Codex a standard tool interface without a hosted service |
+| Mem0 behind Plutus memory adapter | Gives agents runtime recall while keeping sensitivity, retention, audit, and deletion semantics product-owned |
+| Agent-maintained local wiki | Gives Plutus a durable knowledge base without putting full wiki pages into runtime memory |
 | SQLite first | Fits Mac app packaging and handles relational portfolio/run state locally |
 | SQLite-backed local queue | Supports resumable backtests and agent jobs without Redis |
 | Local event stream | Gives progress updates inside the app without SSE infrastructure |
@@ -208,4 +227,4 @@ MVP production:
 - Charting library: validate TradingView Lightweight Charts and ECharts on real Tauri mobile webviews before UI freeze.
 - Equity data provider: start with Yahoo-compatible adapter but keep provider interface explicit for Polygon/Tiingo migration.
 - Crypto OHLCV provider: start with CoinGecko metadata and CCXT exchange candles where credentials/limits permit.
-- Remote-control transport: choose the simplest encrypted local-network transport that works across Tauri desktop/mobile, with manual host address entry as a fallback when discovery fails.
+- Remote-control transport: choose the simplest encrypted local-network transport that works across Tauri desktop/mobile, with manual host address entry when discovery fails.

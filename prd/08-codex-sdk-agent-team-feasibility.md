@@ -14,6 +14,7 @@ For Plutus, this means the agent team should be implemented as a Codex-controlle
 - `@openai/codex-sdk` owns Codex thread lifecycle and streamed agent execution.
 - Project-scoped custom agents under `.codex/agents/` define finance specialist roles.
 - Local tool namespaces expose Plutus domain tools to Codex through a Mac-hosted stdio MCP adapter with role-specific allowlists.
+- Mem0-backed memory and local wiki tools are exposed only through first-party Plutus namespaces, not as direct agent dependencies.
 - Structured output schemas turn Codex results into validated product records.
 
 ## 2. Evidence From Codex SDK And Codex Docs
@@ -116,6 +117,7 @@ Project-scoped custom agents should live under `.codex/agents/`:
 - `portfolio-manager.toml`: reviews allocation, concentration, drift, benchmark exposure, and rebalancing candidates.
 - `risk-manager.toml`: performs drawdown, leverage, volatility, liquidity, concentration, and scenario checks.
 - `report-writer.toml`: consolidates final run cards, reports, caveats, and mobile summaries.
+- `llm-wiki-curator.toml`: creates and updates local wiki pages from completed run artifacts, source summaries, and durable memories.
 
 Each custom agent must include only the local stdio MCP adapter namespaces listed for its role in [Agent MCP Map](./09-agent-mcp-map.md).
 

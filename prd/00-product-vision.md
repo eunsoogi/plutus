@@ -18,7 +18,7 @@ It explicitly focuses on research, simulation, and backtesting rather than live 
 - Turn natural-language requests into structured research runs, strategy drafts, portfolio analysis, and backtest reports.
 - Provide multi-agent teams for investment, quant, crypto, macro, technical analysis, and risk workflows.
 - Support a macOS host app and a mobile remote-control app from the beginning with a shared TypeScript domain layer.
-- Preserve the user's preferences, watchlists, strategies, research notes, and prior decisions across sessions.
+- Preserve the user's preferences, watchlists, strategies, research notes, wiki pages, and prior decisions across sessions.
 - Produce auditable outputs: data sources, tool traces, assumptions, decision rationale summaries, risk checks, and generated artifacts.
 
 ## 3. Non-Goals For MVP
@@ -51,6 +51,7 @@ It explicitly focuses on research, simulation, and backtesting rather than live 
 - Preset research teams such as investment committee, global equities desk, crypto research desk, quant strategy desk, technical analysis panel, and risk committee.
 - Cross-market data and composite backtesting across stocks and crypto.
 - Persistent memory and reusable workflows.
+- LLM-maintained local wiki pages for theses, strategy lessons, risk lessons, instrument notes, and workflow knowledge.
 - Shadow-account concept for comparing user behavior against extracted rule-based strategies.
 - Run cards and persisted artifacts for reproducibility.
 - Exportable reports and strategy code, with live trading excluded from MVP.
@@ -67,3 +68,4 @@ It explicitly focuses on research, simulation, and backtesting rather than live 
 
 - HKUDS/Vibe-Trading README, accessed 2026-05-16: research workspace, no live execution, research workflow, skill library, swarm presets, provider failover, and run-card concepts.
 - OpenAI Codex SDK docs, accessed 2026-05-17: TypeScript package `@openai/codex-sdk`, local Codex thread control, repeated `run()` calls, resumable thread IDs, structured output, streamed events, working-directory controls, and Codex CLI environment/config overrides.
+- `mem0ai/mem0` GitHub repository, accessed 2026-05-17: Apache-2.0 universal memory layer for AI agents and default open-source memory baseline for Plutus.

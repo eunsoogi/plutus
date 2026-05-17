@@ -23,6 +23,7 @@ MVP local tool namespaces:
 - `plutus_research`: web/document/news retrieval through sanitized readers and citation-safe summaries.
 - `plutus_reports`: run card creation, report rendering, chart artifact registration, and mobile summary generation.
 - `plutus_memory`: user preferences, saved theses, prior research runs, strategy library, and audit-safe recall.
+- `plutus_wiki`: local wiki page search, read, autonomous page maintenance, contradiction checks, revision history, and revert support.
 - `plutus_audit`: immutable event logging, tool-call provenance, warning registration, and compliance flags.
 
 Post-MVP local tool namespaces:
@@ -106,8 +107,27 @@ Post-MVP local tool namespaces:
 - `recall_user_preferences(scope)`: preferences such as risk tolerance, default benchmarks, and excluded assets.
 - `recall_prior_runs(query, filters)`: semantically search past research runs for the active profile.
 - `recall_saved_theses(instrumentIds)`: retrieve saved theses and notes.
-- `save_research_memory(memory)`: save explicitly approved durable memory.
+- `capture_research_memory(memory, sourceRefs, capturePolicy)`: automatically save durable memory through the Plutus memory adapter.
+- `update_research_memory(memoryId, patch)`: edit or reclassify an existing memory.
+- `archive_research_memory(memoryId, reason)`: archive memory without deleting its audit trail.
 - `forget_research_memory(memoryId)`: remove memory at user request.
+
+The backing implementation should use Mem0 through `packages/memory`, while the tool contract remains Plutus-owned for audit, retention, sensitivity, and deletion semantics.
+
+`plutus_memory` stores atomic recall records and wiki pointers. It must not store full wiki page bodies.
+
+### `plutus_wiki`
+
+- `search_wiki(query, filters)`: search local wiki pages and metadata.
+- `get_wiki_page(pageId)`: read a wiki page with source links and freshness metadata.
+- `create_wiki_page(page, sourceRefs)`: create a wiki page with source links and revision metadata.
+- `update_wiki_page(pageId, patch, sourceRefs, revisionNote)`: update an existing wiki page.
+- `merge_wiki_pages(sourcePageIds, targetPage, sourceRefs)`: consolidate duplicated or overlapping pages.
+- `archive_wiki_page(pageId, reason)`: archive an obsolete page.
+- `revert_wiki_revision(pageId, revisionId, reason)`: restore a previous revision at user or system request.
+- `find_wiki_contradictions(sourceRefs, candidateClaims)`: compare proposed claims against existing wiki pages.
+
+In MVP, `plutus_wiki` is an autonomous maintenance workflow. Wiki writes do not require pre-approval, but every write must include source links, revision notes, audit events, and user-visible revert support.
 
 ### `plutus_audit`
 
@@ -129,6 +149,7 @@ Post-MVP local tool namespaces:
 | Portfolio Manager | `plutus_portfolio`, `plutus_market_data`, `plutus_risk`, `plutus_memory`, `plutus_audit` | None | Read-only portfolio access; can register allocation recommendations |
 | Risk Manager | `plutus_risk`, `plutus_portfolio`, `plutus_market_data`, `plutus_audit` | `plutus_backtest`, `plutus_memory` | Can register risk warnings and vetoes |
 | Report Writer | `plutus_reports`, `plutus_audit`, `plutus_memory` | `plutus_market_data`, `plutus_portfolio`, `plutus_backtest`, `plutus_risk` through artifact/result IDs only | Can create run cards, report artifacts, and mobile summaries |
+| LLM Wiki Curator | `plutus_memory`, `plutus_wiki`, `plutus_reports`, `plutus_audit` | `plutus_research` through source/result IDs only | Can capture wiki pointer memories and create, update, merge, archive, and cross-link wiki pages; cannot make portfolio recommendations |
 
 ## 6. Preset Team Tool Bundles
 
@@ -167,6 +188,12 @@ Post-MVP local tool namespaces:
 - Agents: `quant_strategy_researcher`, `portfolio_manager`, `risk_manager`, `report_writer`.
 - Tool namespaces: `plutus_portfolio`, `plutus_market_data`, `plutus_backtest`, `plutus_risk`, `plutus_reports`, `plutus_research`, `plutus_audit`.
 - Required final checks: parsed trade quality, behavior diagnostics, shadow rule extraction, replay/backtest assumptions.
+
+### Knowledge Curation Desk
+
+- Agents: `llm_wiki_curator`, `report_writer`.
+- Tool namespaces: `plutus_memory`, `plutus_wiki`, `plutus_reports`, `plutus_research`, `plutus_audit`.
+- Required final checks: source run links, memory capture policy, contradiction scan, freshness notes, revision note, and audit event.
 
 ## 7. Custom Agent Local MCP Adapter Examples
 
@@ -240,5 +267,6 @@ args = ["--filter", "@plutus/local-mcp-adapter", "start", "plutus_audit", "--std
 - Backtest execution is available only to `quant_strategy_researcher` and risk validation flows.
 - Risk veto registration is available only to `risk_manager`.
 - Report artifact publication is available only to `report_writer`.
+- Memory and wiki maintenance are autonomous, source-linked, audited, versioned where applicable, and user-editable or reversible.
 - Every local tool response includes source metadata, timestamp, and warning fields where applicable.
 - The Orchestrator can select a team preset and pass only that preset's tool bundle to Codex.

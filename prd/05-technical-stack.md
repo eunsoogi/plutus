@@ -23,6 +23,8 @@ Package layout:
 - `packages/domain`: portfolio, instrument, strategy, run-card, remote-control, and artifact domain models.
 - `packages/data`: provider adapters and market data normalization.
 - `packages/backtest`: strategy specs, local backtest engine, and report models.
+- `packages/memory`: Plutus memory adapter, Mem0 integration, memory capture rules, retention policies, sensitivity filters, and recall/ranking schemas.
+- `packages/wiki`: local Markdown wiki storage, wiki metadata, contradiction checks, revision diffs, activity feed, and revert workflows.
 - `packages/local-tools`: first-party local tool router with namespace-scoped tools and per-agent allowlists.
 - `packages/local-mcp-adapter`: local stdio MCP adapter that exposes approved local tool namespaces to Codex.
 - `packages/remote-control`: pairing, encrypted session protocol, command schemas, and host/mobile message types.
@@ -48,6 +50,8 @@ Use:
 - Codex CLI `env` controls so secrets are scoped, redacted, and never dumped into prompts.
 - Local tool router for domain tools that Codex must call, including market data, portfolio state, backtesting, and report generation.
 - Local stdio MCP adapter that exposes the local tool router to Codex without requiring a network service or hosted backend.
+- Mem0 behind a Plutus-owned memory adapter for automatic long-term memory, semantic recall, and deletion-aware user controls.
+- Local Markdown wiki storage for LLM Wiki Curator outputs, with SQLite metadata and audit links.
 - Application-level guardrails around financial safety, prompt injection, and trade-execution boundaries.
 
 Important note:
@@ -72,6 +76,8 @@ Recommended:
 - Query/migrations: a lightweight SQLite migration layer in the Tauri Rust side or a TypeScript SQLite layer embedded in the local runtime.
 - Jobs: SQLite-backed local queue for backtests, reports, provider refresh, and long-running agent stages.
 - Artifacts: local app data directory files with content hashes and SQLite metadata.
+- Memory: SQLite metadata plus Mem0-backed semantic memory records accessed only through the `packages/memory` adapter.
+- Wiki: local Markdown pages plus SQLite metadata, source links, revision state, activity feed, and review timestamps.
 - Realtime: Tauri event stream inside the Mac host app, forwarded to paired mobile devices over the remote-control session.
 
 No MVP feature should require PostgreSQL, Redis, BullMQ, S3, Docker Compose, or a hosted API server.

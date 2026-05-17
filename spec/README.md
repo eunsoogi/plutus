@@ -15,13 +15,14 @@ The specs define a local-first MVP architecture, package boundaries, data contra
 7. [Security, Compliance, And Risk Controls](./06-security-compliance-and-risk-controls.md)
 8. [MVP Implementation Plan](./07-mvp-implementation-plan.md)
 9. [Codex Development Automation](./08-codex-development-automation.md)
+10. [Memory And LLM Wiki](./09-memory-and-llm-wiki.md)
 
 ## Design Baseline
 
 - Build Plutus as a pnpm/Turborepo TypeScript monorepo centered on a Tauri 2 macOS host app and mobile remote-control app.
 - Keep MVP product state local to the Mac host with SQLite plus app-local artifact files.
 - Use `@openai/codex-sdk` from the Mac host local runtime process, behind `CodexRunHost`.
-- Use first-party local tools for market data, portfolio, backtest, risk, research, reports, memory, and audit access.
+- Use first-party local tools for market data, portfolio, backtest, risk, research, reports, memory, wiki, and audit access.
 - Expose local tools to Codex through a Mac-hosted stdio MCP adapter; no hosted backend or network MCP service is required.
 - Use Tauri 2 for the macOS host shell and iOS/Android remote-control shells.
 - Treat Codex as a primary implementation worker: root scripts, fixtures, test harnesses, and browser-preview routes must let Codex build, test, and inspect changes locally.
@@ -42,3 +43,4 @@ The specs define a local-first MVP architecture, package boundaries, data contra
 | `07-roadmap-and-mvp-scope.md` | Implementation plan, completion gates |
 | `08-codex-sdk-agent-team-feasibility.md` | Agent runtime |
 | `09-agent-mcp-map.md` | Local tool surface with MCP-compatible naming |
+| `10-memory-and-llm-wiki.md` | Memory and LLM wiki |

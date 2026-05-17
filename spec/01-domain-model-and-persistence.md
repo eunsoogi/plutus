@@ -55,6 +55,23 @@ export const ArtifactType = z.enum([
   "mobile_summary",
   "audit_export",
 ]);
+
+export const MemoryKind = z.enum([
+  "user_preference",
+  "research_memory",
+  "strategy_memory",
+  "workflow_memory",
+  "wiki_pointer",
+]);
+
+export const WikiPageCategory = z.enum([
+  "thesis",
+  "strategy",
+  "risk_lesson",
+  "instrument",
+  "workflow",
+  "glossary",
+]);
 ```
 
 ## 4. Entity Model
@@ -262,6 +279,78 @@ Latest quote snapshot with freshness metadata.
 - `source_refs`
 - `created_at`
 
+### MemoryRecord
+
+Product-owned metadata for Mem0-backed automatic memory.
+
+- `id`
+- `profile_id`
+- `mem0_id`
+- `kind`: `user_preference`, `research_memory`, `strategy_memory`, `workflow_memory`, `wiki_pointer`
+- `summary`
+- `tags`
+- `source_refs`
+- `capture_policy`
+- `sensitivity_class`
+- `retention_class`
+- `status`: `active`, `archived`, `deleted`
+- `last_recalled_at`
+- `created_at`
+- `updated_at`
+- `deleted_at`
+
+### MemoryActivity
+
+- `id`
+- `memory_id`
+- `event_type`: `captured`, `recalled`, `updated`, `pinned`, `archived`, `deleted`, `category_disabled`, `category_enabled`
+- `actor`
+- `research_run_id`
+- `audit_ref`
+- `payload`
+- `created_at`
+
+### WikiPage
+
+- `id`
+- `profile_id`
+- `slug`
+- `category`: `thesis`, `strategy`, `risk_lesson`, `instrument`, `workflow`, `glossary`
+- `title`
+- `summary`
+- `status`: `active`, `archived`
+- `current_revision_id`
+- `tags`
+- `source_refs`
+- `memory_refs`
+- `freshness`: `current`, `needs_review`, `stale`, `contradicted`
+- `confidence`: `low`, `medium`, `high`
+- `created_at`
+- `updated_at`
+- `archived_at`
+
+### WikiRevision
+
+- `id`
+- `wiki_page_id`
+- `revision_number`
+- `storage_key`
+- `content_hash`
+- `revision_note`
+- `source_refs`
+- `contradiction_refs`
+- `created_by`
+- `audit_ref`
+- `created_at`
+
+### WikiLink
+
+- `id`
+- `from_page_id`
+- `to_page_id`
+- `link_type`: `supports`, `contradicts`, `updates`, `related`, `supersedes`
+- `created_at`
+
 ### RemoteDevice
 
 Paired mobile controller identity.
@@ -302,6 +391,8 @@ packages/domain/src/
   strategy/schema.ts
   research-run/schema.ts
   artifact/schema.ts
+  memory/schema.ts
+  wiki/schema.ts
   remote-control/schema.ts
 ```
 
@@ -326,6 +417,8 @@ apps/tauri/src-tauri/src/storage/
     research_runs.rs
     strategies.rs
     artifacts.rs
+    memory.rs
+    wiki.rs
     audit.rs
     remote_control.rs
   repositories/
@@ -333,6 +426,8 @@ apps/tauri/src-tauri/src/storage/
     instrument_repository.rs
     research_run_repository.rs
     artifact_repository.rs
+    memory_repository.rs
+    wiki_repository.rs
     remote_device_repository.rs
   migrations/
 ```
@@ -404,6 +499,7 @@ BTC and NVDA exposure together looks risky. Review my portfolio and suggest what
 - Trade import rows for CSV uploads.
 - Shadow Account behavior diagnostics.
 - Broker/exchange read-only account references.
-- Persistent memory controls for saved theses and user preferences.
+- Automatic memory capture controls for saved theses and user preferences.
+- LLM-maintained wiki history and knowledge-base review tools.
 - Provider health history and quota tracking.
 - Optional remote-control device metadata for paired mobile controllers.

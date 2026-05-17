@@ -18,6 +18,7 @@ MVP should prove the core loop:
 - Local app command layer with portfolio, watchlist, instrument, and research-run resources.
 - OpenAI Codex SDK agent host with specialist role workflows.
 - Project-scoped Codex custom agent files for market data, equity, crypto, quant, technical, portfolio, risk, and report roles.
+- Project-scoped LLM Wiki Curator custom agent for autonomous knowledge-base maintenance.
 - `CodexRunHost` adapter with start, stream, resume, structured-turn, and archive capabilities.
 - Market data adapters for US equities/ETFs and major crypto.
 - Manual portfolio entry.
@@ -26,6 +27,8 @@ MVP should prove the core loop:
 - Basic long-only backtesting for single-asset and simple multi-asset strategies.
 - Risk summary and recommendation category.
 - Run cards and report artifacts.
+- Mem0-backed runtime memory adapter with automatic capture, recall, edit, archive, delete, and category controls.
+- Local Markdown wiki with autonomous LLM Wiki Curator updates, source-linked revision history, activity feed, and revert controls.
 - macOS host app with research workspace, local data store, Codex runtime, and remote-control service.
 - Mobile remote-control app with portfolio summary, watchlist, run history, run composer controls, and artifact viewer backed by the Mac host.
 - Pairing, encrypted remote-control session, connected-device list, and revoke controls.
@@ -39,7 +42,8 @@ MVP should prove the core loop:
 - Remote-control in-app notifications for completed runs while connected.
 - Read-only exchange/broker portfolio import.
 - Mobile push notifications through platform services after a separate notification design.
-- Persistent agent memory controls.
+- Advanced persistent agent memory controls.
+- Wiki contradiction review and periodic knowledge-base maintenance.
 
 ## 4. Phase 3
 

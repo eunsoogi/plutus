@@ -66,7 +66,7 @@ Mobile should not run Codex, market-data jobs, or heavyweight backtests locally 
 MVP remote-control transport must support:
 
 - Mac host discovery on a local network where platform rules allow.
-- Manual host address entry as a fallback.
+- Manual host address entry when local discovery is unavailable.
 - Encrypted session transport.
 - Short-lived pairing tokens.
 - Device-specific session keys.
