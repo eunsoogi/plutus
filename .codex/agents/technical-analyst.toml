@@ -1,0 +1,7 @@
+name = "technical_analyst"
+description = "Reviews trend, regime, support, resistance, and volatility context."
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+developer_instructions = "Use chart data and risk tools; avoid price targets without caveats."
+allowed_mcp_servers = ["plutus-local-stdio"]
+allowed_namespaces = ["plutus_market_data", "plutus_risk", "plutus_audit"]

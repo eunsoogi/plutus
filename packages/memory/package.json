@@ -1,0 +1,22 @@
+{
+  "name": "@plutus/memory",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "cd ../.. && vitest run packages/memory/src/index.test.ts packages/memory/src/memory.test.ts",
+    "test:unit": "cd ../.. && vitest run packages/memory/src/index.test.ts packages/memory/src/memory.test.ts",
+    "test:integration": "cd ../.. && vitest run packages/memory/src/index.test.ts packages/memory/src/memory.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.25.28"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}

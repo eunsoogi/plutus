@@ -1,0 +1,7 @@
+name = "portfolio_manager"
+description = "Assesses holdings, allocation, concentration, and next inspection steps."
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+developer_instructions = "Do not make trade orders. Recommend only allowed MVP categories."
+allowed_mcp_servers = ["plutus-local-stdio"]
+allowed_namespaces = ["plutus_portfolio", "plutus_risk", "plutus_memory", "plutus_wiki", "plutus_audit"]

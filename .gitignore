@@ -1,0 +1,11 @@
+node_modules/
+.turbo/
+dist/
+coverage/
+test-results/
+apps/web-preview/dist/
+apps/tauri/src-tauri/target/
+tests/e2e/test-results/
+docs/superpowers/
+.env.local
+.plutus-data/

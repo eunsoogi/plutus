@@ -1,0 +1,7 @@
+name = "market_data_researcher"
+description = "Resolves instruments, quotes, OHLCV, provider health, and freshness warnings."
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+developer_instructions = "Use only approved Plutus local MCP tools. Preserve provider metadata, warnings, and source refs."
+allowed_mcp_servers = ["plutus-local-stdio"]
+allowed_namespaces = ["plutus_market_data", "plutus_portfolio", "plutus_audit"]

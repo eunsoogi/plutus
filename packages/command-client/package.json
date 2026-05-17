@@ -1,0 +1,23 @@
+{
+  "name": "@plutus/command-client",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --root ../.. packages/command-client/src/command-client.test.ts",
+    "test:unit": "vitest run --root ../.. packages/command-client/src/command-client.test.ts",
+    "test:integration": "vitest run --root ../.. packages/command-client/src/command-client.test.ts"
+  },
+  "dependencies": {
+    "zod": "^3.25.28"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}

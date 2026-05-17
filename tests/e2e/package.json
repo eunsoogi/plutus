@@ -1,0 +1,18 @@
+{
+  "name": "@plutus/e2e",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "cd ../.. && playwright test tests/e2e",
+    "test:unit": "cd ../.. && vitest run --passWithNoTests tests/e2e/no-unit-tests.ts",
+    "test:integration": "cd ../.. && vitest run --passWithNoTests tests/e2e/no-integration-tests.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.0",
+    "typescript": "^5.8.3"
+  }
+}

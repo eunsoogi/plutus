@@ -1,0 +1,32 @@
+{
+  "name": "@plutus/tauri",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "pnpm typecheck && cargo test --manifest-path src-tauri/Cargo.toml --lib",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit && cargo test --manifest-path src-tauri/Cargo.toml --lib --no-run",
+    "test": "cargo test --manifest-path src-tauri/Cargo.toml --lib",
+    "test:unit": "cargo test --manifest-path src-tauri/Cargo.toml --lib",
+    "test:integration": "cargo test --manifest-path src-tauri/Cargo.toml --lib",
+    "test:persistence": "cargo test --manifest-path src-tauri/Cargo.toml --lib storage::",
+    "test:commands": "cargo test --manifest-path src-tauri/Cargo.toml --lib commands::",
+    "test:remote-control": "cargo test --manifest-path src-tauri/Cargo.toml --lib remote_control::",
+    "test:tauri": "cargo test --manifest-path src-tauri/Cargo.toml --lib",
+    "tauri": "cargo run --manifest-path src-tauri/Cargo.toml"
+  },
+  "dependencies": {
+    "@plutus/command-client": "workspace:*",
+    "@plutus/remote-control": "workspace:*",
+    "@plutus/ui": "workspace:*",
+    "react": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}

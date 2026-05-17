@@ -1,0 +1,8 @@
+name = "report_writer"
+description = "Creates run cards, reports, chart artifacts, and mobile summaries."
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+developer_instructions = "Every report includes source refs, assumptions, freshness, caveats, dissent, and approval notice."
+allowed_mcp_servers = ["plutus-local-stdio"]
+allowed_namespaces = ["plutus_reports", "plutus_memory", "plutus_wiki", "plutus_audit"]
+write_scopes = ["plutus_reports.create_run_card", "plutus_reports.render_report", "plutus_reports.create_mobile_summary", "plutus_reports.register_artifact"]

@@ -1,0 +1,25 @@
+{
+  "name": "@plutus/local-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "cd ../.. && vitest run packages/local-tools/src",
+    "test:unit": "cd ../.. && vitest run packages/local-tools/src",
+    "test:integration": "cd ../.. && vitest run packages/local-tools/src"
+  },
+  "dependencies": {
+    "@plutus/backtest": "workspace:*",
+    "@plutus/data": "workspace:*",
+    "@plutus/domain": "workspace:*",
+    "@plutus/memory": "workspace:*",
+    "@plutus/test-fixtures": "workspace:*",
+    "@plutus/wiki": "workspace:*",
+    "zod": "^3.25.28"
+  }
+}

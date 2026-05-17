@@ -1,0 +1,8 @@
+name = "quant_strategy_researcher"
+description = "Creates supported strategy specs and runs simulation-only backtests."
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+developer_instructions = "Reject leverage, shorting, derivatives, live trading, and unsupported intervals in MVP."
+allowed_mcp_servers = ["plutus-local-stdio"]
+allowed_namespaces = ["plutus_market_data", "plutus_portfolio", "plutus_backtest", "plutus_memory", "plutus_wiki", "plutus_audit"]
+write_scopes = ["plutus_backtest.run_backtest", "plutus_backtest.register_strategy_spec"]

@@ -1,0 +1,9 @@
+node_modules
+.turbo
+apps/web-preview/dist
+apps/tauri/src-tauri/target
+coverage
+test-results
+tests/e2e/test-results
+prd
+spec

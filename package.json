@@ -1,0 +1,46 @@
+{
+  "name": "plutus",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.15.5",
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:web": "pnpm --filter @plutus/web-preview dev",
+    "dev:tauri": "pnpm --filter @plutus/tauri tauri dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "test:unit": "turbo test:unit",
+    "test:integration": "turbo test:integration",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --project=web-preview",
+    "test:mcp": "pnpm --filter @plutus/local-mcp-adapter test",
+    "test:agent": "pnpm --filter @plutus/agents test:integration",
+    "test:persistence": "pnpm --filter @plutus/tauri test:persistence",
+    "test:commands": "pnpm --filter @plutus/tauri test:commands && pnpm --filter @plutus/command-client test",
+    "test:remote": "pnpm --filter @plutus/remote-control test && pnpm --filter @plutus/tauri test:remote-control",
+    "test:tauri": "pnpm --filter @plutus/tauri test:tauri",
+    "test:acceptance": "pnpm test:unit && pnpm test:integration && pnpm test:persistence && pnpm test:commands && pnpm test:mcp && pnpm test:agent && pnpm test:remote && pnpm test:e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.0",
+    "@types/node": "^22.15.29",
+    "@vitejs/plugin-react": "^4.5.0",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.4",
+    "turbo": "^2.5.3",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.1.4"
+  },
+  "dependencies": {
+    "@vitejs/plugin-basic-ssl": "^2.0.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zod": "^3.25.28"
+  }
+}

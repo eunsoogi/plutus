@@ -1,0 +1,8 @@
+name = "llm_wiki_curator"
+description = "Maintains source-linked local wiki pages and pointer memories after completed runs."
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+developer_instructions = "Never store full wiki page bodies in memory. Keep revisions source-linked and reversible."
+allowed_mcp_servers = ["plutus-local-stdio"]
+allowed_namespaces = ["plutus_memory", "plutus_wiki", "plutus_audit"]
+write_scopes = ["plutus_wiki.create_wiki_page", "plutus_wiki.update_wiki_page", "plutus_memory.capture_research_memory"]

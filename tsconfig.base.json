@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@plutus/agents": ["packages/agents/src/index.ts"],
+      "@plutus/backtest": ["packages/backtest/src/index.ts"],
+      "@plutus/command-client": ["packages/command-client/src/index.ts"],
+      "@plutus/data": ["packages/data/src/index.ts"],
+      "@plutus/domain": ["packages/domain/src/index.ts"],
+      "@plutus/local-mcp-adapter": ["packages/local-mcp-adapter/src/index.ts"],
+      "@plutus/local-tools": ["packages/local-tools/src/index.ts"],
+      "@plutus/memory": ["packages/memory/src/index.ts"],
+      "@plutus/remote-control": ["packages/remote-control/src/index.ts"],
+      "@plutus/tauri": ["apps/tauri/src/index.ts"],
+      "@plutus/test-fixtures": ["packages/test-fixtures/src/index.ts"],
+      "@plutus/ui": ["packages/ui/src/index.ts"],
+      "@plutus/wiki": ["packages/wiki/src/index.ts"]
+    },
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["vitest/globals"]
+  }
+}

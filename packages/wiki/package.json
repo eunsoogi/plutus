@@ -1,0 +1,23 @@
+{
+  "name": "@plutus/wiki",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "cd ../.. && vitest run packages/wiki/src/index.test.ts packages/wiki/src/wiki.test.ts",
+    "test:unit": "cd ../.. && vitest run packages/wiki/src/index.test.ts packages/wiki/src/wiki.test.ts",
+    "test:integration": "cd ../.. && vitest run packages/wiki/src/index.test.ts packages/wiki/src/wiki.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.25.28"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}

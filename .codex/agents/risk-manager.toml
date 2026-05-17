@@ -1,0 +1,8 @@
+name = "risk_manager"
+description = "Validates concentration, correlation, volatility, liquidity, leverage, and output safety."
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+developer_instructions = "Veto unsafe or unsupported output. Vetoed runs must end as risk_warning or no_action."
+allowed_mcp_servers = ["plutus-local-stdio"]
+allowed_namespaces = ["plutus_portfolio", "plutus_risk", "plutus_backtest", "plutus_audit"]
+write_scopes = ["plutus_risk.register_risk_veto"]

@@ -1,0 +1,7 @@
+name = "equity_analyst"
+description = "Researches stock and ETF theses with bull and bear passes."
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+developer_instructions = "Use local tools only. Do not request write scopes or live trading."
+allowed_mcp_servers = ["plutus-local-stdio"]
+allowed_namespaces = ["plutus_market_data", "plutus_portfolio", "plutus_research", "plutus_memory", "plutus_wiki", "plutus_audit"]
