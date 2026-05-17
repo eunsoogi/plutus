@@ -1,10 +1,18 @@
 import type { NamespaceHandler } from "./common";
-import { ok, warning } from "./common";
 import {
+  contentHash,
+  ok,
+  warning,
+  writeDurableJson,
+  writeDurableText,
+} from "./common";
+import {
+  PAST_PERFORMANCE_CAVEAT,
   type BacktestResult,
   renderBacktestMarkdownReport,
   runLongOnlyBacktest,
   type StrategySpec,
+  StrategySpecSchema,
   validateStrategySpec,
 } from "@plutus/backtest";
 
@@ -16,54 +24,117 @@ export const handleBacktest: NamespaceHandler = ({
 }) => {
   if (call.tool === "run_backtest") {
     const input = call.input as {
-      strategySpec?: {
-        universe?: string[];
-        longOnly?: boolean;
-        leverage?: number;
-      };
+      strategySpec?: unknown;
+      strategySpecId?: string;
+      rerunOf?: string;
     };
-    const strategySpec = input.strategySpec ?? {};
-    if (strategySpec.longOnly === false || (strategySpec.leverage ?? 1) > 1) {
-      return ok(auditRef, "plutus_backtest", undefined, [
-        warning(
-          "unsupported_strategy",
-          "blocking",
-          "MVP backtests support long-only, unlevered strategies only.",
-        ),
-      ]);
+    const resolved = resolveStrategySpec(runtime, input);
+    if (!resolved.strategySpec) {
+      const validation = resolved.validation;
+      return ok(
+        auditRef,
+        "plutus_backtest",
+        { status: "rejected", validation },
+        [
+          warning(
+            "invalid_strategy_spec",
+            "blocking",
+            validation.errors.join("; "),
+          ),
+        ],
+      );
     }
-    const normalizedSpec = hasAssetUniverse(strategySpec)
-      ? (strategySpec as StrategySpec)
-      : undefined;
-    const validation = normalizedSpec
-      ? validateStrategySpec(normalizedSpec)
-      : { valid: true, errors: [], warnings: [] };
+
+    const strategySpec = resolved.strategySpec;
+    const validation = resolved.validation;
     if (!validation.valid) {
-      return ok(auditRef, "plutus_backtest", { validation }, [
+      return ok(
+        auditRef,
+        "plutus_backtest",
+        { status: "rejected", validation },
+        [
+          warning(
+            "invalid_strategy_spec",
+            "blocking",
+            validation.errors.join("; "),
+          ),
+        ],
+      );
+    }
+
+    let result: ReturnType<typeof runLongOnlyBacktest>;
+    try {
+      result = runLongOnlyBacktest(strategySpec);
+    } catch (error) {
+      return ok(auditRef, "plutus_backtest", { status: "rejected" }, [
         warning(
-          "unsupported_strategy",
+          "backtest_run_failed",
           "blocking",
-          validation.errors.join("; "),
+          error instanceof Error ? error.message : "Backtest run failed.",
         ),
       ]);
     }
-    const result = normalizedSpec ? runLongOnlyBacktest(normalizedSpec) : null;
-    const backtestRunId = `backtest_${context.runId}`;
-    runtime.records.set(backtestRunId, {
+    const sequence = nextBacktestSequence(runtime);
+    const backtestRunId = `backtest_${context.runId}_${sequence}`;
+    const reportContent = renderBacktestMarkdownReport(result);
+    const artifactPath = writeDurableText(
+      runtime,
+      context,
+      ["backtests", `${backtestRunId}.md`],
+      reportContent,
+    );
+    const artifact = {
+      id: `artifact_${backtestRunId}`,
+      runId: context.runId,
       backtestRunId,
-      instruments: strategySpec.universe ?? [],
+      kind: "backtest_report",
+      mimeType: "text/markdown",
+      content: reportContent,
+      contentHash: contentHash(reportContent),
+      path: artifactPath,
+      sourceRefs: [
+        {
+          id: backtestRunId,
+          provider: "plutus_backtest",
+          retrievedAt: new Date(0).toISOString(),
+        },
+      ],
+      caveats: [PAST_PERFORMANCE_CAVEAT],
+      createdAt: new Date(0).toISOString(),
+    };
+    const record = {
+      backtestRunId,
+      rerunOf: input.rerunOf,
+      instruments: strategySpec.assetUniverse.map(
+        (asset) => asset.instrumentId,
+      ),
+      strategySpec,
       status: "completed",
       profileId: context.profileId,
       result,
-    });
+      dateRange: strategySpec.timeRange,
+      artifacts: [artifact],
+      createdAt: new Date(0).toISOString(),
+    };
+    const recordPath = writeDurableJson(
+      runtime,
+      context,
+      ["backtests", `${backtestRunId}.json`],
+      record,
+    );
+    runtime.records.set(backtestRunId, { ...record, path: recordPath });
+    runtime.records.set(artifact.id, artifact);
     return ok(
       auditRef,
       "plutus_backtest",
       {
         backtestRunId,
+        rerunOf: record.rerunOf,
         status: "completed",
+        dateRange: record.dateRange,
         metrics: result?.metrics ?? {},
-        artifactRefs: [`artifact_${backtestRunId}`],
+        artifactRefs: [artifact.id],
+        path: recordPath,
       },
       [
         warning(
@@ -82,13 +153,7 @@ export const handleBacktest: NamespaceHandler = ({
 
   if (call.tool === "validate_strategy_spec") {
     const input = call.input as { strategySpec?: unknown };
-    const parsed = hasAssetUniverse(input.strategySpec)
-      ? validateStrategySpec(input.strategySpec as StrategySpec)
-      : {
-          valid: false,
-          errors: ["strategySpec must match the Plutus StrategySpec schema."],
-          warnings: [],
-        };
+    const parsed = validateStrategyInput(input.strategySpec);
     return ok(
       auditRef,
       "plutus_backtest",
@@ -112,6 +177,7 @@ export const handleBacktest: NamespaceHandler = ({
       : undefined;
     return ok(auditRef, "plutus_backtest", {
       backtestRunId: input.backtestRunId,
+      record: record ?? null,
       result: backtestRecordResult(record) ?? record ?? null,
     });
   }
@@ -125,20 +191,51 @@ export const handleBacktest: NamespaceHandler = ({
       benchmarkId: input.benchmarkId,
       comparisons: (input.backtestRunIds ?? []).map((backtestRunId) => ({
         backtestRunId,
-        result: runtime.records.get(backtestRunId) ?? null,
+        record: runtime.records.get(backtestRunId) ?? null,
+        result:
+          backtestRecordResult(runtime.records.get(backtestRunId)) ?? null,
       })),
     });
   }
 
   if (call.tool === "register_strategy_spec") {
     const input = call.input as { strategySpec?: unknown };
-    const strategySpecId = `strategy_${context.runId}`;
-    runtime.records.set(strategySpecId, {
+    const parsed = parseStrategySpec(input.strategySpec);
+    const validation = parsed.validation;
+    if (!validation.valid || !parsed.strategySpec) {
+      return ok(
+        auditRef,
+        "plutus_backtest",
+        { status: "rejected", validation },
+        [
+          warning(
+            "invalid_strategy_spec",
+            "blocking",
+            validation.errors.join("; "),
+          ),
+        ],
+      );
+    }
+    const strategySpecId = `strategy_${context.runId}_${nextStrategySequence(runtime)}`;
+    const record = {
       strategySpecId,
-      strategySpec: input.strategySpec,
+      strategySpec: parsed.strategySpec,
       profileId: context.profileId,
+      validation,
+      createdAt: new Date(0).toISOString(),
+    };
+    const path = writeDurableJson(
+      runtime,
+      context,
+      ["strategies", `${strategySpecId}.json`],
+      record,
+    );
+    runtime.records.set(strategySpecId, { ...record, path });
+    return ok(auditRef, "plutus_backtest", {
+      strategySpecId,
+      validation,
+      path,
     });
-    return ok(auditRef, "plutus_backtest", { strategySpecId });
   }
 
   if (call.tool === "get_strategy_spec") {
@@ -171,10 +268,22 @@ export const handleBacktest: NamespaceHandler = ({
   });
 };
 
-function hasAssetUniverse(value: unknown): value is { assetUniverse: unknown } {
-  return Boolean(
-    value && typeof value === "object" && "assetUniverse" in value,
-  );
+function nextBacktestSequence(runtime: {
+  records: Map<string, unknown>;
+}): number {
+  const key = "backtest_sequence";
+  const next = Number(runtime.records.get(key) ?? 0) + 1;
+  runtime.records.set(key, next);
+  return next;
+}
+
+function nextStrategySequence(runtime: {
+  records: Map<string, unknown>;
+}): number {
+  const key = "strategy_sequence";
+  const next = Number(runtime.records.get(key) ?? 0) + 1;
+  runtime.records.set(key, next);
+  return next;
 }
 
 function backtestRecordResult(record: unknown): BacktestResult | undefined {
@@ -185,4 +294,59 @@ function backtestRecordResult(record: unknown): BacktestResult | undefined {
   return result && typeof result === "object"
     ? (result as BacktestResult)
     : undefined;
+}
+
+function validateStrategyInput(value: unknown) {
+  return parseStrategySpec(value).validation;
+}
+
+function parseStrategySpec(value: unknown): {
+  strategySpec?: StrategySpec;
+  validation: { valid: boolean; errors: string[]; warnings: string[] };
+} {
+  const parsed = StrategySpecSchema.safeParse(value);
+  if (!parsed.success) {
+    return {
+      validation: {
+        valid: false,
+        errors: [
+          "strategySpec must match the Plutus StrategySpec schema.",
+          ...parsed.error.issues.map(
+            (issue) => `${issue.path.join(".")}: ${issue.message}`,
+          ),
+        ],
+        warnings: [],
+      },
+    };
+  }
+  return {
+    strategySpec: parsed.data,
+    validation: validateStrategySpec(parsed.data),
+  };
+}
+
+function resolveStrategySpec(
+  runtime: { records: Map<string, unknown> },
+  input: { strategySpec?: unknown; strategySpecId?: string },
+): {
+  strategySpec?: StrategySpec;
+  validation: { valid: boolean; errors: string[]; warnings: string[] };
+} {
+  if (input.strategySpec) {
+    return parseStrategySpec(input.strategySpec);
+  }
+  if (!input.strategySpecId) {
+    return parseStrategySpec(undefined);
+  }
+  const record = runtime.records.get(input.strategySpecId);
+  if (!record || typeof record !== "object" || !("strategySpec" in record)) {
+    return {
+      validation: {
+        valid: false,
+        errors: [`strategySpecId ${input.strategySpecId} was not found.`],
+        warnings: [],
+      },
+    };
+  }
+  return parseStrategySpec((record as { strategySpec?: unknown }).strategySpec);
 }

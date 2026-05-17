@@ -8,6 +8,7 @@ export const localToolRunContextSchema = z.object({
   allowedNamespaces: z.array(z.string()),
   allowedTools: z.array(z.string()),
   writeScopes: z.array(z.string()),
+  appDataPath: z.string().optional(),
 });
 
 export type LocalToolRunContext = z.infer<typeof localToolRunContextSchema>;

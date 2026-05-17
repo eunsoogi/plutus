@@ -3,6 +3,8 @@ import {
   NAMESPACE_NAMES,
   WRITE_TOOLS,
 } from "./authz/agent-allowlists";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { InMemoryToolRuntime } from "./audit/in-memory-audit";
 import { createInMemoryToolRuntime } from "./audit/in-memory-audit";
 import type { LocalToolCall, LocalToolRunContext } from "./context";
@@ -11,19 +13,22 @@ import { localToolResponseSchema } from "./schemas/envelope";
 import { handleBacktest } from "./namespaces/backtest";
 import { handleGeneric } from "./namespaces/generic";
 import { handleMarketData } from "./namespaces/market-data";
+import { handleMemory } from "./namespaces/memory";
+import { handlePortfolio } from "./namespaces/portfolio";
 import { handleReports } from "./namespaces/reports";
 import { handleResearch } from "./namespaces/research";
 import { handleRisk } from "./namespaces/risk";
+import { handleWiki } from "./namespaces/wiki";
 
 const handlers = {
   plutus_backtest: handleBacktest,
   plutus_market_data: handleMarketData,
-  plutus_portfolio: handleGeneric,
+  plutus_portfolio: handlePortfolio,
   plutus_risk: handleRisk,
   plutus_reports: handleReports,
   plutus_research: handleResearch,
-  plutus_memory: handleGeneric,
-  plutus_wiki: handleGeneric,
+  plutus_memory: handleMemory,
+  plutus_wiki: handleWiki,
   plutus_audit: handleGeneric,
 };
 
@@ -148,7 +153,7 @@ export class LocalToolRouter {
       };
     }
 
-    if (containsForeignPortfolio(call.input)) {
+    if (containsForeignPortfolio(call.input, context)) {
       return {
         code: "cross_profile_denied",
         severity: "blocking",
@@ -193,18 +198,48 @@ function containsForeignProfile(
   );
 }
 
-function containsForeignPortfolio(value: unknown): boolean {
+function containsForeignPortfolio(
+  value: unknown,
+  context: LocalToolRunContext,
+): boolean {
   if (!value || typeof value !== "object") {
     return false;
   }
   if (
     "portfolioId" in value &&
     typeof value.portfolioId === "string" &&
-    value.portfolioId !== "018f3f5d-0000-7000-8000-000000000002"
+    !allowedPortfolioIds(context).has(value.portfolioId)
   ) {
     return true;
   }
   return Object.values(value).some((nested) =>
-    containsForeignPortfolio(nested),
+    containsForeignPortfolio(nested, context),
   );
+}
+
+function allowedPortfolioIds(context: LocalToolRunContext): Set<string> {
+  const ids = new Set([
+    "018f3f5d-0000-7000-8000-000000000002",
+    "018f3f5d-0000-7000-8000-000000000202",
+  ]);
+  if (!context.appDataPath) return ids;
+  const statePath = join(
+    context.appDataPath,
+    "local-tools",
+    "portfolio-state.json",
+  );
+  if (!existsSync(statePath)) return ids;
+  try {
+    const state = JSON.parse(readFileSync(statePath, "utf8")) as {
+      profileId?: string;
+      portfolios?: Array<{ id?: string }>;
+    };
+    if (state.profileId !== context.profileId) return ids;
+    for (const portfolio of state.portfolios ?? []) {
+      if (portfolio.id) ids.add(portfolio.id);
+    }
+  } catch {
+    return ids;
+  }
+  return ids;
 }

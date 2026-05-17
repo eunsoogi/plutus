@@ -5,8 +5,13 @@ import {
   type ToolCall,
 } from "@plutus/local-tools";
 export { parseMcpToolName } from "./namespace-registry";
-export { decodeSignedRunContext } from "./run-context";
-export { createStdioMcpAdapter } from "./stdio-server";
+export { decodeSignedRunContext, signRunContext } from "./run-context";
+export {
+  buildStdioAdapterStartCommand,
+  createStdioMcpAdapter,
+  parseStartArgs,
+  startStdioServer,
+} from "./stdio-server";
 export type { StdioMcpAdapter, StdioMcpAdapterOptions } from "./stdio-server";
 
 export class LocalMcpAdapter {

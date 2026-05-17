@@ -69,6 +69,27 @@ describe("strategy spec and long-only validation", () => {
       "Unsupported risk profile: enhanced risk warning required.",
     );
   });
+
+  it("rejects instruments that are not backed by supported market data", () => {
+    const fixture = createBtcMovingAverageCrossoverFixture();
+    const spec = createMovingAverageCrossoverStrategy({
+      primaryInstrumentId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      benchmarkId: fixture.benchmarkInstrumentId,
+      shortWindow: 20,
+      longWindow: 50,
+      start: "2021-01-01",
+      end: "2021-06-30",
+    });
+
+    const result = validateStrategySpec(spec);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Unsupported instrument"),
+      ]),
+    );
+  });
 });
 
 describe("long-only backtest engine and reports", () => {

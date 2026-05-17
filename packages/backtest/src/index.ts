@@ -5,6 +5,12 @@ export const BACKTEST_PAST_PERFORMANCE_CAVEAT =
 export const PAST_PERFORMANCE_CAVEAT = BACKTEST_PAST_PERFORMANCE_CAVEAT;
 
 const UuidSchema = z.string().uuid();
+const SUPPORTED_FIXTURE_INSTRUMENT_IDS = new Set([
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  "018f3f5d-0000-7000-8000-000000000103",
+  "018f3f5d-0000-7000-8000-000000000107",
+]);
 
 export const StrategySpecSchema = z.object({
   id: UuidSchema.optional(),
@@ -181,11 +187,31 @@ export function validateStrategySpec(
     );
   }
   for (const data of spec.requiredData) {
+    if (!SUPPORTED_FIXTURE_INSTRUMENT_IDS.has(data.instrumentId)) {
+      errors.push(
+        `Unsupported instrument ${data.instrumentId}; MVP backtests require registered fixture market data.`,
+      );
+    }
     if (data.interval !== "1d") {
       errors.push(
         `Unsupported interval ${data.interval}; MVP engine supports daily candles only.`,
       );
     }
+  }
+  for (const asset of spec.assetUniverse) {
+    if (!SUPPORTED_FIXTURE_INSTRUMENT_IDS.has(asset.instrumentId)) {
+      errors.push(
+        `Unsupported instrument ${asset.instrumentId}; MVP backtests require registered fixture market data.`,
+      );
+    }
+  }
+  if (
+    spec.benchmarkId &&
+    !SUPPORTED_FIXTURE_INSTRUMENT_IDS.has(spec.benchmarkId)
+  ) {
+    errors.push(
+      `Unsupported benchmark ${spec.benchmarkId}; MVP backtests require registered fixture market data.`,
+    );
   }
   const params = spec.positionSizing.params;
   if (Number(params.leverage ?? 1) > 1) {
@@ -621,6 +647,10 @@ export const renderBacktestMarkdown = renderBacktestMarkdownReport;
 export function runLongOnlyBacktest(spec: StrategySpec): BacktestResult & {
   metrics: BacktestResult["metrics"] & { tradeCount: number };
 } {
+  const validation = validateStrategySpec(spec);
+  if (!validation.valid) {
+    throw new Error(validation.errors.join("; "));
+  }
   const fixture = createBtcMovingAverageCrossoverFixture();
   const candles = fixture.candles.filter(
     (candle) =>

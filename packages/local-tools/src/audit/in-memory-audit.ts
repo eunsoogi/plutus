@@ -15,6 +15,7 @@ export interface AuditEvent {
 export interface InMemoryToolRuntime {
   auditEvents: AuditEvent[];
   records: Map<string, unknown>;
+  storageRoot?: string;
   log: (
     context: LocalToolRunContext,
     call: LocalToolCall,
@@ -23,11 +24,14 @@ export interface InMemoryToolRuntime {
   ) => string;
 }
 
-export function createInMemoryToolRuntime(): InMemoryToolRuntime {
+export function createInMemoryToolRuntime(
+  options: { storageRoot?: string } = {},
+): InMemoryToolRuntime {
   const auditEvents: AuditEvent[] = [];
   return {
     auditEvents,
     records: new Map<string, unknown>(),
+    storageRoot: options.storageRoot,
     log(context, call, decision, reason) {
       const auditRef = `audit_${String(auditEvents.length + 1).padStart(4, "0")}`;
       auditEvents.push({
