@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Plutus",
+  "version": "0.1.0",
+  "identifier": "com.eunsoogi.plutus",
+  "build": {
+    "beforeDevCommand": "pnpm --filter @plutus/web-preview dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "pnpm --filter @plutus/web-preview build",
+    "frontendDist": "../../web-preview/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Plutus",
+        "width": 1280,
+        "height": 860,
+        "minWidth": 960,
+        "minHeight": 640
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": []
+  }
+}

@@ -51,9 +51,30 @@ export type RemotePlatform = "ios" | "android";
 export type RemotePermissionStatus =
   | "allowed"
   | "disabled"
+  | "host_kill_switch"
   | "invalid_session"
+  | "unlock_required"
   | "revoked"
   | "stale";
+export type RemoteAddressSource = "manual" | "discovery";
+export type RemoteUnlockMethod = "biometric";
+
+export interface RemoteAddressMetadata {
+  source: RemoteAddressSource;
+  host: string;
+  port: number;
+  label?: string;
+}
+
+export interface RemoteTransportMetadata {
+  scheme: "wss";
+  address: RemoteAddressMetadata;
+  encryption: {
+    cipherSuite: "x25519-chacha20poly1305";
+    handshakeHash: string;
+    sessionKeyRef: string;
+  };
+}
 
 export interface RemoteDeviceIdentity {
   id: string;
@@ -64,9 +85,13 @@ export interface RemoteDeviceIdentity {
 export interface RemoteSession extends RemoteDeviceIdentity {
   deviceId: string;
   sessionKey: string;
+  sessionKeyRef: string;
+  transport: RemoteTransportMetadata;
   pairedAt: string;
   lastHeartbeatAt: string;
   status: "connected" | "revoked";
+  unlockRequired: boolean;
+  unlockedUntil?: string;
   revokedReason?: string;
 }
 
@@ -75,19 +100,30 @@ export interface PairingSession {
   hostId: string;
   state: "connected" | "stale" | "revoked";
   sessionKey: string;
+  sessionKeyRef: string;
+  transport: RemoteTransportMetadata;
   expiresAt: string;
   canMutate: boolean;
+  unlockRequired: boolean;
 }
 
 interface PairingCode {
   code: string;
   hostName: string;
+  address: RemoteAddressMetadata;
   expiresAt: string;
   consumed: boolean;
 }
 
+interface HostKillSwitch {
+  active: boolean;
+  reason?: string;
+  updatedAt: string;
+}
+
 export interface RemoteControlStore {
   enabled: boolean;
+  hostKillSwitch: HostKillSwitch;
   pairingCodes: PairingCode[];
   sessions: RemoteSession[];
   audit: Array<{
@@ -102,6 +138,7 @@ export interface RemoteCommandRequest {
   commandId: string;
   deviceId: string;
   sessionKey: string;
+  sessionKeyRef: string;
   command: RemoteCommand;
 }
 
@@ -143,6 +180,10 @@ export function createMemoryRemoteControlStore(
 ): RemoteControlStore {
   return {
     enabled: false,
+    hostKillSwitch: {
+      active: false,
+      updatedAt: now.toISOString(),
+    },
     pairingCodes: [],
     sessions: [],
     audit: [{ type: "remote.store_created", at: now.toISOString() }],
@@ -159,10 +200,14 @@ export function isSessionStale(
 }
 
 export function createPairingCode(hostId = "mac-host-fixture") {
+  const keyRef = createSessionKeyRef(hostId);
   return {
     hostId,
     qrPayload: `plutus://pair/${hostId}/123456`,
     shortCode: "123456",
+    address: defaultDiscoveryAddress(),
+    sessionKeyRef: keyRef,
+    transport: createTransportMetadata(defaultDiscoveryAddress(), keyRef),
     expiresAt: new Date(Date.now() + 300000).toISOString(),
   };
 }
@@ -175,9 +220,15 @@ export function pairDevice(shortCode: string): PairingSession {
     deviceId: "018f3f5d-0000-7000-8000-000000000008",
     hostId: "mac-host-fixture",
     state: "connected",
-    sessionKey: "encrypted-session-key-fixture",
+    sessionKey: "enc:v1:encrypted-session-key-fixture",
+    sessionKeyRef: "secure://plutus/remote-control/session-keys/fixture",
+    transport: createTransportMetadata(
+      defaultDiscoveryAddress(),
+      "secure://plutus/remote-control/session-keys/fixture",
+    ),
     expiresAt: new Date(Date.now() + 86400000).toISOString(),
     canMutate: true,
+    unlockRequired: true,
   };
 }
 
@@ -213,10 +264,87 @@ function createPairingDigits(seed: number): string {
   return String(Math.abs(seed) % 1_000_000).padStart(6, "0");
 }
 
+function stableDigest(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+function defaultDiscoveryAddress(): RemoteAddressMetadata {
+  return {
+    source: "discovery",
+    host: "plutus.local",
+    port: 7420,
+    label: "local discovery",
+  };
+}
+
+function validateAddress(
+  address: RemoteAddressMetadata,
+): RemoteAddressMetadata {
+  if (!address.host.trim()) throw new Error("remote host address is required");
+  if (
+    !Number.isInteger(address.port) ||
+    address.port < 1 ||
+    address.port > 65535
+  ) {
+    throw new Error("remote host port is invalid");
+  }
+  if (!["manual", "discovery"].includes(address.source)) {
+    throw new Error("remote host address source is invalid");
+  }
+  return { ...address, host: address.host.trim() };
+}
+
+function createSessionKeyRef(seed: string): string {
+  const cleaned = seed.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 36) || "session";
+  return `secure://plutus/remote-control/session-keys/${cleaned}`;
+}
+
+function createTransportMetadata(
+  address: RemoteAddressMetadata,
+  sessionKeyRef: string,
+): RemoteTransportMetadata {
+  const validated = validateAddress(address);
+  return {
+    scheme: "wss",
+    address: validated,
+    encryption: {
+      cipherSuite: "x25519-chacha20poly1305",
+      handshakeHash: `sha256:${stableDigest(
+        `${validated.source}:${validated.host}:${validated.port}:${sessionKeyRef}`,
+      )}`,
+      sessionKeyRef,
+    },
+  };
+}
+
 function createSessionKey(deviceId: string, at: Date): string {
   const cleaned =
     deviceId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16) || "device";
-  return `plutus_session_${cleaned}_${at.getTime().toString(36)}`;
+  return `enc:v1:${stableDigest(`${cleaned}:${at.toISOString()}`)}`;
+}
+
+function requiresUnlock(command: RemoteCommand): boolean {
+  return [
+    "portfolio.update_position_thesis",
+    "watchlist.update_item",
+    "run.start",
+    "run.cancel",
+    "artifact.get",
+    "wiki.get",
+  ].includes(command.type);
+}
+
+function isUnlocked(session: RemoteSession, at: Date): boolean {
+  return (
+    !session.unlockRequired ||
+    (!!session.unlockedUntil &&
+      new Date(session.unlockedUntil).getTime() >= at.getTime())
+  );
 }
 
 export class RemoteControlHost {
@@ -236,17 +364,44 @@ export class RemoteControlHost {
     });
   }
 
+  async setHostKillSwitch(active: boolean, reason?: string): Promise<void> {
+    const at = this.now();
+    this.store.hostKillSwitch = {
+      active,
+      reason,
+      updatedAt: at.toISOString(),
+    };
+    this.store.audit.push({
+      type: active
+        ? "remote.host_kill_switch_enabled"
+        : "remote.host_kill_switch_disabled",
+      at: at.toISOString(),
+      reason,
+    });
+  }
+
   async enablePairing(input: {
     hostName: string;
-  }): Promise<{ code: string; expiresAt: string }> {
+    address?: RemoteAddressMetadata;
+  }): Promise<{
+    code: string;
+    expiresAt: string;
+    address: RemoteAddressMetadata;
+    transport: RemoteTransportMetadata;
+  }> {
     this.store.enabled = true;
     const at = this.now();
+    const address = validateAddress(input.address ?? defaultDiscoveryAddress());
+    const previewKeyRef = createSessionKeyRef(
+      `${input.hostName}-${at.getTime()}`,
+    );
     const code = createPairingDigits(
       at.getTime() + this.store.pairingCodes.length + 314159,
     );
     const pairing = {
       code,
       hostName: input.hostName,
+      address,
       expiresAt: new Date(at.getTime() + pairingTtlMs).toISOString(),
       consumed: false,
     };
@@ -255,7 +410,12 @@ export class RemoteControlHost {
       type: "remote.pairing_code_created",
       at: at.toISOString(),
     });
-    return { code: pairing.code, expiresAt: pairing.expiresAt };
+    return {
+      code: pairing.code,
+      expiresAt: pairing.expiresAt,
+      address,
+      transport: createTransportMetadata(address, previewKeyRef),
+    };
   }
 
   async pairDevice(input: {
@@ -263,6 +423,9 @@ export class RemoteControlHost {
     device: RemoteDeviceIdentity;
   }): Promise<RemoteSession> {
     if (!this.store.enabled) throw new Error("Remote control is disabled");
+    if (this.store.hostKillSwitch.active) {
+      throw new Error("Remote control host kill switch is active");
+    }
     const at = this.now();
     const pairing = this.store.pairingCodes.find(
       (candidate) =>
@@ -272,13 +435,19 @@ export class RemoteControlHost {
     );
     if (!pairing) throw new Error("Pairing code is not active");
     pairing.consumed = true;
+    const sessionKeyRef = createSessionKeyRef(
+      `${input.device.id}-${at.getTime()}`,
+    );
     const session: RemoteSession = {
       ...input.device,
       deviceId: input.device.id,
       sessionKey: createSessionKey(input.device.id, at),
+      sessionKeyRef,
+      transport: createTransportMetadata(pairing.address, sessionKeyRef),
       pairedAt: at.toISOString(),
       lastHeartbeatAt: at.toISOString(),
       status: "connected",
+      unlockRequired: true,
     };
     this.store.sessions = [
       ...this.store.sessions.filter(
@@ -292,6 +461,38 @@ export class RemoteControlHost {
       at: at.toISOString(),
     });
     return session;
+  }
+
+  async unlockSession(input: {
+    deviceId: string;
+    sessionKey: string;
+    sessionKeyRef: string;
+    method: RemoteUnlockMethod;
+    at?: Date;
+    ttlMs?: number;
+  }): Promise<void> {
+    const at = input.at ?? this.now();
+    const session = this.store.sessions.find(
+      (candidate) => candidate.id === input.deviceId,
+    );
+    if (
+      !session ||
+      session.sessionKey !== input.sessionKey ||
+      session.sessionKeyRef !== input.sessionKeyRef
+    ) {
+      throw new Error("invalid_session");
+    }
+    if (input.method !== "biometric") {
+      throw new Error("unlock method is not allowed");
+    }
+    session.unlockedUntil = new Date(
+      at.getTime() + (input.ttlMs ?? 60_000),
+    ).toISOString();
+    this.store.audit.push({
+      type: "remote.session_unlocked",
+      deviceId: input.deviceId,
+      at: at.toISOString(),
+    });
   }
 
   async recordHeartbeat(input: { deviceId: string; at?: Date }): Promise<void> {
@@ -377,10 +578,21 @@ export class RemoteControlHost {
   ): RemoteCommandResponse["permission"] {
     if (!this.store.enabled)
       return { status: "disabled", deviceId: request.deviceId };
+    if (this.store.hostKillSwitch.active) {
+      return {
+        status: "host_kill_switch",
+        deviceId: request.deviceId,
+        reason: this.store.hostKillSwitch.reason,
+      };
+    }
     const session = this.store.sessions.find(
       (candidate) => candidate.id === request.deviceId,
     );
-    if (!session || session.sessionKey !== request.sessionKey) {
+    if (
+      !session ||
+      session.sessionKey !== request.sessionKey ||
+      session.sessionKeyRef !== request.sessionKeyRef
+    ) {
       return { status: "invalid_session", deviceId: request.deviceId };
     }
     if (session.status === "revoked") {
@@ -392,6 +604,9 @@ export class RemoteControlHost {
     }
     if (isSessionStale(session, at))
       return { status: "stale", deviceId: request.deviceId };
+    if (requiresUnlock(request.command) && !isUnlocked(session, at)) {
+      return { status: "unlock_required", deviceId: request.deviceId };
+    }
     return { status: "allowed", deviceId: request.deviceId };
   }
 }

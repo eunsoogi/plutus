@@ -99,6 +99,38 @@ CREATE TABLE IF NOT EXISTS research_runs (
   failure_reason TEXT
 );
 
+CREATE TABLE IF NOT EXISTS research_run_events (
+  id TEXT PRIMARY KEY,
+  research_run_id TEXT NOT NULL REFERENCES research_runs(id),
+  sequence INTEGER NOT NULL,
+  event_type TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(research_run_id, sequence)
+);
+
+CREATE TABLE IF NOT EXISTS research_run_final_outputs (
+  id TEXT PRIMARY KEY,
+  research_run_id TEXT NOT NULL REFERENCES research_runs(id),
+  summary TEXT NOT NULL,
+  structured_output TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS local_job_queue (
+  id TEXT PRIMARY KEY,
+  research_run_id TEXT REFERENCES research_runs(id),
+  job_type TEXT NOT NULL,
+  status TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  attempts INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  available_at TEXT NOT NULL,
+  locked_at TEXT,
+  failure_reason TEXT
+);
+
 CREATE TABLE IF NOT EXISTS agent_artifacts (
   id TEXT PRIMARY KEY,
   research_run_id TEXT NOT NULL REFERENCES research_runs(id),
@@ -150,7 +182,7 @@ CREATE TABLE IF NOT EXISTS backtest_runs (
 CREATE TABLE IF NOT EXISTS memory_records (
   id TEXT PRIMARY KEY,
   profile_id TEXT NOT NULL REFERENCES local_profiles(id),
-  mem0_id TEXT NOT NULL,
+  mem0_id TEXT,
   kind TEXT NOT NULL,
   summary TEXT NOT NULL,
   tags TEXT NOT NULL,
@@ -167,7 +199,7 @@ CREATE TABLE IF NOT EXISTS memory_records (
 
 CREATE TABLE IF NOT EXISTS memory_activity (
   id TEXT PRIMARY KEY,
-  memory_id TEXT NOT NULL REFERENCES memory_records(id),
+  memory_id TEXT REFERENCES memory_records(id),
   event_type TEXT NOT NULL,
   actor TEXT NOT NULL,
   research_run_id TEXT,
@@ -206,6 +238,14 @@ CREATE TABLE IF NOT EXISTS wiki_revisions (
   contradiction_refs TEXT NOT NULL,
   created_by TEXT NOT NULL,
   audit_ref TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS wiki_links (
+  id TEXT PRIMARY KEY,
+  from_wiki_page_id TEXT REFERENCES wiki_pages(id),
+  to_wiki_page_id TEXT REFERENCES wiki_pages(id),
+  link_type TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
 

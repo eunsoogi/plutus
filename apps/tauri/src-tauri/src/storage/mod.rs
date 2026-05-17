@@ -100,6 +100,38 @@ pub struct ResearchRun {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RunEvent {
+    pub id: String,
+    pub research_run_id: String,
+    pub sequence: i64,
+    pub event_type: String,
+    pub payload: serde_json::Value,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct FinalOutput {
+    pub id: String,
+    pub research_run_id: String,
+    pub summary: String,
+    pub structured_output: serde_json::Value,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct LocalJob {
+    pub id: String,
+    pub research_run_id: Option<String>,
+    pub job_type: String,
+    pub status: String,
+    pub payload: serde_json::Value,
+    pub attempts: i64,
+    pub created_at: String,
+    pub updated_at: String,
+    pub available_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Artifact {
     pub id: String,
     pub research_run_id: String,
@@ -108,6 +140,47 @@ pub struct Artifact {
     pub storage_key: String,
     pub content_hash: String,
     pub mime_type: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewResearchRun {
+    pub profile_id: String,
+    pub portfolio_id: Option<String>,
+    pub user_request: String,
+    pub selected_team: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppendRunEvent {
+    pub research_run_id: String,
+    pub sequence: i64,
+    pub event_type: String,
+    pub payload: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PersistFinalOutput {
+    pub research_run_id: String,
+    pub summary: String,
+    pub structured_output: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EnqueueLocalJob {
+    pub research_run_id: Option<String>,
+    pub job_type: String,
+    pub payload: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WriteArtifactFile {
+    pub research_run_id: String,
+    pub artifact_type: String,
+    pub title: String,
+    pub mime_type: String,
+    pub metadata: serde_json::Value,
+    pub created_by_agent: String,
+    pub contents: Vec<u8>,
 }
 
 pub struct PlutusDatabase {
@@ -148,14 +221,63 @@ impl PlutusDatabase {
             params![MVP_MANUAL_ACCOUNT_ID, MVP_PROFILE_ID, now],
         )?;
         let instruments = [
-            (MVP_NVDA_ID, "stock", "NVDA", "NVIDIA Corporation", "USD", "NASDAQ"),
+            (
+                MVP_NVDA_ID,
+                "stock",
+                "NVDA",
+                "NVIDIA Corporation",
+                "USD",
+                "NASDAQ",
+            ),
             (MVP_BTC_ID, "crypto", "BTC-USD", "Bitcoin", "USD", "CRYPTO"),
-            ("018f3f5d-0000-7000-8000-000000000101", "stock", "AAPL", "Apple Inc.", "USD", "NASDAQ"),
-            ("018f3f5d-0000-7000-8000-000000000104", "crypto", "ETH-USD", "Ethereum", "USD", "CRYPTO"),
-            ("018f3f5d-0000-7000-8000-000000000105", "stablecoin", "USDC-USD", "USD Coin", "USD", "CRYPTO"),
-            ("018f3f5d-0000-7000-8000-000000000106", "cash", "USD", "US Dollar Cash", "USD", "CASH"),
-            ("018f3f5d-0000-7000-8000-000000000107", "etf", "SPY", "SPDR S&P 500 ETF", "USD", "NYSEARCA"),
-            ("018f3f5d-0000-7000-8000-000000000108", "etf", "QQQ", "Invesco QQQ Trust", "USD", "NASDAQ"),
+            (
+                "018f3f5d-0000-7000-8000-000000000101",
+                "stock",
+                "AAPL",
+                "Apple Inc.",
+                "USD",
+                "NASDAQ",
+            ),
+            (
+                "018f3f5d-0000-7000-8000-000000000104",
+                "crypto",
+                "ETH-USD",
+                "Ethereum",
+                "USD",
+                "CRYPTO",
+            ),
+            (
+                "018f3f5d-0000-7000-8000-000000000105",
+                "stablecoin",
+                "USDC-USD",
+                "USD Coin",
+                "USD",
+                "CRYPTO",
+            ),
+            (
+                "018f3f5d-0000-7000-8000-000000000106",
+                "cash",
+                "USD",
+                "US Dollar Cash",
+                "USD",
+                "CASH",
+            ),
+            (
+                "018f3f5d-0000-7000-8000-000000000107",
+                "etf",
+                "SPY",
+                "SPDR S&P 500 ETF",
+                "USD",
+                "NYSEARCA",
+            ),
+            (
+                "018f3f5d-0000-7000-8000-000000000108",
+                "etf",
+                "QQQ",
+                "Invesco QQQ Trust",
+                "USD",
+                "NASDAQ",
+            ),
         ];
         for (id, asset_type, symbol, name, currency, exchange) in instruments {
             tx.execute(
@@ -185,6 +307,122 @@ impl PlutusDatabase {
         tx.commit()?;
         Ok(())
     }
+
+    pub fn create_research_run(&self, input: NewResearchRun) -> Result<ResearchRun> {
+        let run = ResearchRun {
+            id: new_id(),
+            profile_id: input.profile_id,
+            portfolio_id: input.portfolio_id,
+            status: "queued".to_string(),
+            user_request: input.user_request,
+            selected_team: input.selected_team,
+            codex_thread_id: None,
+            workspace_path: format!("runs/{}", new_id()),
+            recommendation_category: None,
+        };
+        self.conn.execute(
+            "INSERT INTO research_runs(id, profile_id, portfolio_id, status, user_request, selected_team, codex_thread_id, workspace_path, custom_agent_versions, local_tool_config_hash, model_config, started_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7, '{}', 'local-tools-v1', '{}', ?8)",
+            params![run.id, run.profile_id, run.portfolio_id, run.status, run.user_request, run.selected_team, run.workspace_path, now()],
+        )?;
+        Ok(run)
+    }
+
+    pub fn append_run_event(&self, input: AppendRunEvent) -> Result<RunEvent> {
+        let event = RunEvent {
+            id: new_id(),
+            research_run_id: input.research_run_id,
+            sequence: input.sequence,
+            event_type: input.event_type,
+            payload: input.payload,
+            created_at: now(),
+        };
+        self.conn.execute(
+            "INSERT INTO research_run_events(id, research_run_id, sequence, event_type, payload, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![event.id, event.research_run_id, event.sequence, event.event_type, event.payload.to_string(), event.created_at],
+        )?;
+        Ok(event)
+    }
+
+    pub fn persist_final_output(&self, input: PersistFinalOutput) -> Result<FinalOutput> {
+        let output = FinalOutput {
+            id: new_id(),
+            research_run_id: input.research_run_id,
+            summary: input.summary,
+            structured_output: input.structured_output,
+            created_at: now(),
+        };
+        self.conn.execute(
+            "INSERT INTO research_run_final_outputs(id, research_run_id, summary, structured_output, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![output.id, output.research_run_id, output.summary, output.structured_output.to_string(), output.created_at],
+        )?;
+        self.conn.execute(
+            "UPDATE research_runs SET status = 'completed', completed_at = ?1, recommendation_category = ?2 WHERE id = ?3",
+            params![
+                output.created_at,
+                output
+                    .structured_output
+                    .get("recommendationCategory")
+                    .and_then(|value| value.as_str()),
+                output.research_run_id
+            ],
+        )?;
+        Ok(output)
+    }
+
+    pub fn enqueue_local_job(&self, input: EnqueueLocalJob) -> Result<LocalJob> {
+        let timestamp = now();
+        let job = LocalJob {
+            id: new_id(),
+            research_run_id: input.research_run_id,
+            job_type: input.job_type,
+            status: "queued".to_string(),
+            payload: input.payload,
+            attempts: 0,
+            created_at: timestamp.clone(),
+            updated_at: timestamp.clone(),
+            available_at: timestamp,
+        };
+        self.conn.execute(
+            "INSERT INTO local_job_queue(id, research_run_id, job_type, status, payload, attempts, created_at, updated_at, available_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![job.id, job.research_run_id, job.job_type, job.status, job.payload.to_string(), job.attempts, job.created_at, job.updated_at, job.available_at],
+        )?;
+        Ok(job)
+    }
+
+    pub fn write_artifact_file(
+        &self,
+        paths: &AppDataPaths,
+        input: WriteArtifactFile,
+    ) -> Result<Artifact> {
+        let artifact_id = new_id();
+        let storage_key = format!("runs/{}/artifacts/{artifact_id}", input.research_run_id);
+        let target = paths.root.join(&storage_key);
+        if let Some(parent) = target.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(&target, &input.contents)
+            .with_context(|| format!("failed to write artifact {}", target.display()))?;
+
+        let artifact = Artifact {
+            id: artifact_id,
+            research_run_id: input.research_run_id,
+            artifact_type: input.artifact_type,
+            title: input.title,
+            storage_key,
+            content_hash: sha256_hex(&input.contents),
+            mime_type: input.mime_type,
+        };
+        self.conn.execute(
+            "INSERT INTO agent_artifacts(id, research_run_id, artifact_type, title, storage_key, content_hash, mime_type, metadata, created_by_agent, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            params![artifact.id, artifact.research_run_id, artifact.artifact_type, artifact.title, artifact.storage_key, artifact.content_hash, artifact.mime_type, input.metadata.to_string(), input.created_by_agent, now()],
+        )?;
+        Ok(artifact)
+    }
 }
 
 pub fn now() -> String {
@@ -199,9 +437,22 @@ pub fn json_text(value: serde_json::Value) -> String {
     value.to_string()
 }
 
+pub fn sha256_hex(contents: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+
+    let mut hasher = Sha256::new();
+    hasher.update(contents);
+    hex::encode(hasher.finalize())
+}
+
 pub trait PortfolioRepository {
     fn list_portfolios(&self, profile_id: &str) -> Result<Vec<Portfolio>>;
-    fn create_portfolio(&self, profile_id: &str, name: &str, base_currency: &str) -> Result<Portfolio>;
+    fn create_portfolio(
+        &self,
+        profile_id: &str,
+        name: &str,
+        base_currency: &str,
+    ) -> Result<Portfolio>;
     fn add_position(&self, input: NewPosition) -> Result<Position>;
     fn update_position_thesis(&self, position_id: &str, thesis: &str) -> Result<Position>;
 }
@@ -235,10 +486,16 @@ impl PortfolioRepository for PlutusDatabase {
                 updated_at: row.get(7)?,
             })
         })?;
-        rows.collect::<rusqlite::Result<Vec<_>>>().map_err(Into::into)
+        rows.collect::<rusqlite::Result<Vec<_>>>()
+            .map_err(Into::into)
     }
 
-    fn create_portfolio(&self, profile_id: &str, name: &str, base_currency: &str) -> Result<Portfolio> {
+    fn create_portfolio(
+        &self,
+        profile_id: &str,
+        name: &str,
+        base_currency: &str,
+    ) -> Result<Portfolio> {
         let portfolio = Portfolio {
             id: new_id(),
             profile_id: profile_id.to_string(),
@@ -342,5 +599,106 @@ mod tests {
             .update_position_thesis(&position.id, "Updated from Mac command")
             .unwrap();
         assert_eq!(updated.thesis, "Updated from Mac command");
+    }
+
+    #[test]
+    fn persists_run_events_final_outputs_local_jobs_and_artifact_files() {
+        let temp = tempfile::tempdir().unwrap();
+        let paths = AppDataPaths::create(temp.path()).unwrap();
+        let mut db = PlutusDatabase::open(&paths.database).unwrap();
+        db.seed_mvp().unwrap();
+
+        let run = db
+            .create_research_run(NewResearchRun {
+                profile_id: MVP_PROFILE_ID.to_string(),
+                portfolio_id: Some(MVP_PORTFOLIO_ID.to_string()),
+                user_request: "Review BTC and NVDA".to_string(),
+                selected_team: "portfolio_review_committee".to_string(),
+            })
+            .unwrap();
+        let event = db
+            .append_run_event(AppendRunEvent {
+                research_run_id: run.id.clone(),
+                sequence: 1,
+                event_type: "agent.delta".to_string(),
+                payload: json!({"agent": "analyst", "text": "checking concentration"}),
+            })
+            .unwrap();
+        let final_output = db
+            .persist_final_output(PersistFinalOutput {
+                research_run_id: run.id.clone(),
+                summary: "Trim BTC risk and keep NVDA watch.".to_string(),
+                structured_output: json!({"recommendationCategory": "rebalance"}),
+            })
+            .unwrap();
+        let job = db
+            .enqueue_local_job(EnqueueLocalJob {
+                research_run_id: Some(run.id.clone()),
+                job_type: "artifact.render".to_string(),
+                payload: json!({"format": "json"}),
+            })
+            .unwrap();
+        let artifact = db
+            .write_artifact_file(
+                &paths,
+                WriteArtifactFile {
+                    research_run_id: run.id.clone(),
+                    artifact_type: "run_card".to_string(),
+                    title: "Run Card".to_string(),
+                    mime_type: "application/json".to_string(),
+                    metadata: json!({"source": "test"}),
+                    created_by_agent: "report_writer".to_string(),
+                    contents: br#"{"summary":"Trim BTC risk"}"#.to_vec(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(event.sequence, 1);
+        assert_eq!(final_output.summary, "Trim BTC risk and keep NVDA watch.");
+        assert_eq!(job.status, "queued");
+        assert_eq!(
+            fs::read(paths.root.join(&artifact.storage_key)).unwrap(),
+            br#"{"summary":"Trim BTC risk"}"#,
+        );
+        assert_eq!(artifact.content_hash.len(), 64);
+    }
+
+    #[test]
+    fn schema_allows_local_only_memory_rows_and_wiki_links() {
+        let mut db = PlutusDatabase::in_memory().unwrap();
+        db.seed_mvp().unwrap();
+        let timestamp = now();
+        let memory_id = new_id();
+        db.conn
+            .execute(
+                "INSERT INTO memory_records(id, profile_id, mem0_id, kind, summary, tags, source_refs, capture_policy, sensitivity_class, retention_class, status, created_at, updated_at)
+                 VALUES (?1, ?2, NULL, 'preference', 'Local only memory', '[]', '[]', 'manual', 'normal', 'default', 'active', ?3, ?3)",
+                params![memory_id, MVP_PROFILE_ID, timestamp],
+            )
+            .unwrap();
+        db.conn
+            .execute(
+                "INSERT INTO memory_activity(id, memory_id, event_type, actor, research_run_id, audit_ref, payload, created_at)
+                 VALUES (?1, NULL, 'category_disabled', 'user', NULL, NULL, '{}', ?2)",
+                params![new_id(), now()],
+            )
+            .unwrap();
+        db.conn
+            .execute(
+                "INSERT INTO wiki_links(id, from_wiki_page_id, to_wiki_page_id, link_type, created_at)
+                 VALUES (?1, NULL, NULL, 'manual', ?2)",
+                params![new_id(), now()],
+            )
+            .unwrap();
+
+        let stored_mem0: Option<String> = db
+            .conn
+            .query_row(
+                "SELECT mem0_id FROM memory_records WHERE id = ?1",
+                [&memory_id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert!(stored_mem0.is_none());
     }
 }

@@ -36,6 +36,10 @@ export type CommandEnvelope = z.infer<typeof CommandEnvelopeSchema>;
 export type CommandBridge = <T = unknown>(
   envelope: CommandEnvelope,
 ) => Promise<T>;
+export type TauriInvoke = <T = unknown>(
+  command: string,
+  args?: Record<string, unknown>,
+) => Promise<T>;
 
 export interface Portfolio {
   id: string;
@@ -65,6 +69,7 @@ export interface AgentArtifact {
 }
 
 type AnyRecord = Record<string, unknown>;
+const DEFAULT_PROFILE_ID = "018f3f5d-0000-7000-8000-000000000001";
 
 const corePortfolio: Portfolio = {
   id: "portfolio-core",
@@ -206,6 +211,166 @@ export function createMockCommandBridge(
   return bridge;
 }
 
+const tauriCommandMap: Record<
+  z.infer<typeof AllowedCommandSchema>,
+  (args: unknown[]) => { command: string; args: Record<string, unknown> }
+> = {
+  "portfolios.list": () => ({ command: "list_portfolios", args: {} }),
+  "portfolios.create": ([input]) => ({
+    command: "create_portfolio",
+    args: {
+      input: {
+        profile_id: DEFAULT_PROFILE_ID,
+        name: (input as AnyRecord).name,
+        base_currency: (input as AnyRecord).baseCurrency ?? "USD",
+      },
+    },
+  }),
+  "portfolios.getSnapshot": ([input]) => ({
+    command: "get_portfolio_snapshot",
+    args: input as Record<string, unknown>,
+  }),
+  "portfolios.addPosition": ([input]) => ({
+    command: "add_portfolio_position",
+    args: {
+      input: {
+        portfolio_id: (input as AnyRecord).portfolioId,
+        account_id: (input as AnyRecord).accountId,
+        symbol: (input as AnyRecord).symbol,
+        quantity: (input as AnyRecord).quantity,
+        average_cost: (input as AnyRecord).averageCost,
+        cost_currency: (input as AnyRecord).costCurrency,
+        thesis: (input as AnyRecord).thesis,
+      },
+    },
+  }),
+  "portfolios.updatePosition": ([input]) => ({
+    command: "update_portfolio_position",
+    args: {
+      input: {
+        position_id: (input as AnyRecord).positionId,
+        quantity: (input as AnyRecord).quantity,
+        thesis: (input as AnyRecord).thesis,
+      },
+    },
+  }),
+  "portfolios.updatePositionThesis": ([input]) => ({
+    command: "update_portfolio_position",
+    args: {
+      input: {
+        position_id: (input as AnyRecord).positionId,
+        quantity: undefined,
+        thesis: (input as AnyRecord).thesis,
+      },
+    },
+  }),
+  "watchlists.list": () => ({ command: "list_watchlists", args: {} }),
+  "watchlists.create": ([input]) => ({
+    command: "create_watchlist",
+    args: {
+      input: {
+        profile_id: (input as AnyRecord).profileId ?? DEFAULT_PROFILE_ID,
+        name: (input as AnyRecord).name,
+      },
+    },
+  }),
+  "watchlists.addItem": ([input]) => ({
+    command: "add_watchlist_item",
+    args: {
+      input: {
+        watchlist_id: (input as AnyRecord).watchlistId,
+        symbol: (input as AnyRecord).symbol,
+        trigger_note: (input as AnyRecord).triggerNote,
+        target_zone: (input as AnyRecord).targetZone,
+      },
+    },
+  }),
+  "watchlists.updateItem": ([input]) => ({
+    command: "update_watchlist_item",
+    args: {
+      input: {
+        item_id: (input as AnyRecord).itemId,
+        trigger_note: (input as AnyRecord).triggerNote,
+        target_zone: (input as AnyRecord).targetZone,
+      },
+    },
+  }),
+  "researchRuns.start": ([input]) => ({
+    command: "start_research_run",
+    args: {
+      input: {
+        profile_id: (input as AnyRecord).profileId ?? DEFAULT_PROFILE_ID,
+        portfolio_id: (input as AnyRecord).portfolioId,
+        user_request:
+          (input as AnyRecord).userRequest ??
+          (input as AnyRecord).thesis ??
+          "Start Plutus research run.",
+        selected_team: (input as AnyRecord).selectedTeam,
+      },
+    },
+  }),
+  "researchRuns.get": ([runId]) => ({
+    command: "get_research_run",
+    args: { runId },
+  }),
+  "researchRuns.cancel": ([runId]) => ({
+    command: "cancel_research_run",
+    args: { runId },
+  }),
+  "artifacts.get": ([artifactId]) => ({
+    command: "get_artifact",
+    args: { artifactId },
+  }),
+  "artifacts.openLocalFile": ([artifactId]) => ({
+    command: "open_local_artifact_file",
+    args: { artifactId },
+  }),
+  "memory.listActivity": ([input]) => ({
+    command: "list_memory_activity",
+    args: input as Record<string, unknown>,
+  }),
+  "memory.update": ([memoryId, patch]) => ({
+    command: "update_memory",
+    args: { memoryId, patch },
+  }),
+  "memory.archive": ([memoryId, reason]) => ({
+    command: "archive_memory",
+    args: { memoryId, reason },
+  }),
+  "memory.forget": ([memoryId]) => ({
+    command: "forget_memory",
+    args: { memoryId },
+  }),
+  "memory.setCategoryEnabled": ([category, enabled]) => ({
+    command: "set_memory_category_enabled",
+    args: { category, enabled },
+  }),
+  "wiki.listPages": ([input]) => ({
+    command: "list_wiki_pages",
+    args: input as Record<string, unknown>,
+  }),
+  "wiki.getPage": ([pageId]) => ({
+    command: "get_wiki_page",
+    args: { pageId },
+  }),
+  "wiki.listActivity": ([input]) => ({
+    command: "list_wiki_activity",
+    args: input as Record<string, unknown>,
+  }),
+  "wiki.revertRevision": ([pageId, revisionId, reason]) => ({
+    command: "revert_wiki_revision",
+    args: { pageId, revisionId, reason },
+  }),
+};
+
+export function createTauriCommandBridge(invoke: TauriInvoke): CommandBridge {
+  return async <T>(envelope: CommandEnvelope): Promise<T> => {
+    const parsed = CommandEnvelopeSchema.parse(envelope);
+    const mapped = tauriCommandMap[parsed.command](parsed.args);
+    return invoke<T>(mapped.command, mapped.args);
+  };
+}
+
 export function redactCommandLog<T>(value: T): T {
   if (Array.isArray(value))
     return value.map((item) => redactCommandLog(item)) as T;
@@ -231,6 +396,14 @@ export class FixtureCommandClient {
     getSnapshot: async (_input: { portfolioId: string }) => ({
       portfolio: corePortfolio,
     }),
+    addPosition: async (input: AnyRecord) => ({
+      id: "position-new",
+      ...input,
+    }),
+    updatePosition: async (input: AnyRecord) => ({
+      id: input.positionId ?? "position-btc",
+      ...input,
+    }),
     updatePositionThesis: async (input: {
       positionId: string;
       thesis: string;
@@ -244,6 +417,15 @@ export class FixtureCommandClient {
 
   watchlists = {
     list: async (): Promise<Watchlist[]> => [defaultWatchlist],
+    create: async (input: AnyRecord) => ({
+      id: "watchlist-new",
+      items: [],
+      ...input,
+    }),
+    addItem: async (input: AnyRecord) => ({
+      id: "watch-new",
+      ...input,
+    }),
     updateItem: async (input: { itemId: string; triggerNote: string }) => ({
       ...(defaultWatchlist.items.find((item) => item.id === input.itemId) ??
         defaultWatchlist.items[0]),
@@ -264,5 +446,25 @@ export class FixtureCommandClient {
   artifacts = {
     get: async (_artifactId: string): Promise<AgentArtifact> => runCardArtifact,
     openLocalFile: async (_artifactId: string) => undefined,
+  };
+
+  memory = {
+    listActivity: async (_input: AnyRecord) => [],
+    update: async (memoryId: string, patch: AnyRecord) => ({ memoryId, patch }),
+    archive: async (_memoryId: string, _reason: string) => undefined,
+    forget: async (_memoryId: string) => undefined,
+    setCategoryEnabled: async (_category: string, _enabled: boolean) =>
+      undefined,
+  };
+
+  wiki = {
+    listPages: async (_input: AnyRecord) => [],
+    getPage: async (pageId: string) => ({ pageId }),
+    listActivity: async (_input: AnyRecord) => [],
+    revertRevision: async (
+      pageId: string,
+      revisionId: string,
+      reason: string,
+    ) => ({ pageId, revisionId, reason }),
   };
 }
