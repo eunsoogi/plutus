@@ -92,6 +92,13 @@ test("Korean locale covers host and remote UI chrome without English leftovers",
     "Remote Settings",
     "Read-only",
     "Biometric unlock required",
+    "MVP",
+    "Portfolio review",
+    "Awaiting local data",
+    "Local data loaded",
+    "Primary Portfolio",
+    "Agent activity",
+    "Workspace status",
   ];
 
   for (const route of koreanRoutes) {
@@ -242,15 +249,11 @@ test("memory, wiki, and remote-control surfaces expose MVP controls", async ({
 
   await page.goto("/wiki/wiki-btc-nvda-concentration?runtime=local");
   await expect(page.getByTestId("wiki-revision-timeline")).toContainText(
-    "Revision:",
+    "not available",
   );
   await expect(
     page.getByRole("button", { name: "Revert revision" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Revert revision" }).click();
-  await expect(page.getByTestId("wiki-command-status")).toContainText(
-    "not available",
-  );
+  ).toBeDisabled();
   await expect(page.getByTestId("source-link-drawer")).toContainText(
     "Source Links",
   );
@@ -491,7 +494,34 @@ test("command-backed remote editors do not fall back to the first entity for bad
   await expect(page.getByLabel("MSFT watchlist note")).toHaveCount(0);
 });
 
-test("wiki detail exposes diff and revision metadata", async ({ page }) => {
+test("wiki detail exposes diff and revision metadata for real wiki state", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.__PLUTUS_COMMAND_BRIDGE__ = (async (envelope) => {
+      if (envelope.command === "app.getSnapshot") {
+        return {
+          profileId: "profile-wiki",
+          portfolios: [],
+          watchlists: [],
+          runs: [],
+          artifacts: [],
+          memoryActivity: [],
+          wikiPages: [
+            {
+              id: "wiki-btc-nvda-concentration",
+              title: "Wiki Page",
+              currentRevisionId: "audit-wiki-btc-nvda-revision",
+              diffBody: "Added concentration lesson and stale quote warning.",
+              sourceRefs: [{ type: "run", id: "run-btc-nvda" }],
+            },
+          ],
+          remoteDevices: [],
+        };
+      }
+      throw new Error(`Unexpected command ${envelope.command}`);
+    }) as NonNullable<Window["__PLUTUS_COMMAND_BRIDGE__"]>;
+  });
   await page.goto("/wiki/wiki-btc-nvda-concentration?runtime=local");
   await expect(page.getByTestId("wiki-diff-view")).toContainText(
     "stale quote warning",
@@ -499,6 +529,52 @@ test("wiki detail exposes diff and revision metadata", async ({ page }) => {
   await expect(page.getByTestId("wiki-revision-timeline")).toContainText(
     "audit",
   );
+});
+
+test("wiki detail uses the routed wiki page when multiple pages exist", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.__PLUTUS_COMMAND_BRIDGE__ = (async (envelope) => {
+      if (envelope.command === "app.getSnapshot") {
+        return {
+          profileId: "profile-wiki",
+          portfolios: [],
+          watchlists: [],
+          runs: [],
+          artifacts: [],
+          memoryActivity: [],
+          wikiPages: [
+            {
+              id: "wiki-first",
+              title: "First Wiki",
+              currentRevisionId: "revision-first",
+              revisionNote: "First page revision note.",
+              sourceRefs: [],
+            },
+            {
+              id: "wiki-target",
+              title: "Target Wiki",
+              currentRevisionId: "revision-target",
+              revisionNote: "Target page revision note.",
+              sourceRefs: [],
+            },
+          ],
+          remoteDevices: [],
+        };
+      }
+      throw new Error(`Unexpected command ${envelope.command}`);
+    }) as NonNullable<Window["__PLUTUS_COMMAND_BRIDGE__"]>;
+  });
+  await page.goto("/wiki/wiki-target");
+
+  await expect(
+    page.getByRole("heading", { name: "Target Wiki", level: 1 }),
+  ).toBeVisible();
+  await expect(page.getByTestId("wiki-diff-view")).toContainText(
+    "Target page revision note.",
+  );
+  await expect(page.getByText("First page revision note.")).toHaveCount(0);
 });
 
 test("browser local runtime queues a research run only after real portfolio state exists", async ({
@@ -515,7 +591,7 @@ test("browser local runtime queues a research run only after real portfolio stat
   await page.goto("/portfolios?runtime=local");
   await page.getByRole("button", { name: "Create Portfolio" }).click();
   await expect(page.getByTestId("portfolio-command-status")).toContainText(
-    "Created Primary Portfolio",
+    "Created Core Portfolio",
   );
   await page.goto("/runs?runtime=local");
   await expect(

@@ -68,6 +68,7 @@ export type PlutusScenario = {
     title: string;
     revision: string;
     sourceRef: string;
+    diffBody?: string;
   };
   remoteDevice: {
     name: string;
@@ -195,6 +196,8 @@ function localizedScenarioText(
   const knownText: Record<string, string> = {
     "No portfolio yet": t("portfolio.empty"),
     Core: t("portfolio.core"),
+    "Core Portfolio": t("portfolio.defaultName"),
+    "Primary Portfolio": t("portfolio.defaultName"),
     "No watchlist yet": t("watchlist.empty"),
     "Default Watchlist": t("watchlist.default"),
     "No instrument selected": t("instrument.empty"),
@@ -214,6 +217,22 @@ function localizedScenarioText(
     "Import Export": t("settings.importExport"),
   };
   return knownText[value] ?? value;
+}
+
+function localizedPortfolioHeading(
+  value: string | undefined,
+  t: ReturnType<typeof useI18n>["t"],
+) {
+  const portfolioName = localizedScenarioText(value, t);
+  const normalizedName = portfolioName.toLocaleLowerCase();
+  if (
+    !portfolioName ||
+    normalizedName.includes("portfolio") ||
+    portfolioName.includes("포트폴리오")
+  ) {
+    return portfolioName;
+  }
+  return t("portfolio.suffix", { name: portfolioName });
 }
 
 function localizedCommandSource(
@@ -432,17 +451,27 @@ export function RiskChart() {
         role="img"
         aria-label={t("chart.exposureLine")}
       >
-        <rect x="0" y="0" width="320" height="120" fill="#f7fafc" />
+        <rect x="0" y="0" width="320" height="120" fill="#0c1219" />
+        <path
+          d="M0 90H320M0 60H320M0 30H320M40 0V120M120 0V120M200 0V120M280 0V120"
+          stroke="#263445"
+          strokeWidth="1"
+        />
+        <path
+          d="M10 90L70 80L130 55L190 70L250 35L310 28L310 120L10 120Z"
+          fill="#56b6c7"
+          fillOpacity="0.12"
+        />
         <polyline
           points="10,90 70,80 130,55 190,70 250,35 310,28"
           fill="none"
-          stroke="#1f7a5f"
+          stroke="#56b6c7"
           strokeWidth="4"
         />
         <polyline
           points="10,100 70,92 130,82 190,75 250,68 310,60"
           fill="none"
-          stroke="#b24724"
+          stroke="#ef6b62"
           strokeWidth="4"
         />
       </svg>
@@ -475,32 +504,80 @@ export function ArtifactList({ scenario }: { scenario: PlutusScenario }) {
 
 export function HostDashboard({ scenario }: { scenario: PlutusScenario }) {
   const { t } = useI18n();
+  const symbols = scenario.portfolio.positions.map(
+    (position) => position.symbol,
+  );
+  const hasRunActivity = Boolean(
+    scenario.run.id ||
+    scenario.run.category ||
+    scenario.run.finalCard ||
+    scenario.run.artifacts.length,
+  );
+  const hasLocalData = Boolean(
+    scenario.portfolio.id ||
+    scenario.watchlist.id ||
+    scenario.run.id ||
+    scenario.run.artifacts.length ||
+    scenario.memory.id ||
+    scenario.memory.summary ||
+    scenario.wiki.id ||
+    (scenario.remoteDevice.name &&
+      scenario.remoteDevice.name !== "No paired device"),
+  );
   return (
     <HostShell>
       <header className="page-header">
         <p className="eyebrow">{t("dashboard.eyebrow")}</p>
         <h1>{t("dashboard.title")}</h1>
         <h2>{t("dashboard.host")}</h2>
+        <div className="pill-row" aria-label={t("aria.workspaceStatus")}>
+          <span className="pill">{t("dashboard.workflow")}</span>
+          <span className="pill">
+            {hasLocalData
+              ? t("dashboard.dataLoaded")
+              : t("dashboard.dataStatus")}
+          </span>
+          <span className="pill">
+            {symbols.length ? symbols.join(" / ") : t("remote.noPositions")}
+          </span>
+        </div>
       </header>
-      <section className="grid two">
-        <PortfolioSummary scenario={scenario} />
-        {scenario.run.category ? (
-          <article className="panel">
-            <h2>{t("dashboard.currentGuardrail")}</h2>
-            <RiskWarning />
-          </article>
-        ) : null}
-        <article className="panel">
-          <h2>{t("dashboard.runProgress")}</h2>
-          <RunStageList />
-        </article>
-        <article className="panel">
+      <section className="dashboard-grid">
+        <div className="dashboard-stack">
+          <PortfolioSummary scenario={scenario} />
+          <WatchlistPanel
+            scenario={scenario}
+            title={localizedScenarioText(scenario.watchlist.name, t)}
+          />
+        </div>
+        <article className="panel dashboard-span">
           <h2>{t("artifact.list")}</h2>
           <p data-testid="artifact-title">
             {localizedScenarioText(scenario.run.artifacts[0]?.name, t) ||
               t("artifact.none")}
           </p>
-          {scenario.run.artifacts.length > 0 ? <RiskChart /> : null}
+          {scenario.run.artifacts.length > 0 ? (
+            <RiskChart />
+          ) : (
+            <div className="empty-canvas" aria-label={t("artifact.none")}>
+              <span />
+              <strong>{t("runs.noRunsYet")}</strong>
+              <p>{t("settings.preview")}</p>
+            </div>
+          )}
+        </article>
+        <div className="dashboard-stack">
+          {scenario.run.category ? (
+            <article className="panel">
+              <h2>{t("dashboard.currentGuardrail")}</h2>
+              <RiskWarning />
+            </article>
+          ) : null}
+          {hasRunActivity ? <AgentActivityPanel scenario={scenario} /> : null}
+        </div>
+        <article className="panel run-panel dashboard-span">
+          <h2>{t("dashboard.runProgress")}</h2>
+          <RunStageList />
         </article>
       </section>
     </HostShell>
@@ -511,7 +588,7 @@ export function PortfolioSummary({ scenario }: { scenario: PlutusScenario }) {
   const { locale, t } = useI18n();
   const portfolioName = localizedScenarioText(scenario.portfolio.name, t);
   const portfolioHeading = scenario.portfolio.id
-    ? t("portfolio.suffix", { name: portfolioName })
+    ? localizedPortfolioHeading(scenario.portfolio.name, t)
     : portfolioName;
   return (
     <article className="panel" data-testid="portfolio-core">
@@ -520,11 +597,67 @@ export function PortfolioSummary({ scenario }: { scenario: PlutusScenario }) {
       <p className="metric">
         {formatCurrency(scenario.portfolio.value, "USD", locale)}
       </p>
-      <div className="position-list">
-        {scenario.portfolio.positions.map((position) => (
-          <div className="row" key={position.symbol}>
-            <span>{position.symbol}</span>
-            <strong>{position.allocation}</strong>
+      <div className="desk-table position-list">
+        <div className="desk-row header">
+          <span>{t("table.symbol")}</span>
+          <span>{t("table.quantity")}</span>
+          <span>{t("table.value")}</span>
+          <span>{t("table.thesis")}</span>
+        </div>
+        {scenario.portfolio.positions.length ? (
+          scenario.portfolio.positions.map((position) => (
+            <div className="desk-row" key={position.symbol}>
+              <strong>{position.symbol}</strong>
+              <strong>{position.allocation}</strong>
+              <span>{formatCurrency(position.value, "USD", locale)}</span>
+              <span>{position.thesis || t("common.notAvailable")}</span>
+            </div>
+          ))
+        ) : (
+          <div className="desk-row empty-row">
+            <strong>{t("portfolio.empty")}</strong>
+            <span>-</span>
+            <span>-</span>
+            <span>{t("runtime.body")}</span>
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function AgentActivityPanel({ scenario }: { scenario: PlutusScenario }) {
+  const { t } = useI18n();
+  const symbolList =
+    scenario.portfolio.positions
+      .map((position) => position.symbol)
+      .join(", ") || t("common.none");
+  const lanes = [
+    [t("agentActivity.market"), t("stage.grounding"), symbolList],
+    [t("agentActivity.quant"), t("stage.executing"), scenario.run.title],
+    [
+      t("agentActivity.risk"),
+      t("stage.validating"),
+      scenario.run.category || t("common.none"),
+    ],
+    [
+      t("agentActivity.report"),
+      t("stage.reporting"),
+      localizedScenarioText(scenario.run.artifacts[0]?.name, t) ||
+        t("artifact.none"),
+    ],
+  ] as const;
+  return (
+    <article className="panel">
+      <h2>{t("agentActivity.title")}</h2>
+      <div className="agent-lanes">
+        {lanes.map(([agent, stage, detail]) => (
+          <div className="agent-lane" key={agent}>
+            <strong>{agent}</strong>
+            <span>
+              {stage} - {detail}
+            </span>
+            <i className="agent-dot" aria-hidden="true" />
           </div>
         ))}
       </div>
@@ -568,16 +701,27 @@ export function PortfoliosPage({
     try {
       const created = await commandClient.portfolios.create({
         profileId: scenario.profileId,
-        name: "Primary Portfolio",
+        name: t("portfolio.defaultName"),
         baseCurrency: "USD",
       });
       if (created.id) {
+        const createdName = localizedScenarioText(
+          created.name ?? t("portfolio.defaultName"),
+          t,
+        );
         setCreatedPortfolio({
           id: created.id,
-          name: created.name ?? "Primary Portfolio",
+          name: createdName,
         });
       }
-      setMessage(t("portfolio.created", { name: created.name ?? "portfolio" }));
+      setMessage(
+        t("portfolio.created", {
+          name: localizedScenarioText(
+            created.name ?? t("portfolio.defaultName"),
+            t,
+          ),
+        }),
+      );
     } catch (error) {
       setMessage(commandErrorMessage(error));
     } finally {
@@ -1191,6 +1335,9 @@ export function WikiPage({
       setCommandStatus(commandErrorMessage(error));
     }
   }
+  const hasWikiPage = Boolean(scenario.wiki.id || scenario.wiki.title);
+  const hasRevision = Boolean(scenario.wiki.revision);
+  const hasSourceRef = Boolean(scenario.wiki.sourceRef);
   return (
     <HostShell>
       <h1>
@@ -1199,26 +1346,38 @@ export function WikiPage({
       <section className="grid two">
         <article className="panel">
           <h2>{t("wiki.feed")}</h2>
-          <p>{t("wiki.feedBody")}</p>
+          <p>{hasWikiPage ? t("wiki.feedBody") : t("wiki.empty")}</p>
         </article>
         <article className="panel" data-testid="wiki-revision-timeline">
           <h2>{t("wiki.revisionTimeline")}</h2>
-          <p>{t("wiki.revision", { revision: scenario.wiki.revision })}</p>
-          <p>audit: audit-wiki-btc-nvda-revision</p>
+          <p>
+            {hasRevision
+              ? t("wiki.revision", { revision: scenario.wiki.revision })
+              : t("common.notAvailable")}
+          </p>
+          {hasRevision ? <p>audit: {scenario.wiki.revision}</p> : null}
           <p data-testid="wiki-command-status">
             {localizedCommandStatus(commandStatus, t)}
           </p>
-          <button className="secondary" onClick={() => void revertRevision()}>
+          <button
+            className="secondary"
+            disabled={!hasRevision}
+            onClick={() => void revertRevision()}
+          >
             {t("wiki.revert")}
           </button>
         </article>
         <article className="panel" data-testid="source-link-drawer">
           <h2>{t("wiki.sourceLinks")}</h2>
-          <p>{scenario.wiki.sourceRef}</p>
+          <p>{hasSourceRef ? scenario.wiki.sourceRef : t("wiki.empty")}</p>
         </article>
         <article className="panel" data-testid="wiki-diff-view">
           <h2>{t("wiki.diff")}</h2>
-          <p>{t("wiki.diffBody")}</p>
+          <p>
+            {hasRevision && scenario.wiki.diffBody
+              ? scenario.wiki.diffBody
+              : t("common.notAvailable")}
+          </p>
         </article>
       </section>
     </HostShell>
@@ -1428,7 +1587,7 @@ export function RemoteDashboardPage({
         <button
           className="primary"
           data-testid="remote-command"
-          aria-label={t("runs.start")}
+          aria-label={t("remote.startAccessible")}
           disabled={disabled || pending}
           onClick={startRemoteReview}
         >

@@ -20,6 +20,13 @@ test("browser runtime starts empty instead of seeded with BTC/NVDA data", async 
     "No portfolio yet",
   );
   await expect(page.getByText("BTC/NVDA")).toHaveCount(0);
+  await expect(page.getByText("Agent Activity")).toHaveCount(0);
+  await expect(page.getByText("NVDA earnings context")).toHaveCount(0);
+  await expect(page.getByText("BTC liquidity sweep")).toHaveCount(0);
+  await expect(page.getByText("MVP")).toHaveCount(0);
+  await expect(page.getByText("Primary Portfolio")).toHaveCount(0);
+  await expect(page.getByText("Awaiting local data")).toBeVisible();
+  await expect(page.getByText("Local data loaded")).toHaveCount(0);
 
   await page.getByRole("link", { name: "Watchlists" }).click();
   await expect(page.getByTestId("watchlist-default")).toContainText(
@@ -31,6 +38,142 @@ test("browser runtime starts empty instead of seeded with BTC/NVDA data", async 
     page.getByRole("button", { name: "Start Research Run" }),
   ).toBeDisabled();
   await expect(page.getByTestId("final-run-card")).toContainText("none");
+});
+
+test("Korean portfolio creation avoids internal milestone and English default labels", async ({
+  page,
+}) => {
+  await page.goto("/portfolios?runtime=local&locale=ko");
+  await page.evaluate(() => localStorage.removeItem("plutus.localRuntime.v1"));
+  await page.reload();
+  await page.getByRole("button", { name: "포트폴리오 만들기" }).click();
+
+  await expect(page.getByTestId("portfolio-command-status")).toContainText(
+    "기본 포트폴리오 생성됨",
+  );
+  await expect(page.getByText("Primary Portfolio")).toHaveCount(0);
+  await expect(page.getByText("MVP")).toHaveCount(0);
+});
+
+test("legacy local preview portfolio names are localized before rendering", async ({
+  page,
+}) => {
+  await page.goto("/dashboard?runtime=local&locale=ko");
+  await page.evaluate(() => {
+    localStorage.setItem(
+      "plutus.localRuntime.v1",
+      JSON.stringify({
+        profileId: "local-browser-profile",
+        portfolios: [
+          {
+            id: "portfolio-legacy",
+            name: "Core Portfolio",
+            baseCurrency: "USD",
+            positions: [],
+          },
+        ],
+        watchlists: [],
+        runs: [],
+        artifacts: [],
+        memoryActivity: [],
+        wikiPages: [],
+        remoteDevices: [],
+      }),
+    );
+  });
+  await page.reload();
+
+  await expect(page.getByTestId("portfolio-core")).toContainText(
+    "기본 포트폴리오",
+  );
+  await expect(page.getByText("Core Portfolio")).toHaveCount(0);
+  await expect(page.getByText("Primary Portfolio")).toHaveCount(0);
+  await expect(page.getByText("기본 포트폴리오 포트폴리오")).toHaveCount(0);
+});
+
+test("Korean portfolio creation status localizes legacy command bridge names", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.__PLUTUS_COMMAND_BRIDGE__ = async (envelope) => {
+      if (envelope.command === "app.getSnapshot") {
+        return {
+          profileId: "profile-ko",
+          portfolios: [],
+          watchlists: [],
+          runs: [],
+          artifacts: [],
+          memoryActivity: [],
+          wikiPages: [],
+          remoteDevices: [],
+        };
+      }
+      if (envelope.command === "portfolios.create") {
+        return {
+          id: "portfolio-created",
+          name: "Primary Portfolio",
+          baseCurrency: "USD",
+          positions: [],
+        };
+      }
+      throw new Error(`Unexpected command ${envelope.command}`);
+    };
+  });
+  await page.goto("/portfolios?locale=ko");
+  await page.getByRole("button", { name: "포트폴리오 만들기" }).click();
+
+  await expect(page.getByTestId("portfolio-command-status")).toContainText(
+    "기본 포트폴리오 생성됨",
+  );
+  await expect(page.getByText("Primary Portfolio")).toHaveCount(0);
+});
+
+test("dashboard data status reflects loaded local state", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__PLUTUS_COMMAND_BRIDGE__ = async (envelope) => {
+      if (envelope.command === "app.getSnapshot") {
+        return {
+          profileId: "profile-real",
+          portfolios: [
+            {
+              id: "portfolio-real",
+              name: "Real Portfolio",
+              baseCurrency: "USD",
+              positions: [],
+            },
+          ],
+          watchlists: [],
+          runs: [],
+          artifacts: [],
+          memoryActivity: [],
+          wikiPages: [],
+          remoteDevices: [],
+        };
+      }
+      throw new Error(`Unexpected command ${envelope.command}`);
+    };
+  });
+
+  await page.goto("/dashboard?locale=ko");
+  await expect(page.getByText("로컬 데이터 로드됨")).toBeVisible();
+  await expect(page.getByText("로컬 데이터 대기 중")).toHaveCount(0);
+});
+
+test("empty local wiki does not imply completed wiki activity", async ({
+  page,
+}) => {
+  await page.goto("/wiki?runtime=local");
+  await expect(
+    page.getByRole("heading", { name: "Wiki Browser" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("No wiki pages captured yet.").first(),
+  ).toBeVisible();
+  await expect(
+    page.getByText("LLM Wiki Curator updated a source-linked risk lesson."),
+  ).toHaveCount(0);
+  await expect(page.getByText("audit-wiki-btc-nvda-revision")).toHaveCount(0);
+  await expect(page.getByText("stale quote warning")).toHaveCount(0);
 });
 
 test("desktop run detail renders empty local state without generated artifacts", async ({

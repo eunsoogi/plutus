@@ -158,6 +158,7 @@ export function scenarioFromSnapshot(
   const watchlistId =
     routeId(path, "/watchlists") ?? routeId(path, "/remote/watchlists");
   const runId = routeId(path, "/runs") ?? routeId(path, "/remote/runs");
+  const wikiId = routeId(path, "/wiki") ?? routeId(path, "/remote/wiki");
   const portfolio = portfolioId
     ? snapshot.portfolios.find((candidate) => candidate.id === portfolioId)
     : snapshot.portfolios[0];
@@ -174,7 +175,9 @@ export function scenarioFromSnapshot(
       (artifact as unknown as Record<string, unknown>).researchRunId === run.id,
   );
   const memory = snapshot.memoryActivity[0];
-  const wiki = snapshot.wikiPages[0];
+  const wiki = wikiId
+    ? snapshot.wikiPages.find((candidate) => candidate.id === wikiId)
+    : snapshot.wikiPages[0];
   const remoteDevice = snapshot.remoteDevices[0];
   const remoteDeviceRecord = remoteDevice as
     | Record<string, unknown>
@@ -283,6 +286,12 @@ export function scenarioFromSnapshot(
         Array.isArray(wiki?.sourceRefs) && wiki.sourceRefs.length > 0
           ? displaySourceRef(wiki.sourceRefs[0])
           : "",
+      diffBody:
+        typeof wiki?.diffBody === "string"
+          ? wiki.diffBody
+          : typeof wiki?.revisionNote === "string"
+            ? wiki.revisionNote
+            : undefined,
     },
     remoteDevice: {
       name:

@@ -1723,10 +1723,11 @@ impl<'a> PlutusCommands<'a> {
 
     fn load_wiki_pages_for_snapshot(&self, profile_id: &str) -> Result<Vec<Value>> {
         let mut stmt = self.db.conn.prepare(
-            "SELECT id, slug, category, title, summary, freshness, confidence, current_revision_id, source_refs, updated_at
-             FROM wiki_pages
-             WHERE profile_id = ?1
-             ORDER BY updated_at DESC
+            "SELECT wp.id, wp.slug, wp.category, wp.title, wp.summary, wp.freshness, wp.confidence, wp.current_revision_id, wp.source_refs, wp.updated_at, wr.revision_note
+             FROM wiki_pages wp
+             LEFT JOIN wiki_revisions wr ON wr.id = wp.current_revision_id
+             WHERE wp.profile_id = ?1
+             ORDER BY wp.updated_at DESC
              LIMIT 50",
         )?;
         let rows = stmt.query_map(params![profile_id], |row| {
@@ -1743,6 +1744,7 @@ impl<'a> PlutusCommands<'a> {
                 "sourceRefs": redact_secret_values(
                     &serde_json::from_str::<Value>(&source_refs).unwrap_or_else(|_| json!([]))
                 ),
+                "revisionNote": row.get::<_, Option<String>>(10)?.map(|note| redact_secrets(&note)),
                 "updatedAt": row.get::<_, String>(9)?,
             }))
         })?;
@@ -2902,6 +2904,15 @@ mod tests {
                 params![current_revision_id, wiki_id, timestamp],
             )
             .unwrap();
+
+        let snapshot = commands.get_app_snapshot(MVP_PROFILE_ID).unwrap();
+        let snapshot_page = snapshot["wikiPages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|page| page["id"].as_str() == Some(wiki_id.as_str()))
+            .unwrap();
+        assert_eq!(snapshot_page["revisionNote"].as_str(), Some("Update"));
 
         let page = commands
             .revert_wiki_revision(&wiki_id, &original_revision_id, "restore vetted text")

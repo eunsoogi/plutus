@@ -41,7 +41,7 @@ describe("ui helpers", () => {
     expect(translate("ko", "remote.saveThesis")).toBe("투자 메모를 Mac에 저장");
     expect(translate("ko", "wiki.revisionTimeline")).toBe("수정 이력");
     expect(translate("ko", "remote.readOnlyMobile")).toBe(
-      "MVP에서는 모바일에서 조회만 가능합니다.",
+      "이 미리보기에서는 모바일 조회만 가능합니다.",
     );
   });
 });

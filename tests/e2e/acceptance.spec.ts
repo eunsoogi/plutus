@@ -18,7 +18,7 @@ test("MVP acceptance scenario queues host run and exposes mobile preview", async
   await page.reload();
   await page.getByRole("button", { name: "Create Portfolio" }).click();
   await expect(page.getByTestId("portfolio-command-status")).toContainText(
-    "Created Primary Portfolio",
+    "Created Core Portfolio",
   );
 
   await page.goto("/runs?runtime=local");
