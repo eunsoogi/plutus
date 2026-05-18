@@ -32,7 +32,16 @@ export class MockCodexRunHost implements CodexRunHost {
       }
     }
 
-    const parsed = finalRunCardSchema.safeParse(this.scenario.finalRunCard);
+    const parsed = finalRunCardSchema.safeParse(
+      this.scenario.finalRunCard &&
+        typeof this.scenario.finalRunCard === "object"
+        ? {
+            ...(this.scenario.finalRunCard as Record<string, unknown>),
+            runId: request.runId,
+            profileId: request.profileId,
+          }
+        : this.scenario.finalRunCard,
+    );
     if (!parsed.success) {
       events.push(
         codexRunEventSchema.parse(

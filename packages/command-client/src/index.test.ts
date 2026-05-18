@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FixtureCommandClient } from "./index";
+import { FixtureCommandClient } from "./fixture-client.test-support";
 
 describe("command client", () => {
   it("exposes typed portfolio, watchlist, run, and artifact commands without secrets", async () => {

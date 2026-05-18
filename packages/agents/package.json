@@ -18,7 +18,9 @@
     "@openai/codex-sdk": "0.130.0",
     "@plutus/domain": "workspace:*",
     "@plutus/local-tools": "workspace:*",
-    "@plutus/test-fixtures": "workspace:*",
     "zod": "^3.25.28"
+  },
+  "devDependencies": {
+    "@plutus/test-fixtures": "workspace:*"
   }
 }

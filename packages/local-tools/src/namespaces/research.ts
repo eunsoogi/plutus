@@ -1,5 +1,5 @@
 import type { NamespaceHandler } from "./common";
-import { warning } from "./common";
+import { allowFixtureTools, warning } from "./common";
 import type {
   LocalToolResponse,
   LocalToolWarning,
@@ -133,6 +133,21 @@ export const handleResearch: NamespaceHandler = ({ call, auditRef }) => {
   const warnings = detectPromptInjection(call.input)
     ? [promptInjectionWarning()]
     : [];
+  if (!allowFixtureTools()) {
+    return researchOk(
+      auditRef,
+      undefined,
+      [],
+      [
+        ...warnings,
+        warning(
+          "research_provider_not_configured",
+          "blocking",
+          "Research providers are not configured for local runtime; deterministic fixtures require PLUTUS_ALLOW_FIXTURE_TOOLS=1.",
+        ),
+      ],
+    );
+  }
 
   switch (call.tool) {
     case "web_search": {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { makeRunContext } from "@plutus/local-tools";
+import { makeRunContext } from "../../local-tools/src/test-support";
 import { LocalMcpAdapter, hasNetworkListener } from "./index";
 
 describe("local MCP adapter", () => {

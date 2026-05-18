@@ -14,6 +14,7 @@ use crate::storage::{AppDataPaths, PlutusDatabase};
 pub fn registered_command_names() -> &'static [&'static str] {
     &[
         "list_portfolios",
+        "get_app_snapshot",
         "create_portfolio",
         "get_portfolio_snapshot",
         "add_portfolio_position",
@@ -26,10 +27,7 @@ pub fn registered_command_names() -> &'static [&'static str] {
         "start_research_run",
         "get_research_run",
         "cancel_research_run",
-        "append_run_event",
-        "persist_final_output",
         "enqueue_local_job",
-        "write_artifact_file",
         "get_artifact",
         "open_local_artifact_file",
         "list_memory_activity",
@@ -41,9 +39,9 @@ pub fn registered_command_names() -> &'static [&'static str] {
         "get_wiki_page",
         "list_wiki_activity",
         "revert_wiki_revision",
-        "pair_remote_device",
         "revoke_remote_device",
         "list_remote_devices",
+        "prepare_remote_unlock",
         "execute_remote_command",
     ]
 }
@@ -53,13 +51,14 @@ pub fn run() {
         .setup(|app| {
             let app_data_dir = app.path().app_data_dir()?;
             let paths = AppDataPaths::create(app_data_dir)?;
-            let mut db = PlutusDatabase::open(&paths.database)?;
-            db.seed_mvp()?;
+            let db = PlutusDatabase::open(&paths.database)?;
+            db.ensure_default_profile()?;
             app.manage(AppState::new(db, paths));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::list_portfolios,
+            commands::get_app_snapshot,
             commands::create_portfolio,
             commands::get_portfolio_snapshot,
             commands::add_portfolio_position,
@@ -72,10 +71,7 @@ pub fn run() {
             commands::start_research_run,
             commands::get_research_run,
             commands::cancel_research_run,
-            commands::append_run_event,
-            commands::persist_final_output,
             commands::enqueue_local_job,
-            commands::write_artifact_file,
             commands::get_artifact,
             commands::open_local_artifact_file,
             commands::list_memory_activity,
@@ -87,9 +83,9 @@ pub fn run() {
             commands::get_wiki_page,
             commands::list_wiki_activity,
             commands::revert_wiki_revision,
-            commands::pair_remote_device,
             commands::revoke_remote_device,
             commands::list_remote_devices,
+            commands::prepare_remote_unlock,
             commands::execute_remote_command,
         ])
         .run(tauri::generate_context!())
@@ -103,16 +99,14 @@ mod tests {
         let commands = crate::registered_command_names();
         for command in [
             "list_portfolios",
+            "get_app_snapshot",
             "create_portfolio",
             "get_portfolio_snapshot",
             "add_portfolio_position",
             "update_portfolio_position",
             "update_position_thesis",
             "start_research_run",
-            "append_run_event",
-            "persist_final_output",
             "enqueue_local_job",
-            "write_artifact_file",
             "get_artifact",
             "open_local_artifact_file",
             "cancel_research_run",
@@ -128,9 +122,9 @@ mod tests {
             "get_wiki_page",
             "list_wiki_activity",
             "revert_wiki_revision",
-            "pair_remote_device",
             "revoke_remote_device",
             "list_remote_devices",
+            "prepare_remote_unlock",
             "execute_remote_command",
         ] {
             assert!(commands.contains(&command), "missing command {command}");

@@ -272,6 +272,15 @@ CREATE TABLE IF NOT EXISTS remote_sessions (
   ended_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS remote_command_nonces (
+  session_id TEXT NOT NULL REFERENCES remote_sessions(id),
+  command_id TEXT NOT NULL,
+  command_type TEXT NOT NULL,
+  payload_hash TEXT NOT NULL,
+  consumed_at TEXT NOT NULL,
+  PRIMARY KEY(session_id, command_id)
+);
+
 CREATE TABLE IF NOT EXISTS audit_events (
   id TEXT PRIMARY KEY,
   profile_id TEXT,

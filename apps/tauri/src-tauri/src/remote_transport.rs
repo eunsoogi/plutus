@@ -141,7 +141,7 @@ fn xor_with_keystream(input: &[u8], key_ref: &str, nonce: &str) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::remote_control::pair_device;
+    use crate::remote_control::{pair_device, test_remote_public_key};
     use crate::storage::{PlutusDatabase, MVP_PROFILE_ID};
 
     #[test]
@@ -153,7 +153,7 @@ mod tests {
             MVP_PROFILE_ID,
             "Eunsoo iPhone",
             "ios",
-            "public-key",
+            &test_remote_public_key(),
             &["run"],
         )
         .unwrap();
@@ -192,7 +192,7 @@ mod tests {
             MVP_PROFILE_ID,
             "Eunsoo iPhone",
             "ios",
-            "public-key",
+            &test_remote_public_key(),
             &["run"],
         )
         .unwrap();

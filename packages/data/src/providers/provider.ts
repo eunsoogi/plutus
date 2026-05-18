@@ -216,9 +216,7 @@ export function createMarketDataService(options: MarketDataServiceOptions) {
   const acceptStale = options.failover?.acceptStale ?? false;
 
   async function getProviderHealth(): Promise<ProviderHealth[]> {
-    return Promise.all(
-      options.providers.map((provider) => provider.getHealth()),
-    );
+    return Promise.all(options.providers.map(readProviderHealth));
   }
 
   async function getQuote(

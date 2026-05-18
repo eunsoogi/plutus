@@ -7,6 +7,7 @@ import {
 } from "../codex-run-host/schemas";
 import { btcNvdaPortfolioReviewScenario } from "../test-harness/btc-nvda-scenario";
 import { MockCodexRunHost } from "../test-harness/mock-codex-sdk";
+import { createFinalRunCard } from "../test-harness/scripted-run-stream";
 
 describe("CodexRunHost test harness", () => {
   it("streams deterministic BTC/NVDA portfolio review stages and validates the final run card", async () => {
@@ -37,7 +38,7 @@ describe("CodexRunHost test harness", () => {
     });
   });
 
-  it("records structured output validation failure without completing the run", async () => {
+  it("injects host-owned ids before validating the final run card", async () => {
     const scenario = btcNvdaPortfolioReviewScenario({
       finalRunCard: { runId: undefined, category: "risk_warning" },
     });
@@ -50,11 +51,11 @@ describe("CodexRunHost test harness", () => {
       allowedRecommendationCategories: ["risk_warning", "no_action"],
     });
 
-    expect(result.status).toBe("failed");
-    expect(result.validationFailures[0]?.path).toContain("runId");
-    expect(result.events.at(-1)).toMatchObject({
-      stage: "failed",
-      type: "validation_failed",
+    expect(result.status).toBe("completed");
+    expect(result.finalRunCard).toMatchObject({
+      runId: "run-invalid",
+      profileId: "profile-core",
+      category: "risk_warning",
     });
   });
 
@@ -119,7 +120,7 @@ describe("CodexSdkRunHost product lifecycle", () => {
     const client = new RecordingProductCodexClient([
       {
         type: "run.status_changed",
-        runId: "run-product",
+        runId: "spoofed-run",
         stage: "planning",
         message: "planning started",
       },
@@ -163,6 +164,8 @@ describe("CodexSdkRunHost product lifecycle", () => {
     ).toEqual({
       command: "pnpm",
       args: [
+        "--dir",
+        expect.any(String),
         "--filter",
         "@plutus/local-mcp-adapter",
         "start",
@@ -171,6 +174,7 @@ describe("CodexSdkRunHost product lifecycle", () => {
         "--stdio",
       ],
       env: {
+        PLUTUS_REPO_ROOT: expect.any(String),
         PLUTUS_RUN_CONTEXT_SECRET: expect.any(String),
         PLUTUS_SIGNED_RUN_CONTEXT: expect.stringMatching(/^[^.]+\.[^.]+$/),
       },
@@ -214,6 +218,10 @@ describe("CodexSdkRunHost product lifecycle", () => {
       "run.status_changed",
       "run.completed",
     ]);
+    expect(streamed.map((event) => event.runId)).toEqual([
+      "run-product",
+      "run-product",
+    ]);
   });
 
   it("builds role-scoped MCP servers for quant runs without exposing portfolio/report-only namespaces", async () => {
@@ -254,7 +262,7 @@ describe("CodexSdkRunHost product lifecycle", () => {
     const client = {
       async *runStreamed() {
         yield {
-          finalRunCard: {
+          finalRunCard: createFinalRunCard({
             runId: "run-veto",
             profileId: "profile-core",
             title: "Rejected candidate",
@@ -263,7 +271,7 @@ describe("CodexSdkRunHost product lifecycle", () => {
             summary: "Risk vetoed.",
             warnings: ["veto"],
             evidenceRefs: ["audit:veto"],
-          },
+          }),
         };
       },
     };

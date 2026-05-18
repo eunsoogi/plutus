@@ -32,6 +32,7 @@ export interface ResearchRunHandle {
 }
 
 export interface StartResearchRunInput {
+  runId?: string;
   profileId: string;
   portfolioId?: string;
   selectedTeam?: string;

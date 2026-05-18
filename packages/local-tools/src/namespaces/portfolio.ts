@@ -5,13 +5,13 @@ import {
   fixtureIds,
   instrumentMap,
   marketData,
-} from "@plutus/test-fixtures";
+} from "../runtime-reference-data";
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { NamespaceHandler } from "./common";
-import { ok, warning } from "./common";
+import { allowFixtureTools, ok, warning } from "./common";
 
 const CURRENT_PRICES: Record<string, number> = {
   AAPL: 212.5,
@@ -63,8 +63,13 @@ export const handlePortfolio: NamespaceHandler = ({
   auditRef,
 }) => {
   const state = portfolioStateFor(context.appDataPath);
-  const portfolios = state?.portfolios ?? activePortfolios;
-  const watchlists = state?.watchlists ?? [defaultWatchlist];
+  const allowFixtureFallback = allowFixtureTools();
+  const portfolios = (
+    state?.portfolios ?? (allowFixtureFallback ? activePortfolios : [])
+  ).filter((candidate) => candidate.profileId === context.profileId);
+  const watchlists = (
+    state?.watchlists ?? (allowFixtureFallback ? [defaultWatchlist] : [])
+  ).filter((candidate) => candidate.profileId === context.profileId);
   const accessWarning = portfolioAccessWarning(
     call.input,
     context.profileId,
@@ -74,10 +79,13 @@ export const handlePortfolio: NamespaceHandler = ({
     return ok(auditRef, "plutus_portfolio", undefined, [accessWarning]);
   }
 
-  const portfolio =
-    portfolioFor(call.input, portfolios) ?? portfolios[0] ?? corePortfolio;
+  const portfolio = portfolioFor(call.input, portfolios);
   runtime.records.set(`portfolio_state_source_${context.runId}`, {
-    source: state ? "tauri_export" : "fixtures",
+    source: state
+      ? "tauri_export"
+      : allowFixtureFallback
+        ? "fixtures"
+        : "missing_app_data",
     appDataPath: context.appDataPath,
   });
 
@@ -89,19 +97,31 @@ export const handlePortfolio: NamespaceHandler = ({
           .map((candidate) => portfolioSummary(candidate)),
       });
     case "get_portfolio_snapshot":
-      return ok(auditRef, "plutus_portfolio", snapshot(portfolio));
+      if (!portfolio) return missingPortfolioState(auditRef);
+      return ok(
+        auditRef,
+        "plutus_portfolio",
+        snapshot(portfolio, allowFixtureFallback),
+      );
     case "compute_allocation":
+      if (!portfolio) return missingPortfolioState(auditRef);
       return ok(auditRef, "plutus_portfolio", {
         portfolioId: portfolio.id,
         asOf: "2026-05-17T00:00:00.000Z",
-        allocation: allocationRows(portfolio, groupByFor(call.input)),
+        allocation: allocationRows(
+          portfolio,
+          groupByFor(call.input),
+          allowFixtureFallback,
+        ),
       });
     case "compute_performance":
+      if (!portfolio) return missingPortfolioState(auditRef);
       return ok(auditRef, "plutus_portfolio", {
         portfolioId: portfolio.id,
-        performance: performance(portfolio, call.input),
+        performance: performance(portfolio, call.input, allowFixtureFallback),
       });
     case "get_position_history":
+      if (!portfolio) return missingPortfolioState(auditRef);
       return ok(auditRef, "plutus_portfolio", {
         portfolioId: portfolio.id,
         events: positionHistory(portfolio, call.input),
@@ -112,7 +132,7 @@ export const handlePortfolio: NamespaceHandler = ({
       });
     case "get_instrument_notes":
       return ok(auditRef, "plutus_portfolio", {
-        notes: instrumentNotes(call.input),
+        notes: instrumentNotes(call.input, portfolios, watchlists),
       });
     default:
       return ok(auditRef, "plutus_portfolio", undefined, [
@@ -125,6 +145,16 @@ export const handlePortfolio: NamespaceHandler = ({
   }
 };
 
+function missingPortfolioState(auditRef: string) {
+  return ok(auditRef, "plutus_portfolio", undefined, [
+    warning(
+      "portfolio_state_unavailable",
+      "blocking",
+      "No exported app portfolio state is available for this run.",
+    ),
+  ]);
+}
+
 function portfolioSummary(portfolio: PortfolioLike) {
   return {
     id: portfolio.id,
@@ -133,51 +163,60 @@ function portfolioSummary(portfolio: PortfolioLike) {
     baseCurrency: portfolio.baseCurrency,
     benchmarkId: portfolio.benchmarkId,
     positionCount: portfolio.positions.length,
-    marketValue: round(totalMarketValue(portfolio)),
+    marketValue: round(totalMarketValue(portfolio, allowFixtureTools())),
   };
 }
 
-function snapshot(portfolio: PortfolioLike) {
+function snapshot(portfolio: PortfolioLike, allowFixtures: boolean) {
   return {
     portfolio: portfolioSummary(portfolio),
     positions: portfolio.positions.map((position) => {
-      const currentPrice =
-        CURRENT_PRICES[position.symbol] ?? position.averageCost;
-      const marketValue = position.quantity * currentPrice;
+      const currentPrice = priceFor(position, allowFixtures);
+      const quantity = numericPositionField(position, "quantity");
+      const averageCost = numericPositionField(position, "averageCost");
+      const marketValue = quantity * currentPrice;
       return {
         ...position,
+        quantity,
+        averageCost,
         currentPrice,
         marketValue: round(marketValue),
-        unrealizedPnl: round(
-          marketValue - position.quantity * position.averageCost,
-        ),
-        quote: marketData.quotes.find(
-          (quote) => quote.instrumentId === position.instrumentId,
-        ),
+        unrealizedPnl: round(marketValue - quantity * averageCost),
+        quote: allowFixtures
+          ? marketData.quotes.find(
+              (quote) => quote.instrumentId === positionInstrumentId(position),
+            )
+          : undefined,
       };
     }),
   };
 }
 
-function allocationRows(portfolio: PortfolioLike, groupBy: AllocationGroupBy) {
-  const total = totalMarketValue(portfolio);
+function allocationRows(
+  portfolio: PortfolioLike,
+  groupBy: AllocationGroupBy,
+  allowFixtures: boolean,
+) {
+  const total = totalMarketValue(portfolio, allowFixtures);
   const rows = portfolio.positions.map((position) => {
-    const marketValue =
-      position.quantity *
-      (CURRENT_PRICES[position.symbol] ?? position.averageCost);
-    const instrument = instrumentBySymbol(position.symbol);
+    const quantity = numericPositionField(position, "quantity");
+    const marketValue = quantity * priceFor(position, allowFixtures);
+    const instrument = instrumentBySymbol(position.symbol, allowFixtures);
+    const tags = positionTags(position);
     return {
       symbol: position.symbol,
-      instrumentId: position.instrumentId,
+      instrumentId: positionInstrumentId(position),
       assetType: instrument?.assetType,
       marketValue: round(marketValue),
       weightPct: round((marketValue / total) * 100),
-      riskBucket: position.riskBucket,
+      riskBucket: positionRiskBucket(position),
       sector: instrument?.sector ?? "Unclassified",
       category: instrument?.category ?? "Unclassified",
-      currency: instrument?.currency ?? position.costCurrency,
-      account: accountName(position.accountId) ?? "Unknown account",
-      tags: position.tags,
+      currency: instrument?.currency ?? positionCostCurrency(position),
+      account:
+        accountName(positionAccountId(position), allowFixtures) ??
+        "Unknown account",
+      tags,
     };
   });
 
@@ -210,7 +249,11 @@ function allocationRows(portfolio: PortfolioLike, groupBy: AllocationGroupBy) {
   }));
 }
 
-function performance(portfolio: PortfolioLike, input: unknown) {
+function performance(
+  portfolio: PortfolioLike,
+  input: unknown,
+  allowFixtures: boolean,
+) {
   const start =
     input && typeof input === "object" && "start" in input
       ? String((input as { start: unknown }).start)
@@ -220,21 +263,30 @@ function performance(portfolio: PortfolioLike, input: unknown) {
       ? String((input as { end: unknown }).end)
       : "2026-05-17";
   const costBasis = portfolio.positions.reduce(
-    (sum, position) => sum + position.quantity * position.averageCost,
+    (sum, position) =>
+      sum +
+      numericPositionField(position, "quantity") *
+        numericPositionField(position, "averageCost"),
     0,
   );
-  const value = totalMarketValue(portfolio);
+  const value = totalMarketValue(portfolio, allowFixtures);
   const benchmarkId =
     input && typeof input === "object" && "benchmarkId" in input
       ? String((input as { benchmarkId: unknown }).benchmarkId)
-      : fixtureIds.SPY;
+      : allowFixtures
+        ? fixtureIds.SPY
+        : portfolio.benchmarkId;
+  const totalReturnPct = costBasis
+    ? round(((value - costBasis) / costBasis) * 100)
+    : 0;
+  const benchmarkReturnPct = allowFixtures ? 7.4 : 0;
   return {
     start,
     end,
-    totalReturnPct: round(((value - costBasis) / costBasis) * 100),
+    totalReturnPct,
     benchmarkId,
-    benchmarkReturnPct: 7.4,
-    excessReturnPct: round(((value - costBasis) / costBasis) * 100 - 7.4),
+    benchmarkReturnPct,
+    excessReturnPct: round(totalReturnPct - benchmarkReturnPct),
     marketValue: round(value),
     costBasis: round(costBasis),
   };
@@ -258,20 +310,24 @@ function positionHistory(portfolio: PortfolioLike, input: unknown) {
     .filter(
       (position) =>
         (!positionId || position.id === positionId) &&
-        (!instrumentId || position.instrumentId === instrumentId) &&
+        (!instrumentId || positionInstrumentId(position) === instrumentId) &&
         (!symbol || position.symbol === symbol),
     )
     .map((position) => ({
       positionId: position.id,
-      instrumentId: position.instrumentId,
+      instrumentId: positionInstrumentId(position),
       symbol: position.symbol,
-      acquiredAt: position.acquiredAt,
-      quantity: position.quantity,
-      averageCost: position.averageCost,
+      acquiredAt: positionAcquiredAt(position),
+      quantity: numericPositionField(position, "quantity"),
+      averageCost: numericPositionField(position, "averageCost"),
     }));
 }
 
-function instrumentNotes(input: unknown) {
+function instrumentNotes(
+  input: unknown,
+  portfolios: PortfolioLike[],
+  watchlists: Array<typeof defaultWatchlist>,
+) {
   const symbol =
     input && typeof input === "object" && "symbol" in input
       ? String((input as { symbol: unknown }).symbol).toUpperCase()
@@ -281,20 +337,22 @@ function instrumentNotes(input: unknown) {
       ? String((input as { instrumentId: unknown }).instrumentId)
       : undefined;
   return [
-    ...corePortfolio.positions
+    ...portfolios
+      .flatMap((portfolio) => portfolio.positions)
       .filter(
         (position) =>
           (!symbol || position.symbol === symbol) &&
-          (!instrumentId || position.instrumentId === instrumentId),
+          (!instrumentId || positionInstrumentId(position) === instrumentId),
       )
       .map((position) => ({
         id: `note_${position.id}`,
         symbol: position.symbol,
-        instrumentId: position.instrumentId,
-        text: position.thesis,
+        instrumentId: positionInstrumentId(position),
+        text: positionThesis(position),
         source: "position_thesis",
       })),
-    ...defaultWatchlist.items
+    ...watchlists
+      .flatMap((watchlist) => watchlist.items)
       .filter(
         (item) =>
           (!symbol || item.symbol === symbol) &&
@@ -310,21 +368,74 @@ function instrumentNotes(input: unknown) {
   ];
 }
 
-function totalMarketValue(portfolio: PortfolioLike) {
+function totalMarketValue(portfolio: PortfolioLike, allowFixtures: boolean) {
   return portfolio.positions.reduce(
     (sum, position) =>
       sum +
-      position.quantity *
-        (CURRENT_PRICES[position.symbol] ?? position.averageCost),
+      numericPositionField(position, "quantity") *
+        priceFor(position, allowFixtures),
     0,
   );
 }
 
-function instrumentBySymbol(symbol: string) {
+function priceFor(
+  position: PortfolioLike["positions"][number],
+  allowFixtures: boolean,
+) {
+  return allowFixtures
+    ? (CURRENT_PRICES[position.symbol] ?? position.averageCost)
+    : numericPositionField(position, "averageCost");
+}
+
+function numericPositionField(
+  position: PortfolioLike["positions"][number],
+  field: "quantity" | "averageCost",
+) {
+  const value = position[field];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function positionTags(position: PortfolioLike["positions"][number]) {
+  return Array.isArray(position.tags) ? position.tags.map(String) : [];
+}
+
+function positionInstrumentId(position: PortfolioLike["positions"][number]) {
+  return typeof position.instrumentId === "string" ? position.instrumentId : "";
+}
+
+function positionAccountId(position: PortfolioLike["positions"][number]) {
+  return typeof position.accountId === "string" ? position.accountId : "";
+}
+
+function positionCostCurrency(position: PortfolioLike["positions"][number]) {
+  return typeof position.costCurrency === "string"
+    ? position.costCurrency
+    : "USD";
+}
+
+function positionRiskBucket(position: PortfolioLike["positions"][number]) {
+  return typeof position.riskBucket === "string"
+    ? position.riskBucket
+    : "Unclassified";
+}
+
+function positionAcquiredAt(position: PortfolioLike["positions"][number]) {
+  return typeof position.acquiredAt === "string"
+    ? position.acquiredAt
+    : undefined;
+}
+
+function positionThesis(position: PortfolioLike["positions"][number]) {
+  return typeof position.thesis === "string" ? position.thesis : "";
+}
+
+function instrumentBySymbol(symbol: string, allowFixtures: boolean) {
+  if (!allowFixtures) return undefined;
   return instrumentMap[symbol as keyof typeof instrumentMap];
 }
 
-function accountName(accountId: string) {
+function accountName(accountId: string, allowFixtures: boolean) {
+  if (!allowFixtures) return undefined;
   return Object.values(accounts).find((account) => account.id === accountId)
     ?.name;
 }
@@ -356,7 +467,7 @@ function portfolioFor(
       : undefined;
   return portfolioId
     ? portfolios.find((portfolio) => portfolio.id === portfolioId)
-    : (portfolios[0] ?? corePortfolio);
+    : portfolios[0];
 }
 
 function portfolioAccessWarning(
@@ -416,7 +527,7 @@ function portfolioStateFor(appDataPath: string | undefined):
       portfolios: parsed.portfolios as PortfolioLike[],
       watchlists: Array.isArray(parsed.watchlists)
         ? (parsed.watchlists as Array<typeof defaultWatchlist>)
-        : [defaultWatchlist],
+        : [],
     };
   } catch {
     return undefined;

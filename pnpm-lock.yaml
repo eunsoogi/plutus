@@ -87,6 +87,9 @@ importers:
       "@plutus/ui":
         specifier: workspace:*
         version: link:../../packages/ui
+      "@tauri-apps/api":
+        specifier: ^2.11.0
+        version: 2.11.0
       "@vitejs/plugin-basic-ssl":
         specifier: ^2.0.0
         version: 2.3.0(vite@6.4.2(@types/node@22.19.19)(tsx@4.22.1))
@@ -127,12 +130,13 @@ importers:
       "@plutus/local-tools":
         specifier: workspace:*
         version: link:../local-tools
-      "@plutus/test-fixtures":
-        specifier: workspace:*
-        version: link:../test-fixtures
       zod:
         specifier: ^3.25.28
         version: 3.25.76
+    devDependencies:
+      "@plutus/test-fixtures":
+        specifier: workspace:*
+        version: link:../test-fixtures
 
   packages/backtest:
     dependencies:
@@ -215,15 +219,16 @@ importers:
       "@plutus/memory":
         specifier: workspace:*
         version: link:../memory
-      "@plutus/test-fixtures":
-        specifier: workspace:*
-        version: link:../test-fixtures
       "@plutus/wiki":
         specifier: workspace:*
         version: link:../wiki
       zod:
         specifier: ^3.25.28
         version: 3.25.76
+    devDependencies:
+      "@plutus/test-fixtures":
+        specifier: workspace:*
+        version: link:../test-fixtures
 
   packages/memory:
     dependencies:
@@ -1227,6 +1232,12 @@ packages:
       }
     cpu: [x64]
     os: [win32]
+
+  "@tauri-apps/api@2.11.0":
+    resolution:
+      {
+        integrity: sha512-7CinYODhky9lmO23xHnUFv0Xt43fbtWMyxZcLcRBlFkcgXKuEirBvHpmtJ89YMhyeGcq20Wuc47Fa4XjyniywA==,
+      }
 
   "@turbo/darwin-64@2.9.14":
     resolution:
@@ -2352,6 +2363,8 @@ snapshots:
 
   "@rollup/rollup-win32-x64-msvc@4.60.4":
     optional: true
+
+  "@tauri-apps/api@2.11.0": {}
 
   "@turbo/darwin-64@2.9.14":
     optional: true

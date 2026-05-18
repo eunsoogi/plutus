@@ -13,5 +13,8 @@ export default defineConfig({
   test: {
     include: ["src/**/*.test.ts"],
     globals: true,
+    env: {
+      PLUTUS_ALLOW_FIXTURE_TOOLS: "1",
+    },
   },
 });

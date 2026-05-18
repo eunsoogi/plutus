@@ -1,11 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { fixtureIds } from "@plutus/test-fixtures";
-import {
-  MockCodexRunHost,
-  RunPlanSchema,
-  assertAllowedFinalCategory,
-} from "./index";
+import { RunPlanSchema, assertAllowedFinalCategory } from "./index";
+import { MockCodexRunHost } from "./test-harness/local-mock-host";
 
 describe("CodexRunHost mock harness", () => {
   it("streams BTC/NVDA run stages, validates structured output, and records local tools", async () => {

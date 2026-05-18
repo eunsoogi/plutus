@@ -1,5 +1,5 @@
 import { CodexSdkRunHost } from "./codex-run-host/codex-sdk-run-host";
-import { finalRunCardSchema } from "./codex-run-host/schemas";
+import { modelFinalRunCardSchema } from "./codex-run-host/schemas";
 
 const host = new CodexSdkRunHost({
   env: process.env,
@@ -7,6 +7,7 @@ const host = new CodexSdkRunHost({
 });
 
 const handle = await host.startResearchRun({
+  runId: process.env.PLUTUS_RUN_ID || undefined,
   profileId: required("PLUTUS_PROFILE_ID"),
   portfolioId: process.env.PLUTUS_PORTFOLIO_ID || undefined,
   selectedTeam: process.env.PLUTUS_SELECTED_TEAM || undefined,
@@ -14,10 +15,11 @@ const handle = await host.startResearchRun({
   appDataPath: process.env.PLUTUS_APP_DATA_PATH || undefined,
 });
 
-const events = [];
+process.stdout.write(`${JSON.stringify({ type: "started", ...handle })}\n`);
+
 let finalOutput: unknown;
 for await (const event of host.streamResearchRun(handle)) {
-  events.push(event);
+  process.stdout.write(`${JSON.stringify({ type: "event", event })}\n`);
   if (
     event &&
     typeof event === "object" &&
@@ -29,11 +31,13 @@ for await (const event of host.streamResearchRun(handle)) {
 }
 finalOutput ??= await host.requestStructuredTurn(handle, {
   prompt:
-    "Return the final Plutus run card as strict JSON with category, risk validation, summary, warnings, evidence refs, assumptions, dissenting views, artifact refs, and approval requirement.",
-  schema: finalRunCardSchema,
+    "Return the final Plutus run card as strict JSON with title, userRequest, selectedTeam, category, riskValidation, summary, confidence, warnings, evidenceRefs, supportingEvidence, freshness, caveats, assumptions, dissentingViews, riskChecklist, artifacts, artifactRefs, limitations, nextActions, and approvalRequired.",
+  schema: modelFinalRunCardSchema,
 });
 
-process.stdout.write(`${JSON.stringify({ ...handle, events, finalOutput })}\n`);
+process.stdout.write(
+  `${JSON.stringify({ type: "finalOutput", finalOutput })}\n`,
+);
 
 function required(name: string): string {
   const value = process.env[name];

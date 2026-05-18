@@ -209,6 +209,105 @@ impl PlutusDatabase {
         Ok(())
     }
 
+    pub fn ensure_default_profile(&self) -> Result<()> {
+        let timestamp = now();
+        self.conn.execute(
+            "INSERT OR IGNORE INTO local_profiles(id, display_name, created_at, updated_at) VALUES (?1, 'Default Profile', ?2, ?2)",
+            params![MVP_PROFILE_ID, timestamp],
+        )?;
+        self.conn.execute(
+            "INSERT OR IGNORE INTO accounts(id, profile_id, name, account_type, base_currency, created_at, updated_at) VALUES (?1, ?2, 'Manual Brokerage', 'manual', 'USD', ?3, ?3)",
+            params![MVP_MANUAL_ACCOUNT_ID, MVP_PROFILE_ID, timestamp],
+        )?;
+        self.ensure_instrument_catalog(&timestamp)?;
+        Ok(())
+    }
+
+    fn ensure_instrument_catalog(&self, timestamp: &str) -> Result<()> {
+        let instruments = [
+            (
+                MVP_NVDA_ID,
+                "stock",
+                "NVDA",
+                "NVIDIA Corporation",
+                "USD",
+                "NASDAQ",
+                json!({"yahoo-compatible": "NVDA"}),
+            ),
+            (
+                MVP_BTC_ID,
+                "crypto",
+                "BTC-USD",
+                "Bitcoin",
+                "USD",
+                "CRYPTO",
+                json!({"coingecko": "bitcoin"}),
+            ),
+            (
+                "018f3f5d-0000-7000-8000-000000000101",
+                "stock",
+                "AAPL",
+                "Apple Inc.",
+                "USD",
+                "NASDAQ",
+                json!({"yahoo-compatible": "AAPL"}),
+            ),
+            (
+                "018f3f5d-0000-7000-8000-000000000104",
+                "crypto",
+                "ETH-USD",
+                "Ethereum",
+                "USD",
+                "CRYPTO",
+                json!({"coingecko": "ethereum"}),
+            ),
+            (
+                "018f3f5d-0000-7000-8000-000000000105",
+                "stablecoin",
+                "USDC-USD",
+                "USD Coin",
+                "USD",
+                "CRYPTO",
+                json!({"coingecko": "usd-coin"}),
+            ),
+            (
+                "018f3f5d-0000-7000-8000-000000000106",
+                "cash",
+                "USD",
+                "US Dollar Cash",
+                "USD",
+                "CASH",
+                json!({"local_catalog": "USD"}),
+            ),
+            (
+                "018f3f5d-0000-7000-8000-000000000107",
+                "etf",
+                "SPY",
+                "SPDR S&P 500 ETF",
+                "USD",
+                "NYSEARCA",
+                json!({"yahoo-compatible": "SPY"}),
+            ),
+            (
+                "018f3f5d-0000-7000-8000-000000000108",
+                "etf",
+                "QQQ",
+                "Invesco QQQ Trust",
+                "USD",
+                "NASDAQ",
+                json!({"yahoo-compatible": "QQQ"}),
+            ),
+        ];
+        for (id, asset_type, symbol, name, currency, exchange, provider_refs) in instruments {
+            self.conn.execute(
+                "INSERT OR IGNORE INTO instruments(id, asset_type, canonical_symbol, display_symbol, name, currency, exchange, provider_refs, status, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?3, ?4, ?5, ?6, ?7, 'active', ?8, ?8)",
+                params![id, asset_type, symbol, name, currency, exchange, provider_refs.to_string(), timestamp],
+            )?;
+        }
+        Ok(())
+    }
+
     pub fn seed_mvp(&mut self) -> Result<()> {
         let tx = self.conn.transaction()?;
         let now = now();
@@ -575,6 +674,38 @@ mod tests {
         db.seed_mvp().unwrap();
         let portfolios = db.list_portfolios(MVP_PROFILE_ID).unwrap();
         assert_eq!(portfolios[0].name, "Core Portfolio");
+    }
+
+    #[test]
+    fn default_profile_bootstrap_adds_reference_data_without_demo_rows() {
+        let db = PlutusDatabase::in_memory().unwrap();
+        db.ensure_default_profile().unwrap();
+
+        let account_count: i64 = db
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM accounts WHERE id = ?1",
+                params![MVP_MANUAL_ACCOUNT_ID],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let instrument_count: i64 = db
+            .conn
+            .query_row("SELECT COUNT(*) FROM instruments", [], |row| row.get(0))
+            .unwrap();
+        let portfolio_count: i64 = db
+            .conn
+            .query_row("SELECT COUNT(*) FROM portfolios", [], |row| row.get(0))
+            .unwrap();
+        let watchlist_count: i64 = db
+            .conn
+            .query_row("SELECT COUNT(*) FROM watchlists", [], |row| row.get(0))
+            .unwrap();
+
+        assert_eq!(account_count, 1);
+        assert!(instrument_count >= 8);
+        assert_eq!(portfolio_count, 0);
+        assert_eq!(watchlist_count, 0);
     }
 
     #[test]

@@ -2,10 +2,10 @@ import {
   corePortfolio,
   fixtureIds,
   instrumentMap,
-} from "@plutus/test-fixtures";
+} from "../runtime-reference-data";
 
 import type { NamespaceHandler } from "./common";
-import { ok, warning, writeDurableJson } from "./common";
+import { allowFixtureTools, ok, warning, writeDurableJson } from "./common";
 import type {
   LocalToolResponse,
   LocalToolWarning,
@@ -125,6 +125,21 @@ export const handleRisk: NamespaceHandler = ({
         "Risk veto was durably recorded.",
       ),
     ]);
+  }
+
+  if (!allowFixtureTools()) {
+    return riskOk(
+      auditRef,
+      undefined,
+      [],
+      [
+        warning(
+          "risk_provider_not_configured",
+          "blocking",
+          "Risk analytics providers are not configured for local runtime; deterministic fixtures require PLUTUS_ALLOW_FIXTURE_TOOLS=1.",
+        ),
+      ],
+    );
   }
 
   switch (call.tool) {

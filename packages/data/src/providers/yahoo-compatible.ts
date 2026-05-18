@@ -102,15 +102,23 @@ export function createYahooCompatibleProvider(
     id: provider,
     label: "Yahoo-compatible free market data",
     supportedAssetTypes: ["stock", "etf"],
-    supportedData: ["quote", "ohlcv"],
+    supportedData: options.useNetwork ? ["quote"] : ["quote", "ohlcv"],
     async getHealth() {
       return {
         provider,
-        status: "available",
+        status: options.useNetwork ? "degraded" : "available",
         latencyMs: null,
         quotaRemaining: null,
         checkedAt: receivedAt,
-        warnings: [],
+        warnings: options.useNetwork
+          ? [
+              makeProviderWarning(
+                "provider_health_not_verified",
+                "info",
+                "Yahoo-compatible free provider health is verified by quote requests.",
+              ),
+            ]
+          : [],
       };
     },
     async getQuote(request): Promise<QuoteSnapshot> {
@@ -144,6 +152,11 @@ export function createYahooCompatibleProvider(
       });
     },
     async getOhlcv(request) {
+      if (options.useNetwork) {
+        throw new Error(
+          "Yahoo-compatible network OHLCV is not implemented; configure a real chart provider before requesting candles.",
+        );
+      }
       return normalizeCandles({
         instrumentId: request.instrumentId,
         provider,

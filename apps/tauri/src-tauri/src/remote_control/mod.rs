@@ -1,4 +1,5 @@
 use anyhow::{bail, Context, Result};
+use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use rand::RngCore;
 use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
@@ -7,7 +8,8 @@ use serde_json::json;
 use crate::audit::record_audit_event;
 use crate::commands::{PlutusCommands, StartResearchRunInput};
 use crate::secure_store::remote_session_key_ref;
-use crate::storage::{new_id, now, sha256_hex, PlutusDatabase};
+use crate::security::redact_secret_values;
+use crate::storage::{new_id, now, sha256_hex, AppDataPaths, PlutusDatabase};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PairingCode {
@@ -57,7 +59,7 @@ pub struct RemoteSessionSecurity {
 pub struct RemoteUnlockProof {
     pub method: String,
     pub session_key_ref: String,
-    pub challenge: String,
+    pub challenge: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -144,6 +146,9 @@ pub fn pair_device_with_transport(
     if address_metadata.port == 0 {
         bail!("remote host port is invalid");
     }
+    if !valid_ed25519_public_key(device_public_key_hex(public_key)?) {
+        bail!("remote device public key is invalid");
+    }
     let device_id = new_id();
     let session_id = new_id();
     let key_ref = remote_session_key_ref(&session_id);
@@ -193,6 +198,22 @@ pub fn pair_device_with_transport(
         address_metadata,
         session_security,
     })
+}
+
+fn device_public_key_hex(public_key: &str) -> Result<&str> {
+    public_key
+        .strip_prefix("ed25519:")
+        .context("remote device public key must use ed25519")
+}
+
+fn valid_ed25519_public_key(public_key_hex: &str) -> bool {
+    let Ok(bytes) = hex::decode(public_key_hex) else {
+        return false;
+    };
+    let Ok(array) = <[u8; 32]>::try_from(bytes.as_slice()) else {
+        return false;
+    };
+    VerifyingKey::from_bytes(&array).is_ok()
 }
 
 pub fn set_host_kill_switch(
@@ -246,11 +267,51 @@ fn host_kill_switch(db: &PlutusDatabase) -> Result<(bool, String)> {
     ))
 }
 
-pub fn unlock_challenge(session_id: &str, command_id: &str) -> String {
+fn unlock_message(
+    session_id: &str,
+    command_id: &str,
+    session_key_ref: &str,
+    command_type: &str,
+    payload: &serde_json::Value,
+) -> String {
+    let payload_hash = sha256_hex(payload.to_string().as_bytes());
     format!(
-        "sha256:{}",
-        sha256_hex(format!("{session_id}:{command_id}").as_bytes())
+        "plutus.remote_unlock.v1:{session_id}:{command_id}:{session_key_ref}:{command_type}:{payload_hash}"
     )
+}
+
+fn ensure_remote_command_nonce_table(db: &PlutusDatabase) -> Result<()> {
+    db.conn.execute(
+        "CREATE TABLE IF NOT EXISTS remote_command_nonces(
+            session_id TEXT NOT NULL,
+            command_id TEXT NOT NULL,
+            command_type TEXT NOT NULL,
+            payload_hash TEXT NOT NULL,
+            consumed_at TEXT NOT NULL,
+            PRIMARY KEY(session_id, command_id)
+        )",
+        [],
+    )?;
+    Ok(())
+}
+
+fn consume_remote_command_nonce(db: &PlutusDatabase, request: &RemoteCommandRequest) -> Result<()> {
+    ensure_remote_command_nonce_table(db)?;
+    let inserted = db.conn.execute(
+        "INSERT OR IGNORE INTO remote_command_nonces(session_id, command_id, command_type, payload_hash, consumed_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![
+            &request.session_id,
+            &request.command_id,
+            &request.command_type,
+            sha256_hex(request.payload.to_string().as_bytes()),
+            now()
+        ],
+    )?;
+    if inserted == 0 {
+        bail!("remote command nonce has already been consumed");
+    }
+    Ok(())
 }
 
 pub fn revoke_device(db: &PlutusDatabase, device_id: &str) -> Result<()> {
@@ -268,8 +329,10 @@ pub fn revoke_device(db: &PlutusDatabase, device_id: &str) -> Result<()> {
 
 pub fn list_devices(db: &PlutusDatabase, profile_id: &str) -> Result<Vec<RemoteDevice>> {
     let mut stmt = db.conn.prepare(
-        "SELECT id, profile_id, device_name, device_platform, public_key, permissions, revoked_at
-         FROM remote_devices WHERE profile_id = ?1 ORDER BY paired_at DESC",
+        "SELECT d.id, d.profile_id, d.device_name, d.device_platform, d.public_key, d.permissions, d.revoked_at
+         FROM remote_devices d
+         WHERE d.profile_id = ?1
+         ORDER BY d.paired_at DESC",
     )?;
     let rows = stmt.query_map(params![profile_id], |row| {
         let permissions: String = row.get(5)?;
@@ -343,22 +406,6 @@ fn assert_artifact_belongs_to_profile(
     Ok(())
 }
 
-fn assert_wiki_page_belongs_to_profile(
-    db: &PlutusDatabase,
-    page_id: &str,
-    profile_id: &str,
-) -> Result<()> {
-    let matched: i64 = db.conn.query_row(
-        "SELECT COUNT(*) FROM wiki_pages WHERE id = ?1 AND profile_id = ?2",
-        params![page_id, profile_id],
-        |row| row.get(0),
-    )?;
-    if matched == 0 {
-        bail!("remote command cannot access wiki page outside paired profile");
-    }
-    Ok(())
-}
-
 pub fn authorize_remote_command(
     db: &PlutusDatabase,
     request: &RemoteCommandRequest,
@@ -411,10 +458,13 @@ pub fn authorize_remote_command(
     }
     if command_requires_unlock(&request.command_type)
         && !valid_unlock_proof(
+            db,
             request.unlock.as_ref(),
             &request.session_id,
             &request.command_id,
             &session_key_ref,
+            &request.command_type,
+            &request.payload,
         )
     {
         warnings.push("unlock_required".to_string());
@@ -441,6 +491,7 @@ pub fn authorize_remote_command(
 
 pub fn execute_authorized_remote_command(
     db: &PlutusDatabase,
+    paths: Option<&AppDataPaths>,
     request: &RemoteCommandRequest,
 ) -> Result<RemoteCommandExecutionResponse> {
     let authorization = authorize_remote_command(db, request)?;
@@ -451,6 +502,7 @@ pub fn execute_authorized_remote_command(
             host_timestamp: now(),
         });
     }
+    consume_remote_command_nonce(db, request)?;
     let paired_profile_id = remote_session_profile_id(db, &request.session_id)?;
     let data = match request.command_type.as_str() {
         "portfolios.list" | "portfolio.list" => {
@@ -534,7 +586,10 @@ pub fn execute_authorized_remote_command(
                 .get("selectedTeam")
                 .and_then(|value| value.as_str())
                 .map(str::to_string);
-            let run = PlutusCommands::new(db).start_research_run(StartResearchRunInput {
+            let commands = paths
+                .map(|paths| PlutusCommands::new_with_paths(db, paths))
+                .unwrap_or_else(|| PlutusCommands::new(db));
+            let run = commands.start_research_run(StartResearchRunInput {
                 profile_id: paired_profile_id.clone(),
                 portfolio_id: portfolio_id.map(str::to_string),
                 user_request: user_request.to_string(),
@@ -556,12 +611,16 @@ pub fn execute_authorized_remote_command(
                 .get("artifactId")
                 .and_then(|value| value.as_str())
                 .context("artifactId is required")?;
+            let run_id = request
+                .payload
+                .get("runId")
+                .and_then(|value| value.as_str());
             db.conn.query_row(
                 "SELECT a.id, a.research_run_id, a.artifact_type, a.title, a.storage_key, a.content_hash, a.mime_type
                  FROM agent_artifacts a
                  JOIN research_runs r ON r.id = a.research_run_id
-                 WHERE a.id = ?1 AND r.profile_id = ?2",
-                params![artifact_id, paired_profile_id],
+                 WHERE a.id = ?1 AND r.profile_id = ?2 AND (?3 IS NULL OR a.research_run_id = ?3)",
+                params![artifact_id, paired_profile_id, run_id],
                 |row| {
                     Ok(json!({
                         "id": row.get::<_, String>(0)?,
@@ -582,6 +641,20 @@ pub fn execute_authorized_remote_command(
                 .and_then(|value| value.as_str())
                 .context("artifactId is required")?;
             assert_artifact_belongs_to_profile(db, artifact_id, &paired_profile_id)?;
+            if let Some(run_id) = request
+                .payload
+                .get("runId")
+                .and_then(|value| value.as_str())
+            {
+                let artifact_run_id: String = db.conn.query_row(
+                    "SELECT research_run_id FROM agent_artifacts WHERE id = ?1",
+                    params![artifact_id],
+                    |row| row.get(0),
+                )?;
+                if artifact_run_id != run_id {
+                    bail!("artifact outside requested run");
+                }
+            }
             json!({"artifactId": artifact_id, "opened": true})
         }
         "position.updateThesis"
@@ -597,11 +670,14 @@ pub fn execute_authorized_remote_command(
                 .get("thesis")
                 .and_then(|value| value.as_str())
                 .context("thesis is required")?;
-            db.conn.execute(
+            let affected = db.conn.execute(
                 "UPDATE positions SET thesis = ?1, updated_at = ?2
                  WHERE id = ?3 AND portfolio_id IN (SELECT id FROM portfolios WHERE profile_id = ?4)",
                 params![thesis, now(), position_id, paired_profile_id],
             )?;
+            if affected == 0 {
+                bail!("position not found for paired profile");
+            }
             json!({"positionId": position_id, "thesis": thesis})
         }
         "watchlist.updateItem" | "watchlist.update_item" | "watchlists.updateItem" => {
@@ -610,16 +686,18 @@ pub fn execute_authorized_remote_command(
                 .get("itemId")
                 .and_then(|value| value.as_str())
                 .context("itemId is required")?;
-            if let Some(note) = request
+            let note = request
                 .payload
                 .get("triggerNote")
                 .and_then(|value| value.as_str())
-            {
-                db.conn.execute(
-                    "UPDATE watchlist_items SET trigger_note = ?1, updated_at = ?2
-                     WHERE id = ?3 AND watchlist_id IN (SELECT id FROM watchlists WHERE profile_id = ?4)",
-                    params![note, now(), item_id, paired_profile_id],
-                )?;
+                .context("triggerNote is required")?;
+            let affected = db.conn.execute(
+                "UPDATE watchlist_items SET trigger_note = ?1, updated_at = ?2
+                 WHERE id = ?3 AND watchlist_id IN (SELECT id FROM watchlists WHERE profile_id = ?4)",
+                params![note, now(), item_id, paired_profile_id],
+            )?;
+            if affected == 0 {
+                bail!("watchlist item not found for paired profile");
             }
             json!({"itemId": item_id, "updated": true})
         }
@@ -632,62 +710,26 @@ pub fn execute_authorized_remote_command(
                  ORDER BY ma.created_at DESC LIMIT 50",
             )?;
             let rows = stmt.query_map(params![paired_profile_id], |row| {
+                let payload = row.get::<_, String>(4)?;
+                let payload = serde_json::from_str::<serde_json::Value>(&payload)
+                    .map(|value| redact_secret_values(&value))
+                    .unwrap_or_else(|_| redact_secret_values(&json!(payload)));
                 Ok(json!({
                     "id": row.get::<_, String>(0)?,
                     "memoryId": row.get::<_, Option<String>>(1)?,
                     "eventType": row.get::<_, String>(2)?,
                     "actor": row.get::<_, String>(3)?,
-                    "payload": row.get::<_, String>(4)?,
+                    "payload": payload,
                     "createdAt": row.get::<_, String>(5)?,
                 }))
             })?;
             json!(rows.collect::<rusqlite::Result<Vec<_>>>()?)
         }
-        "memory.update" => {
-            let memory_id = request
-                .payload
-                .get("memoryId")
-                .and_then(|value| value.as_str())
-                .context("memoryId is required")?;
-            let patch = request
-                .payload
-                .get("patch")
-                .cloned()
-                .unwrap_or_else(|| json!({}));
-            if let Some(summary) = patch.get("summary").and_then(|value| value.as_str()) {
-                db.conn.execute(
-                    "UPDATE memory_records SET summary = ?1, updated_at = ?2 WHERE id = ?3 AND profile_id = ?4",
-                    params![summary, now(), memory_id, paired_profile_id],
-                )?;
-            }
-            json!({"memoryId": memory_id, "updated": true})
-        }
-        "memory.archive" => {
-            let memory_id = request
-                .payload
-                .get("memoryId")
-                .and_then(|value| value.as_str())
-                .context("memoryId is required")?;
-            db.conn.execute(
-                "UPDATE memory_records SET retention_class = 'archived', status = 'archived', updated_at = ?1 WHERE id = ?2 AND profile_id = ?3",
-                params![now(), memory_id, paired_profile_id],
-            )?;
-            json!({"memoryId": memory_id, "archived": true})
-        }
-        "memory.forget" => {
-            let memory_id = request
-                .payload
-                .get("memoryId")
-                .and_then(|value| value.as_str())
-                .context("memoryId is required")?;
-            db.conn.execute(
-                "UPDATE memory_records SET status = 'deleted', deleted_at = ?1, updated_at = ?1 WHERE id = ?2 AND profile_id = ?3",
-                params![now(), memory_id, paired_profile_id],
-            )?;
-            json!({"memoryId": memory_id, "deleted": true})
-        }
-        "memory.setCategoryEnabled" => {
-            json!({"updated": true})
+        "memory.update" | "memory.archive" | "memory.forget" | "memory.setCategoryEnabled" => {
+            bail!(
+                "unsupported remote command {}; memory mutations are Mac-host only",
+                request.command_type
+            )
         }
         "wiki.listPages" | "wiki.list" => {
             let mut stmt = db.conn.prepare(
@@ -744,25 +786,10 @@ pub fn execute_authorized_remote_command(
             })?;
             json!(rows.collect::<rusqlite::Result<Vec<_>>>()?)
         }
-        "wiki.revertRevision" => {
-            let page_id = request
-                .payload
-                .get("pageId")
-                .and_then(|value| value.as_str())
-                .context("pageId is required")?;
-            let revision_id = request
-                .payload
-                .get("revisionId")
-                .and_then(|value| value.as_str())
-                .context("revisionId is required")?;
-            let reason = request
-                .payload
-                .get("reason")
-                .and_then(|value| value.as_str())
-                .unwrap_or("Remote revert request.");
-            assert_wiki_page_belongs_to_profile(db, page_id, &paired_profile_id)?;
-            PlutusCommands::new(db).revert_wiki_revision(page_id, revision_id, reason)?
-        }
+        "wiki.revertRevision" => bail!(
+            "unsupported remote command {}; wiki mutations are Mac-host only",
+            request.command_type
+        ),
         command => bail!("unsupported remote command {command}"),
     };
     record_audit_event(
@@ -786,19 +813,107 @@ pub fn command_group(command_type: &str) -> &str {
 }
 
 fn valid_unlock_proof(
+    db: &PlutusDatabase,
     proof: Option<&RemoteUnlockProof>,
     session_id: &str,
     command_id: &str,
     session_key_ref: &str,
+    command_type: &str,
+    payload: &serde_json::Value,
 ) -> bool {
     let Some(proof) = proof else {
         return false;
     };
-    proof.method == "biometric"
-        && proof.session_key_ref == session_key_ref
-        && proof.challenge == unlock_challenge(session_id, command_id)
+    if proof.method != "biometric" || proof.session_key_ref != session_key_ref {
+        return false;
+    }
+    let Some(signature_hex) = proof
+        .challenge
+        .as_deref()
+        .and_then(|challenge| challenge.strip_prefix("ed25519:"))
+    else {
+        return false;
+    };
+    let Ok(public_key_hex) = db.conn.query_row(
+        "SELECT d.public_key
+         FROM remote_sessions s
+         JOIN remote_devices d ON d.id = s.remote_device_id
+         WHERE s.id = ?1 AND s.session_key_ref = ?2",
+        params![session_id, session_key_ref],
+        |row| row.get::<_, String>(0),
+    ) else {
+        return false;
+    };
+    let Some(public_key_hex) = public_key_hex.strip_prefix("ed25519:") else {
+        return false;
+    };
+    let Ok(public_key_bytes) = hex::decode(public_key_hex) else {
+        return false;
+    };
+    let Ok(signature_bytes) = hex::decode(signature_hex) else {
+        return false;
+    };
+    let Ok(public_key_array) = <[u8; 32]>::try_from(public_key_bytes.as_slice()) else {
+        return false;
+    };
+    let Ok(signature_array) = <[u8; 64]>::try_from(signature_bytes.as_slice()) else {
+        return false;
+    };
+    let Ok(verifying_key) = VerifyingKey::from_bytes(&public_key_array) else {
+        return false;
+    };
+    let signature = Signature::from_bytes(&signature_array);
+    verifying_key
+        .verify(
+            unlock_message(
+                session_id,
+                command_id,
+                session_key_ref,
+                command_type,
+                payload,
+            )
+            .as_bytes(),
+            &signature,
+        )
+        .is_ok()
 }
 
+#[cfg(test)]
+pub(crate) fn test_remote_public_key() -> String {
+    let signing_key = test_remote_signing_key();
+    format!(
+        "ed25519:{}",
+        hex::encode(signing_key.verifying_key().to_bytes())
+    )
+}
+
+#[cfg(test)]
+fn test_remote_signing_key() -> ed25519_dalek::SigningKey {
+    ed25519_dalek::SigningKey::from_bytes(&[7_u8; 32])
+}
+
+#[cfg(test)]
+pub(crate) fn test_unlock_challenge(
+    session_id: &str,
+    command_id: &str,
+    session_key_ref: &str,
+    command_type: &str,
+    payload: &serde_json::Value,
+) -> String {
+    use ed25519_dalek::Signer;
+
+    let signature = test_remote_signing_key().sign(
+        unlock_message(
+            session_id,
+            command_id,
+            session_key_ref,
+            command_type,
+            payload,
+        )
+        .as_bytes(),
+    );
+    format!("ed25519:{}", hex::encode(signature.to_bytes()))
+}
 fn command_requires_unlock(command_type: &str) -> bool {
     matches!(
         command_type,
@@ -841,7 +956,7 @@ mod tests {
             MVP_PROFILE_ID,
             "Eunsoo iPhone",
             "ios",
-            "public-key",
+            &test_remote_public_key(),
             &["portfolio", "run", "artifact", "memory", "wiki"],
         )
         .unwrap();
@@ -878,7 +993,7 @@ mod tests {
             MVP_PROFILE_ID,
             "Eunsoo iPhone",
             "ios",
-            "public-key",
+            &test_remote_public_key(),
             &["portfolio"],
             manual.clone(),
         )
@@ -890,7 +1005,7 @@ mod tests {
             MVP_PROFILE_ID,
             "Broken",
             "ios",
-            "public-key",
+            &test_remote_public_key(),
             &["portfolio"],
             RemoteAddressMetadata {
                 source: "manual".to_string(),
@@ -926,7 +1041,7 @@ mod tests {
             MVP_PROFILE_ID,
             "Android",
             "android",
-            "public-key",
+            &test_remote_public_key(),
             &["portfolio"],
         );
         assert!(blocked_pairing
@@ -944,7 +1059,7 @@ mod tests {
             MVP_PROFILE_ID,
             "Android",
             "android",
-            "public-key",
+            &test_remote_public_key(),
             &["portfolio"],
         )
         .unwrap();
@@ -1003,13 +1118,14 @@ mod tests {
             MVP_PROFILE_ID,
             "Eunsoo iPhone",
             "ios",
-            "public-key",
+            &test_remote_public_key(),
             &["portfolios"],
         )
         .unwrap();
 
         let response = execute_authorized_remote_command(
             &db,
+            None,
             &RemoteCommandRequest {
                 command_id: new_id(),
                 session_id: session.id,
@@ -1047,12 +1163,13 @@ mod tests {
             MVP_PROFILE_ID,
             "Eunsoo iPhone",
             "ios",
-            "public-key",
+            &test_remote_public_key(),
             &["run"],
         )
         .unwrap();
         let response = execute_authorized_remote_command(
             &db,
+            None,
             &RemoteCommandRequest {
                 command_id: "cmd-remote-run".to_string(),
                 session_id: session.id.clone(),
@@ -1060,7 +1177,13 @@ mod tests {
                 unlock: Some(RemoteUnlockProof {
                     method: "biometric".to_string(),
                     session_key_ref: session.session_key_ref.clone(),
-                    challenge: unlock_challenge(&session.id, "cmd-remote-run"),
+                    challenge: Some(test_unlock_challenge(
+                        &session.id,
+                        "cmd-remote-run",
+                        &session.session_key_ref,
+                        "run.start",
+                        &json!({"profileId": MVP_PROFILE_ID, "userRequest": "Remote review"}),
+                    )),
                 }),
                 command_type: "run.start".to_string(),
                 payload: json!({"profileId": MVP_PROFILE_ID, "userRequest": "Remote review"}),
@@ -1123,13 +1246,14 @@ mod tests {
             MVP_PROFILE_ID,
             "Eunsoo iPhone",
             "ios",
-            "public-key",
+            &test_remote_public_key(),
             &["portfolio", "run"],
         )
         .unwrap();
 
         let listed = execute_authorized_remote_command(
             &db,
+            None,
             &RemoteCommandRequest {
                 command_id: "cmd-list".to_string(),
                 session_id: session.id.clone(),
@@ -1149,6 +1273,7 @@ mod tests {
 
         let denied = execute_authorized_remote_command(
             &db,
+            None,
             &RemoteCommandRequest {
                 command_id: "cmd-run-get".to_string(),
                 session_id: session.id.clone(),
@@ -1170,7 +1295,7 @@ mod tests {
             MVP_PROFILE_ID,
             "Eunsoo iPhone",
             "ios",
-            "public-key",
+            &test_remote_public_key(),
             &["run"],
         )
         .unwrap();
@@ -1214,7 +1339,13 @@ mod tests {
                 unlock: Some(RemoteUnlockProof {
                     method: "biometric".to_string(),
                     session_key_ref: session.session_key_ref.clone(),
-                    challenge: unlock_challenge(&session.id, "cmd-unlocked"),
+                    challenge: Some(test_unlock_challenge(
+                        &session.id,
+                        "cmd-unlocked",
+                        &session.session_key_ref,
+                        "run.start",
+                        &json!({}),
+                    )),
                 }),
                 command_type: "run.start".to_string(),
                 payload: json!({}),
@@ -1222,6 +1353,68 @@ mod tests {
         )
         .unwrap();
         assert!(unlocked.permission_granted);
+    }
+
+    #[test]
+    fn sensitive_unlock_proofs_are_bound_to_payload_and_single_use() {
+        let mut db = PlutusDatabase::in_memory().unwrap();
+        db.seed_mvp().unwrap();
+        let session = pair_device(
+            &db,
+            MVP_PROFILE_ID,
+            "Eunsoo iPhone",
+            "ios",
+            &test_remote_public_key(),
+            &["run"],
+        )
+        .unwrap();
+        let payload = json!({"profileId": MVP_PROFILE_ID, "userRequest": "Remote review"});
+        let challenge = test_unlock_challenge(
+            &session.id,
+            "cmd-bound-run",
+            &session.session_key_ref,
+            "run.start",
+            &payload,
+        );
+
+        let substituted = authorize_remote_command(
+            &db,
+            &RemoteCommandRequest {
+                command_id: "cmd-bound-run".to_string(),
+                session_id: session.id.clone(),
+                session_key_ref: Some(session.session_key_ref.clone()),
+                unlock: Some(RemoteUnlockProof {
+                    method: "biometric".to_string(),
+                    session_key_ref: session.session_key_ref.clone(),
+                    challenge: Some(challenge.clone()),
+                }),
+                command_type: "run.start".to_string(),
+                payload: json!({"profileId": MVP_PROFILE_ID, "userRequest": "Different review"}),
+            },
+        )
+        .unwrap();
+        assert!(substituted
+            .warnings
+            .contains(&"unlock_required".to_string()));
+
+        let request = RemoteCommandRequest {
+            command_id: "cmd-bound-run".to_string(),
+            session_id: session.id.clone(),
+            session_key_ref: Some(session.session_key_ref.clone()),
+            unlock: Some(RemoteUnlockProof {
+                method: "biometric".to_string(),
+                session_key_ref: session.session_key_ref.clone(),
+                challenge: Some(challenge),
+            }),
+            command_type: "run.start".to_string(),
+            payload,
+        };
+        let first = execute_authorized_remote_command(&db, None, &request).unwrap();
+        assert!(first.authorization.permission_granted);
+        let replay = execute_authorized_remote_command(&db, None, &request).unwrap_err();
+        assert!(replay
+            .to_string()
+            .contains("remote command nonce has already been consumed"));
     }
 
     #[test]
@@ -1233,7 +1426,7 @@ mod tests {
             MVP_PROFILE_ID,
             "Eunsoo iPhone",
             "ios",
-            "public-key",
+            &test_remote_public_key(),
             &["artifact", "wiki"],
         )
         .unwrap();
@@ -1274,7 +1467,7 @@ mod tests {
         db.conn
             .execute(
                 "INSERT INTO memory_activity(id, memory_id, event_type, actor, research_run_id, audit_ref, payload, created_at)
-                 VALUES (?1, ?2, 'memory.captured', 'user', NULL, NULL, '{\"ok\":true}', ?3)",
+                 VALUES (?1, ?2, 'memory.captured', 'user', NULL, NULL, '{\"ok\":true,\"note\":\"broker token sk-remote-secret\"}', ?3)",
                 params![new_id(), memory_id, timestamp],
             )
             .unwrap();
@@ -1299,13 +1492,14 @@ mod tests {
             MVP_PROFILE_ID,
             "Eunsoo iPhone",
             "ios",
-            "public-key",
+            &test_remote_public_key(),
             &["memory", "wiki"],
         )
         .unwrap();
 
         let memory_activity = execute_authorized_remote_command(
             &db,
+            None,
             &RemoteCommandRequest {
                 command_id: "cmd-memory".to_string(),
                 session_id: session.id.clone(),
@@ -1317,9 +1511,14 @@ mod tests {
         )
         .unwrap();
         assert_eq!(memory_activity.data[0]["createdAt"], timestamp);
+        assert_eq!(memory_activity.data[0]["payload"]["ok"], true);
+        assert!(!memory_activity.data[0]["payload"]
+            .to_string()
+            .contains("sk-remote-secret"));
 
         let wiki_activity = execute_authorized_remote_command(
             &db,
+            None,
             &RemoteCommandRequest {
                 command_id: "cmd-wiki".to_string(),
                 session_id: session.id.clone(),
@@ -1336,8 +1535,9 @@ mod tests {
             "Initial note"
         );
 
-        execute_authorized_remote_command(
+        let denied_archive = execute_authorized_remote_command(
             &db,
+            None,
             &RemoteCommandRequest {
                 command_id: "cmd-archive".to_string(),
                 session_id: session.id.clone(),
@@ -1345,13 +1545,22 @@ mod tests {
                 unlock: Some(RemoteUnlockProof {
                     method: "biometric".to_string(),
                     session_key_ref: session.session_key_ref.clone(),
-                    challenge: unlock_challenge(&session.id, "cmd-archive"),
+                    challenge: Some(test_unlock_challenge(
+                        &session.id,
+                        "cmd-archive",
+                        &session.session_key_ref,
+                        "memory.archive",
+                        &json!({"memoryId": memory_id}),
+                    )),
                 }),
                 command_type: "memory.archive".to_string(),
                 payload: json!({"memoryId": memory_id}),
             },
-        )
-        .unwrap();
+        );
+        assert!(denied_archive
+            .unwrap_err()
+            .to_string()
+            .contains("memory mutations are Mac-host only"));
         let status: String = db
             .conn
             .query_row(
@@ -1360,10 +1569,11 @@ mod tests {
                 |row| row.get(0),
             )
             .unwrap();
-        assert_eq!(status, "archived");
+        assert_eq!(status, "active");
 
-        execute_authorized_remote_command(
+        let denied_forget = execute_authorized_remote_command(
             &db,
+            None,
             &RemoteCommandRequest {
                 command_id: "cmd-forget".to_string(),
                 session_id: session.id.clone(),
@@ -1371,13 +1581,22 @@ mod tests {
                 unlock: Some(RemoteUnlockProof {
                     method: "biometric".to_string(),
                     session_key_ref: session.session_key_ref.clone(),
-                    challenge: unlock_challenge(&session.id, "cmd-forget"),
+                    challenge: Some(test_unlock_challenge(
+                        &session.id,
+                        "cmd-forget",
+                        &session.session_key_ref,
+                        "memory.forget",
+                        &json!({"memoryId": memory_id}),
+                    )),
                 }),
                 command_type: "memory.forget".to_string(),
                 payload: json!({"memoryId": memory_id}),
             },
-        )
-        .unwrap();
+        );
+        assert!(denied_forget
+            .unwrap_err()
+            .to_string()
+            .contains("memory mutations are Mac-host only"));
         let (status, deleted_at): (String, Option<String>) = db
             .conn
             .query_row(
@@ -1386,7 +1605,7 @@ mod tests {
                 |row| Ok((row.get(0)?, row.get(1)?)),
             )
             .unwrap();
-        assert_eq!(status, "deleted");
-        assert!(deleted_at.is_some());
+        assert_eq!(status, "active");
+        assert!(deleted_at.is_none());
     }
 }

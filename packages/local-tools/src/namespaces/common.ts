@@ -27,9 +27,13 @@ export type NamespaceHandler = (
   args: NamespaceHandlerArgs,
 ) => LocalToolResponse | Promise<LocalToolResponse>;
 
+export function allowFixtureTools() {
+  return process.env.PLUTUS_ALLOW_FIXTURE_TOOLS === "1";
+}
+
 export const sourceRef = (
   provider: string,
-  id = "local-fixture",
+  id = "local-runtime",
 ): SourceRef => ({
   id,
   provider,

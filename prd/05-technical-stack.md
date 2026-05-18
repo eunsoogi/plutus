@@ -18,10 +18,11 @@ Recommended:
 Package layout:
 
 - `apps/tauri`: Tauri 2 React shell for macOS host and mobile remote-control app.
-- `apps/web-preview`: development/admin browser preview that reuses Tauri frontend routes; this is not a product runtime.
+- `apps/web-preview`: local browser runtime for development and QA, not a shipped product app shell. It reuses the same React routes and command-client contracts as the Tauri webview, must load state through an explicit runtime bridge, and must render empty/setup states instead of fixture data when no bridge exists.
 - `packages/agents`: Codex run planners, specialist role prompts, structured output schemas, guardrails, and local tool contracts.
 - `packages/domain`: portfolio, instrument, strategy, run-card, remote-control, and artifact domain models.
 - `packages/data`: provider adapters and market data normalization.
+- `packages/local-tools`: first-party Plutus MCP/local-tool namespaces. Production calls must use exported app state and configured provider adapters; deterministic fixture data is only allowed when `PLUTUS_ALLOW_FIXTURE_TOOLS=1` is explicitly set for tests or demos. If research, risk, or market-data providers are not configured, tools return blocking setup warnings instead of silently substituting mock data.
 - `packages/backtest`: strategy specs, local backtest engine, and report models.
 - `packages/memory`: Plutus memory adapter, Mem0 integration, memory capture rules, retention policies, sensitivity filters, and recall/ranking schemas.
 - `packages/wiki`: local Markdown wiki storage, wiki metadata, contradiction checks, revision diffs, activity feed, and revert workflows.

@@ -235,7 +235,15 @@ export class CodexSdkRunHost implements CodexRunHost, ProductCodexRunHost {
       }
     }
 
-    const parsed = finalRunCardSchema.safeParse(finalRunCard);
+    const parsed = finalRunCardSchema.safeParse(
+      finalRunCard && typeof finalRunCard === "object"
+        ? {
+            ...(finalRunCard as Record<string, unknown>),
+            runId: request.runId,
+            profileId: request.profileId,
+          }
+        : finalRunCard,
+    );
     if (!parsed.success) {
       return {
         status: "failed",
@@ -281,8 +289,6 @@ export class CodexSdkRunHost implements CodexRunHost, ProductCodexRunHost {
       events,
       finalRunCard: {
         ...parsed.data,
-        runId: request.runId,
-        profileId: request.profileId,
       },
       validationFailures: [],
     };
@@ -291,7 +297,6 @@ export class CodexSdkRunHost implements CodexRunHost, ProductCodexRunHost {
   async startResearchRun(
     input: StartResearchRunInput,
   ): Promise<ResearchRunHandle> {
-    this.requireSmokeGate();
     const startResearchRun = this.requireProductClient("startResearchRun");
     const configHash = makeConfigHash(input);
     const mcpServers = buildProductMcpServers(input);
@@ -322,7 +327,6 @@ export class CodexSdkRunHost implements CodexRunHost, ProductCodexRunHost {
     threadId: string,
     options: ResumeResearchRunOptions = {},
   ): Promise<ResearchRunHandle> {
-    this.requireSmokeGate();
     const existing = this.handlesByThreadId.get(threadId);
     if (!existing && !options.expectedConfigHash) {
       throw new Error(
@@ -438,6 +442,18 @@ function buildProductMcpServers(input: StartResearchRunInput) {
   const namespaces = teamNamespaces[selectedTeam];
   const writableNamespaces = new Set(teamWritableNamespaces[selectedTeam]);
   const runContextSecret = randomBytes(32).toString("hex");
+  const repoRoot = process.env.PLUTUS_REPO_ROOT ?? process.cwd();
+  const adapterCommand = runtimeCommand(
+    process.env.PLUTUS_LOCAL_MCP_ADAPTER_COMMAND,
+    [
+      "pnpm",
+      "--dir",
+      repoRoot,
+      "--filter",
+      "@plutus/local-mcp-adapter",
+      "start",
+    ],
+  );
 
   const entries = [];
   for (const agentName of teamAgents[selectedTeam]) {
@@ -446,11 +462,13 @@ function buildProductMcpServers(input: StartResearchRunInput) {
       if (!allowlist.allowedNamespaces.includes(namespace)) continue;
       const serverName = `${agentName}__${namespace}`;
       const context: LocalToolRunContext = {
-        runId: makeRunId({
-          configHash: createHash("sha256")
-            .update(`${selectedTeam}:${input.profileId}:${input.userRequest}`)
-            .digest("hex"),
-        }),
+        runId:
+          input.runId ??
+          makeRunId({
+            configHash: createHash("sha256")
+              .update(`${selectedTeam}:${input.profileId}:${input.userRequest}`)
+              .digest("hex"),
+          }),
         profileId: input.profileId,
         agentName,
         selectedTeam,
@@ -466,16 +484,15 @@ function buildProductMcpServers(input: StartResearchRunInput) {
       entries.push([
         serverName,
         {
-          command: "pnpm",
+          command: adapterCommand.command,
           args: [
-            "--filter",
-            "@plutus/local-mcp-adapter",
-            "start",
+            ...adapterCommand.args,
             namespace,
             ...(!writableNamespaces.has(namespace) ? ["--read-only"] : []),
             "--stdio",
           ],
           env: {
+            PLUTUS_REPO_ROOT: repoRoot,
             PLUTUS_RUN_CONTEXT_SECRET: runContextSecret,
             PLUTUS_SIGNED_RUN_CONTEXT: signRunContext(context, {
               namespace,
@@ -488,6 +505,21 @@ function buildProductMcpServers(input: StartResearchRunInput) {
     }
   }
   return Object.fromEntries(entries);
+}
+
+function runtimeCommand(
+  configured: string | undefined,
+  fallback: string[],
+): { command: string; args: string[] } {
+  const parts =
+    configured
+      ?.split(/\s+/)
+      .map((part) => part.trim())
+      .filter(Boolean) ?? fallback;
+  if (parts.length === 0) {
+    throw new Error("Runtime command is empty.");
+  }
+  return { command: parts[0]!, args: parts.slice(1) };
 }
 
 function resolveSelectedTeam(input: StartResearchRunInput) {
@@ -509,9 +541,9 @@ function normalizeEvent(item: unknown, runId: string) {
     return item;
   }
   return {
-    runId,
     at: new Date(0).toISOString(),
     ...item,
+    runId,
   };
 }
 
@@ -555,7 +587,7 @@ class OpenAiCodexSdkProductClient implements CodexSdkClient {
       threadId,
       mapThreadEvents(streamed.events, request.profileId),
     );
-    return { runId: makeRunId(request), threadId };
+    return { runId: request.runId ?? makeRunId(request), threadId };
   }
 
   streamResearchRun(handle: ResearchRunHandle): AsyncIterable<unknown> {
@@ -733,12 +765,21 @@ function signRunContext(
 function zodToJsonSchemaShape(
   schema: z.ZodType<unknown>,
 ): Record<string, unknown> {
+  if (schema instanceof z.ZodDefault) {
+    return zodToJsonSchemaShape(schema.removeDefault());
+  }
   if (schema instanceof z.ZodObject) {
     const shape = schema.shape;
+    const required = Object.entries(shape)
+      .filter(
+        ([, value]) =>
+          !(value instanceof z.ZodOptional || value instanceof z.ZodDefault),
+      )
+      .map(([key]) => key);
     return {
       type: "object",
       additionalProperties: false,
-      required: Object.keys(shape),
+      ...(required.length > 0 ? { required } : {}),
       properties: Object.fromEntries(
         Object.entries(shape).map(([key, value]) => [
           key,

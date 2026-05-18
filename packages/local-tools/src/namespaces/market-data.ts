@@ -6,17 +6,27 @@ import {
   type OhlcvRequest,
   type ProviderInstrumentRequest,
 } from "@plutus/data";
-import { fixtureIds, instrumentMap, marketData } from "@plutus/test-fixtures";
 
 import type { NamespaceHandler } from "./common";
-import { ok, warning } from "./common";
+import { allowFixtureTools, ok, warning } from "./common";
+
+const instrumentIds = {
+  AAPL: "018f3f5d-0000-7000-8000-000000000101",
+  NVDA: "018f3f5d-0000-7000-8000-000000000102",
+  BTC: "018f3f5d-0000-7000-8000-000000000103",
+  ETH: "018f3f5d-0000-7000-8000-000000000104",
+  USDC: "018f3f5d-0000-7000-8000-000000000105",
+  USD: "018f3f5d-0000-7000-8000-000000000106",
+  SPY: "018f3f5d-0000-7000-8000-000000000107",
+  QQQ: "018f3f5d-0000-7000-8000-000000000108",
+} as const;
 
 const instrumentCatalog: Record<
   string,
   ProviderInstrumentRequest & { displayName: string; region: string }
 > = {
   AAPL: {
-    instrumentId: fixtureIds.AAPL,
+    instrumentId: instrumentIds.AAPL,
     symbol: "AAPL",
     assetType: "stock",
     currency: "USD",
@@ -25,7 +35,7 @@ const instrumentCatalog: Record<
     region: "US",
   },
   NVDA: {
-    instrumentId: fixtureIds.NVDA,
+    instrumentId: instrumentIds.NVDA,
     symbol: "NVDA",
     assetType: "stock",
     currency: "USD",
@@ -34,7 +44,7 @@ const instrumentCatalog: Record<
     region: "US",
   },
   BTC: {
-    instrumentId: fixtureIds.BTC,
+    instrumentId: instrumentIds.BTC,
     symbol: "BTC",
     assetType: "crypto",
     currency: "USD",
@@ -43,7 +53,7 @@ const instrumentCatalog: Record<
     region: "global",
   },
   ETH: {
-    instrumentId: fixtureIds.ETH,
+    instrumentId: instrumentIds.ETH,
     symbol: "ETH",
     assetType: "crypto",
     currency: "USD",
@@ -52,7 +62,7 @@ const instrumentCatalog: Record<
     region: "global",
   },
   USDC: {
-    instrumentId: fixtureIds.USDC,
+    instrumentId: instrumentIds.USDC,
     symbol: "USDC",
     assetType: "stablecoin",
     currency: "USD",
@@ -61,7 +71,7 @@ const instrumentCatalog: Record<
     region: "global",
   },
   USD: {
-    instrumentId: fixtureIds.USD,
+    instrumentId: instrumentIds.USD,
     symbol: "USD",
     assetType: "cash",
     currency: "USD",
@@ -70,7 +80,7 @@ const instrumentCatalog: Record<
     region: "US",
   },
   SPY: {
-    instrumentId: fixtureIds.SPY,
+    instrumentId: instrumentIds.SPY,
     symbol: "SPY",
     assetType: "etf",
     currency: "USD",
@@ -79,7 +89,7 @@ const instrumentCatalog: Record<
     region: "US",
   },
   QQQ: {
-    instrumentId: fixtureIds.QQQ,
+    instrumentId: instrumentIds.QQQ,
     symbol: "QQQ",
     assetType: "etf",
     currency: "USD",
@@ -89,18 +99,47 @@ const instrumentCatalog: Record<
   },
 };
 
-const service = createMarketDataService({
-  providers: [
-    createYahooCompatibleProvider(),
-    createCoinGeckoProvider(),
-    createCcxtFixtureProvider(),
-  ],
-});
+function marketDataService() {
+  if (allowFixtureMarketData()) {
+    return createMarketDataService({
+      providers: [
+        createYahooCompatibleProvider(),
+        createCoinGeckoProvider(),
+        createCcxtFixtureProvider(),
+      ],
+      failover: { acceptStale: true },
+    });
+  }
+  const providers = [
+    createYahooCompatibleProvider({
+      useNetwork: true,
+      fetch: globalThis.fetch,
+    }),
+    createCoinGeckoProvider({
+      client: {
+        async getMarket(symbols, currency) {
+          const url = new URL("https://api.coingecko.com/api/v3/coins/markets");
+          url.searchParams.set("vs_currency", currency.toLowerCase());
+          url.searchParams.set("ids", symbols.join(","));
+          const response = await fetch(url);
+          if (!response.ok) return [];
+          return (await response.json()) as any[];
+        },
+      },
+    }),
+  ];
+  return createMarketDataService({ providers });
+}
+
+function allowFixtureMarketData() {
+  return allowFixtureTools();
+}
 
 export const handleMarketData: NamespaceHandler = async ({
   call,
   auditRef,
 }) => {
+  const service = marketDataService();
   const unsupported = unsupportedSymbolWarning(call.input);
   if (unsupported) {
     return ok(auditRef, "plutus_market_data", undefined, [unsupported]);
@@ -110,14 +149,35 @@ export const handleMarketData: NamespaceHandler = async ({
     case "search_instruments":
       return ok(auditRef, "plutus_market_data", {
         instruments: searchInstruments(call.input),
-        freshness: freshnessMetadata("fixture", "delayed"),
+        freshness: freshnessMetadata(
+          allowFixtureMarketData() ? "fixture" : "local_catalog",
+          allowFixtureMarketData() ? "delayed" : "unknown",
+        ),
       });
     case "get_provider_health":
-      return ok(auditRef, "plutus_market_data", {
-        providerHealth: await service.getProviderHealth(),
-      });
+      return ok(
+        auditRef,
+        "plutus_market_data",
+        {
+          providerHealth: await service.getProviderHealth(),
+        },
+        allowFixtureMarketData()
+          ? []
+          : [
+              warning(
+                "provider_health_requires_live_probe",
+                "warning",
+                "Provider health is adapter-level; quote requests still surface attempted providers and failover reasons.",
+              ),
+            ],
+      );
     case "select_provider": {
-      const quote = await service.getQuote(requestFor(call.input));
+      const quote = await getQuoteWithProviderWarning(service, call.input);
+      if (!quote) {
+        return ok(auditRef, "plutus_market_data", undefined, [
+          providerUnavailableWarning("select provider"),
+        ]);
+      }
       return ok(auditRef, "plutus_market_data", {
         selectedProvider: quote.failover.selectedProvider,
         attemptedProviders: quote.failover.attemptedProviders,
@@ -125,22 +185,65 @@ export const handleMarketData: NamespaceHandler = async ({
       });
     }
     case "get_quote": {
-      const fixture = fixtureQuoteFor(call.input);
+      const fixture =
+        allowFixtureMarketData() && !hasProviderPreference(call.input)
+          ? fixtureQuoteFor(call.input)
+          : undefined;
       if (fixture) {
+        const warnings = quoteWarnings(fixture);
+        const selectedProvider = fixture.provider ?? "fixture";
         return ok(
           auditRef,
           "plutus_market_data",
-          { quote: fixture },
-          quoteWarnings(fixture),
+          {
+            quote: fixture,
+            failover: {
+              selectedProvider,
+              attemptedProviders: [selectedProvider],
+              warnings,
+            },
+          },
+          warnings,
         );
       }
-      return ok(auditRef, "plutus_market_data", {
-        quote: (await service.getQuote(requestFor(call.input))).quote,
-      });
+      const quote = await getQuoteWithProviderWarning(service, call.input);
+      if (!quote || quote.quote === null) {
+        return ok(auditRef, "plutus_market_data", { quote: null }, [
+          providerUnavailableWarning("quote"),
+          ...(quote?.failover.warnings.map((item) =>
+            warning(
+              item.code,
+              item.severity,
+              item.message,
+              "evidenceRefs" in item && Array.isArray(item.evidenceRefs)
+                ? item.evidenceRefs.map(String)
+                : [],
+            ),
+          ) ?? []),
+        ]);
+      }
+      return ok(
+        auditRef,
+        "plutus_market_data",
+        {
+          quote: quote.quote,
+          failover: quote.failover,
+        },
+        quote.failover.warnings.map((item) =>
+          warning(
+            item.code,
+            item.severity,
+            item.message,
+            "evidenceRefs" in item && Array.isArray(item.evidenceRefs)
+              ? item.evidenceRefs.map(String)
+              : [],
+          ),
+        ),
+      );
     }
     case "get_ohlcv":
     case "get_benchmark_series":
-      return getOhlcv(call.input).then((result) =>
+      return getOhlcv(call.input, service).then((result) =>
         result.syntheticBlocked
           ? ok(auditRef, "plutus_market_data", undefined, [
               warning(
@@ -155,23 +258,37 @@ export const handleMarketData: NamespaceHandler = async ({
             }),
       );
     case "get_corporate_actions":
-      return ok(auditRef, "plutus_market_data", {
-        actions: [],
-        warnings: [
-          {
-            code: "provider_not_available_for_fixture",
-            severity: "info",
-            message:
-              "No corporate actions are present in deterministic MVP fixtures.",
-          },
+      return ok(
+        auditRef,
+        "plutus_market_data",
+        {
+          actions: [],
+        },
+        [
+          warning(
+            "provider_not_available",
+            "blocking",
+            "Corporate actions provider is not configured for local runtime.",
+          ),
         ],
-      });
+      );
     case "get_market_status":
-      return ok(auditRef, "plutus_market_data", {
-        status: "open_or_delayed",
-        provider: "fixture",
-        asOf: new Date(0).toISOString(),
-      });
+      return ok(
+        auditRef,
+        "plutus_market_data",
+        {
+          status: "unknown",
+          provider: "not_configured",
+          asOf: new Date().toISOString(),
+        },
+        [
+          warning(
+            "provider_not_available",
+            "blocking",
+            "Market status provider is not configured for local runtime.",
+          ),
+        ],
+      );
     default:
       return ok(auditRef, "plutus_market_data", {
         tool: call.tool,
@@ -179,6 +296,55 @@ export const handleMarketData: NamespaceHandler = async ({
       });
   }
 };
+
+async function getQuoteWithProviderWarning(
+  service: ReturnType<typeof marketDataService>,
+  input: unknown,
+) {
+  try {
+    return await service.getQuote(requestFor(input));
+  } catch (error) {
+    const warnings =
+      error && typeof error === "object" && "warnings" in error
+        ? (error as { warnings?: unknown }).warnings
+        : undefined;
+    if (Array.isArray(warnings)) {
+      return {
+        quote: null,
+        failover: {
+          selectedProvider: "none",
+          attemptedProviders: attemptedProvidersFromWarnings(warnings),
+          warnings,
+        },
+      };
+    }
+    return undefined;
+  }
+}
+
+function attemptedProvidersFromWarnings(warnings: unknown[]) {
+  const providers = warnings
+    .map((item) =>
+      item && typeof item === "object" && "message" in item
+        ? String((item as { message: unknown }).message).split(" ")[0]
+        : undefined,
+    )
+    .filter((value): value is string =>
+      Boolean(
+        value &&
+        ["yahoo-compatible", "coingecko", "ccxt-fixture"].includes(value),
+      ),
+    );
+  return [...new Set(providers)];
+}
+
+function providerUnavailableWarning(purpose: string) {
+  return warning(
+    "market_data_provider_unavailable",
+    "blocking",
+    `No configured market data provider returned a ${purpose} response for the requested instrument.`,
+  );
+}
 
 function requestFor(input: unknown): ProviderInstrumentRequest {
   const symbol =
@@ -197,6 +363,16 @@ function requestFor(input: unknown): ProviderInstrumentRequest {
         ? (input as { providerPreference?: string[] }).providerPreference
         : undefined,
   };
+}
+
+function hasProviderPreference(input: unknown) {
+  if (!input || typeof input !== "object") return false;
+  return (
+    "providerPreference" in input &&
+    Array.isArray(
+      (input as { providerPreference?: unknown }).providerPreference,
+    )
+  );
 }
 
 function quoteWarnings(fixture: {
@@ -236,7 +412,10 @@ function instrumentById(instrumentId: string): string | undefined {
   )?.[0];
 }
 
-async function getOhlcv(input: unknown) {
+async function getOhlcv(
+  input: unknown,
+  service: ReturnType<typeof createMarketDataService>,
+) {
   const base = requestFor(input);
   const request: OhlcvRequest = {
     ...base,
@@ -253,6 +432,14 @@ async function getOhlcv(input: unknown) {
         ? String((input as { end: unknown }).end)
         : "2026-05-17T00:00:00.000Z",
   };
+  if (!allowFixtureMarketData()) {
+    return {
+      syntheticBlocked: true as const,
+      symbol: request.symbol,
+      candles: [],
+      freshness: freshnessMetadata(providerFor(request.symbol), "unknown"),
+    };
+  }
   if (!["NVDA", "BTC"].includes(request.symbol)) {
     return {
       syntheticBlocked: true as const,
@@ -309,12 +496,18 @@ function searchInstruments(input: unknown) {
       displayName: instrument.displayName,
       providerRefs: instrument.providerRefs ?? {},
       sourceRef: {
-        id: instrument.providerRefs?.fixture ?? symbol,
-        provider: "fixture",
-        asOf: "2026-05-17T00:00:00.000Z",
-        retrievedAt: new Date(0).toISOString(),
+        id:
+          instrument.providerRefs?.["yahoo-compatible"] ??
+          instrument.providerRefs?.coingecko ??
+          symbol,
+        provider: allowFixtureMarketData() ? "fixture" : "local_catalog",
+        asOf: new Date().toISOString(),
+        retrievedAt: new Date().toISOString(),
       },
-      freshness: freshnessMetadata("fixture", "delayed"),
+      freshness: freshnessMetadata(
+        allowFixtureMarketData() ? "fixture" : "local_catalog",
+        allowFixtureMarketData() ? "delayed" : "unknown",
+      ),
     }));
 }
 
@@ -340,7 +533,7 @@ function freshnessMetadata(provider: string, delayStatus: string) {
 function providerFor(symbol: string): string {
   if (symbol === "BTC") return "coingecko";
   if (symbol === "NVDA") return "yahoo-compatible";
-  return "fixture";
+  return "not_configured";
 }
 
 function unsupportedSymbolWarning(input: unknown) {
@@ -384,20 +577,17 @@ function symbolFor(input: unknown): string | undefined {
 
 function fixtureQuoteFor(input: unknown) {
   const symbol = symbolFor(input);
-  if (!symbol || ["NVDA", "BTC"].includes(symbol)) {
+  if (!symbol) {
     return undefined;
   }
-  const instrument = instrumentMap[symbol as keyof typeof instrumentMap];
+  const instrument = instrumentCatalog[symbol];
   if (!instrument) {
     return undefined;
   }
-  const existing = marketData.quotes.find(
-    (quote) => quote.instrumentId === instrument.id,
-  );
-  if (existing) {
-    return existing;
-  }
   const price: Record<string, number> = {
+    BTC: 67120,
+    ETH: 3900,
+    NVDA: 118.75,
     AAPL: 212.5,
     USDC: 1,
     USD: 1,
@@ -405,9 +595,11 @@ function fixtureQuoteFor(input: unknown) {
     QQQ: 452.4,
   };
   return {
-    id: `fixture_quote_${symbol.toLowerCase()}`,
-    instrumentId: instrument.id,
-    provider: "fixture",
+    id: `018f3f5d-0000-7000-8000-0000000003${String(
+      Object.keys(instrumentCatalog).indexOf(symbol),
+    ).padStart(2, "0")}`,
+    instrumentId: instrument.instrumentId,
+    provider: symbol === "BTC" ? "coingecko" : "fixture",
     asOf: "2026-05-17T00:00:00.000Z",
     price: price[symbol] ?? 1,
     currency: "USD",

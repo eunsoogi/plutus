@@ -14,11 +14,12 @@ Use a shared TypeScript monorepo and Tauri 2 for the macOS host and mobile remot
 - Shared React/Vite frontend where practical, with platform-specific routes for desktop host and mobile controller.
 - macOS host app contains the local SQLite store, local tool router, Codex runtime bridge, backtest engine, artifact store, and remote-control service.
 - Mobile app connects to the Mac host over a paired encrypted remote-control session.
-- Browser preview/admin surface reuses the Tauri frontend routes for development only; it is not a product runtime.
+- Browser preview is a local development and QA runtime surface, not a shipped product app shell. It must reuse the same React routes, command-client contracts, and local state semantics as the Tauri webview, and it must not silently substitute fixture data when a runtime bridge is unavailable.
 
 Preferred choice:
 
 - Use Tauri-only for the product app shells.
+- Treat the browser runtime as a first-class local development shell for the same product surface, backed by an explicit local command bridge or an empty/setup state rather than seeded fixtures. Shipped Mac and mobile shells remain Tauri-only.
 - Keep all MVP product data local to the Mac host.
 - Use mobile as a companion controller: start runs, cancel runs, inspect progress, review summaries, open artifacts, edit watchlist notes, and request portfolio views from the Mac host.
 - Avoid server-managed sync in MVP. Remote use outside the local network can be handled by user-managed networking such as VPN/Tailscale-like access in a later phase, not by a Plutus hosted backend.

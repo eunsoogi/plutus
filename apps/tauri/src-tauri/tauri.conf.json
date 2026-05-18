@@ -5,7 +5,7 @@
   "identifier": "com.eunsoogi.plutus",
   "build": {
     "beforeDevCommand": "pnpm --filter @plutus/web-preview dev",
-    "devUrl": "http://localhost:5173",
+    "devUrl": "http://localhost:4173",
     "beforeBuildCommand": "pnpm --filter @plutus/web-preview build",
     "frontendDist": "../../web-preview/dist"
   },
