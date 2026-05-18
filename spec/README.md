@@ -25,6 +25,7 @@ The specs define a local-first MVP architecture, package boundaries, data contra
 - Use first-party local tools for market data, portfolio, backtest, risk, research, reports, memory, wiki, and audit access.
 - Expose local tools to Codex through a Mac-hosted stdio MCP adapter; no hosted backend or network MCP service is required.
 - Use Tauri 2 for the macOS host shell and iOS/Android remote-control shells.
+- Add shared i18n/l10n support in `packages/ui` and report-generation boundaries so English and Korean app chrome, run cards, reports, memory, and wiki summaries share one locale contract.
 - Treat Codex as a primary implementation worker: root scripts, fixtures, test harnesses, and browser-preview routes must let Codex build, test, and inspect changes locally.
 - Use `apps/web-preview` as the Codex in-app browser surface for UI and responsive design verification.
 - Exclude live trading from MVP. The only allowed MVP output categories are `observe`, `research_more`, `rebalance_candidate`, `strategy_candidate`, `risk_warning`, and `no_action`.

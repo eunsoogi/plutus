@@ -90,6 +90,10 @@ export interface LocalToolRunContext {
   allowedNamespaces: string[];
   allowedTools: string[];
   writeScopes: string[];
+  outputLocale: string;
+  reportLocale: string;
+  numberFormatLocale: string;
+  timezone: string;
 }
 ```
 
@@ -213,10 +217,10 @@ Required behavior:
 
 Tools:
 
-- `create_run_card(runId, payload)`
-- `render_report(runId, format, sections)`
+- `create_run_card(runId, payload, locale)`
+- `render_report(runId, format, sections, locale)`
 - `create_chart_artifact(runId, chartSpec)`
-- `create_mobile_summary(runId, payload)`
+- `create_mobile_summary(runId, payload, locale)`
 - `register_artifact(runId, artifact)`
 
 Write restrictions:
@@ -227,6 +231,7 @@ Required behavior:
 
 - Validate final run card schema.
 - Include risk caveats and assumptions.
+- Render localized labels, dates, numbers, currencies, and mobile copy according to the explicit locale while preserving canonical symbols, IDs, metrics, and audit refs.
 - Store artifacts with content hash and MIME type.
 
 ### `plutus_memory`

@@ -103,6 +103,7 @@ Required MVP flows:
 - inspect mobile remote-control routes at phone width;
 - confirm revoked mobile commands fail;
 - confirm the app shows disconnected/stale state when the Mac host is unavailable.
+- verify English and Korean locale smoke paths for host chrome, mobile chrome, remote state labels, and locale-aware formatting.
 
 Tauri smoke tests must cover native-only behavior:
 
@@ -123,6 +124,7 @@ The web preview must support:
 - local command-client mode for integration smoke checks;
 - desktop viewport for macOS host routes;
 - mobile viewport for remote-control routes;
+- deterministic `?locale=` overrides for i18n QA;
 - stable selectors for Playwright and Codex browser inspection;
 - visible loading, empty, error, stale-data, risk-warning, and disconnected states.
 
@@ -134,6 +136,7 @@ For UI tasks, Codex must run `pnpm dev:web`, open the local preview in the Codex
 - chart containers render nonblank content;
 - primary actions remain reachable by keyboard and pointer;
 - mobile remote-control layouts reflect connected, disconnected, and revoked states.
+- language switching preserves runtime/remote query state and does not overlap compact mobile layouts.
 
 Automated Playwright assertions should cover layout-critical states where possible. Browser inspection remains the final design check before calling a UI change complete.
 

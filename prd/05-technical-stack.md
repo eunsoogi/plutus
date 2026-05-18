@@ -29,7 +29,7 @@ Package layout:
 - `packages/local-tools`: first-party local tool router with namespace-scoped tools and per-agent allowlists.
 - `packages/local-mcp-adapter`: local stdio MCP adapter that exposes approved local tool namespaces to Codex.
 - `packages/remote-control`: pairing, encrypted session protocol, command schemas, and host/mobile message types.
-- `packages/ui`: responsive webview UI primitives and design tokens.
+- `packages/ui`: responsive webview UI primitives, design tokens, translation catalogs, locale resolution helpers, and locale-aware formatting utilities.
 - `packages/command-client`: typed client for Tauri commands and remote-control commands.
 
 ## 3. Codex Runtime
@@ -97,7 +97,17 @@ Recommended:
 
 The mobile app is a controller and viewer for the Mac host. It does not own the source-of-truth database in MVP.
 
-## 6. Data And Backtesting
+## 6. Internationalization And Localization
+
+Recommended:
+
+- Keep MVP i18n in shared TypeScript packages rather than depending on an external localization service.
+- Resolve locale from explicit user preference first, then URL/dev overrides, then platform/browser language.
+- Start with `en-US` and `ko-KR` coverage for app chrome, generated report labels, run-card labels, compact mobile summaries, memory summaries, and wiki summaries.
+- Store canonical data in stable schemas and apply localization only at render/report-generation boundaries.
+- Add translation coverage tests, locale-aware formatter tests, and Playwright smoke coverage for host and mobile routes.
+
+## 7. Data And Backtesting
 
 Recommended:
 
@@ -112,7 +122,7 @@ Charting:
 - ECharts for portfolio heatmaps and correlation views if bundle size and touch interaction remain acceptable.
 - Mobile charting must be tested over remote-control payloads and compact artifact views.
 
-## 7. Security
+## 8. Security
 
 Recommended:
 
@@ -124,7 +134,7 @@ Recommended:
 - Prompt-injection filters for uploaded files, URLs, and news/documents.
 - Remote-control sessions require explicit pairing, encryption, revocation, and host-side visibility.
 
-## 8. Deployment
+## 9. Deployment
 
 MVP distribution:
 
@@ -138,17 +148,18 @@ Local development:
 - SQLite database in app data directory or temporary dev path.
 - `.env.example` with provider keys and safe local defaults.
 
-## 9. Trade-Offs
+## 10. Trade-Offs
 
 - Local-first architecture avoids backend operations and keeps user portfolio state on the Mac host, but the Mac must be reachable for mobile remote control.
 - Mobile remote control is simpler than multi-device sync, but disconnected mobile edits are not available in MVP.
 - A custom MVP backtest engine is faster to ship for simple long-only flows, but advanced quant validation may eventually justify an external engine.
 - Mac-hosted Codex orchestration centralizes run history and safety controls locally, but requires careful per-run workspace isolation, concurrency limits, and cancellation controls.
 
-## 10. Acceptance Criteria
+## 11. Acceptance Criteria
 
 - A new engineer can scaffold the local-first monorepo from this stack without choosing major technologies again.
 - The Mac host Codex runtime can start one local development research thread, stream progress, produce a structured run card, and persist the Codex thread ID in SQLite.
 - The Mac host can expose a paired encrypted remote-control session to mobile.
 - Mobile can start, observe, and cancel a Mac-hosted research run.
 - Backtest jobs can run locally and stream status to the Mac UI and paired mobile controller.
+- A user can switch interface locale between English and Korean on the host or mobile surface, and reports can render localized presentation text without changing canonical metrics.

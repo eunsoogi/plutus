@@ -17,8 +17,33 @@ export type RemoteVisualState =
   | "revoked"
   | "disconnected";
 
-export function formatCurrency(value: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", {
+export type AppLocale = "en" | "ko";
+
+export const defaultLocale: AppLocale = "en";
+export const supportedLocales = ["en", "ko"] as const;
+
+export function normalizeLocale(value: string | null | undefined): AppLocale {
+  const normalized = value?.toLowerCase().split(/[-_]/)[0];
+  return normalized === "ko" ? "ko" : "en";
+}
+
+export function resolveLocale(input: {
+  requested?: string | null;
+  stored?: string | null;
+  browserLocales?: readonly string[];
+}): AppLocale {
+  if (input.requested) return normalizeLocale(input.requested);
+  if (input.stored) return normalizeLocale(input.stored);
+  const browserLocale = input.browserLocales?.find(Boolean);
+  return normalizeLocale(browserLocale);
+}
+
+export function formatCurrency(
+  value: number,
+  currency = "USD",
+  locale: AppLocale = defaultLocale,
+) {
+  return new Intl.NumberFormat(locale === "ko" ? "ko-KR" : "en-US", {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
@@ -33,9 +58,31 @@ export function riskToneForCategory(category: string) {
       : "accent";
 }
 
-export function remoteStateLabel(state: RemoteVisualState | string) {
-  if (state === "connected") return "Connected to Plutus Mac";
-  if (state === "stale") return "Stale snapshot";
-  if (state === "revoked") return "Revoked";
-  return "Disconnected";
+export function remoteStateLabel(
+  state: RemoteVisualState | string,
+  locale: AppLocale = defaultLocale,
+) {
+  const labels: Record<AppLocale, Record<RemoteVisualState, string>> = {
+    en: {
+      connected: "Connected to Plutus Mac",
+      stale: "Stale snapshot",
+      revoked: "Revoked",
+      disconnected: "Disconnected",
+    },
+    ko: {
+      connected: "Plutus Mac에 연결됨",
+      stale: "오래된 스냅샷",
+      revoked: "연결 해제됨",
+      disconnected: "연결 끊김",
+    },
+  };
+  if (
+    state === "connected" ||
+    state === "stale" ||
+    state === "revoked" ||
+    state === "disconnected"
+  ) {
+    return labels[locale][state];
+  }
+  return labels[locale].disconnected;
 }

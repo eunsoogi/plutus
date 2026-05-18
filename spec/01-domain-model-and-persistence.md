@@ -11,6 +11,7 @@ Define the data model, local persistence boundaries, and domain schemas needed f
 - Store all timestamps as ISO 8601 UTC strings in SQLite `TEXT` columns.
 - Store market sessions and candle intervals with explicit timezone metadata.
 - Use ISO currency codes for fiat and stablecoin-denominated cash balances.
+- Store persisted report, formatting, and timezone preferences as explicit BCP 47 or IANA values such as `en-US`, `ko-KR`, and `Asia/Seoul`; app chrome may use normalized language codes such as `en` and `ko` before expanding them for formatter APIs. Do not infer market region, trading currency, or legal jurisdiction from locale.
 
 ## 3. Core Enums
 
@@ -85,6 +86,10 @@ Columns:
 
 - `id`
 - `display_name`
+- `interface_locale`
+- `report_locale`
+- `number_format_locale`
+- `timezone`
 - `created_at`
 - `updated_at`
 - `deleted_at`
@@ -217,6 +222,10 @@ Latest quote snapshot with freshness metadata.
 - `custom_agent_versions`
 - `local_tool_config_hash`
 - `model_config`
+- `output_locale`
+- `report_locale`
+- `number_format_locale`
+- `timezone`
 - `recommendation_category`
 - `confidence`
 - `started_at`
@@ -233,6 +242,7 @@ Latest quote snapshot with freshness metadata.
 - `content_hash`
 - `mime_type`
 - `metadata`
+- `locale`
 - `created_by_agent`
 - `created_at`
 

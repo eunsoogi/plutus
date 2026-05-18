@@ -8,6 +8,7 @@ import {
   ArtifactDetailPage,
   ConnectionPage,
   HostDashboard,
+  I18nProvider,
   InstrumentDetailPage,
   MemoryPage,
   NotFoundPage,
@@ -325,6 +326,7 @@ export const hostRoutePaths = [
   "/wiki/:pageId",
   "/settings/security",
   "/settings/providers",
+  "/settings/preferences",
   "/settings/remote-control",
   "/settings/import-export",
 ] as const;
@@ -346,6 +348,26 @@ export const mobileRoutePaths = [
 ] as const;
 
 export function renderPlutusRoute({
+  path,
+  remote,
+  scenario,
+  commandClient,
+  refreshScenario,
+}: PlutusRouteContext): ReactElement {
+  return (
+    <I18nProvider>
+      {renderPlutusRouteContent({
+        path,
+        remote,
+        scenario,
+        commandClient,
+        refreshScenario,
+      })}
+    </I18nProvider>
+  );
+}
+
+function renderPlutusRouteContent({
   path,
   remote,
   scenario,
@@ -378,6 +400,7 @@ export function renderPlutusRoute({
     oneSegmentRoute(path, "wiki") ||
     path === "/settings/security" ||
     path === "/settings/providers" ||
+    path === "/settings/preferences" ||
     path === "/settings/remote-control" ||
     path === "/settings/import-export";
 
@@ -470,6 +493,9 @@ export function renderPlutusRoute({
   }
   if (path === "/settings/providers") {
     return <SettingsPage title="Provider Settings" />;
+  }
+  if (path === "/settings/preferences") {
+    return <SettingsPage title="Preferences" />;
   }
   if (path === "/settings/remote-control") {
     return <RemoteControlSettingsPage scenario={resolvedScenario} />;

@@ -11,16 +11,128 @@ test("browser runtime does not render seeded portfolio data without a command br
   await expect(page.getByText("Core Portfolio")).toHaveCount(0);
 });
 
+test("locale query renders Korean chrome and persists language changes", async ({
+  page,
+}) => {
+  await page.goto("/dashboard?runtime=local&locale=ko");
+  await expect(page.getByRole("link", { name: "포트폴리오" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "호스트 대시보드" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("언어")).toHaveValue("ko");
+
+  await page.getByLabel("언어").selectOption("en");
+  await expect(page).toHaveURL(/locale=en/);
+  await expect(page.getByRole("link", { name: "Portfolios" })).toBeVisible();
+
+  await page.goto("/remote/dashboard?remote=connected&locale=ko");
+  await expect(page.getByLabel("언어")).toHaveValue("ko");
+  await expect(page.getByTestId("remote-state")).toContainText(
+    "Plutus Mac에 연결됨",
+  );
+});
+
+test("Korean locale covers host and remote UI chrome without English leftovers", async ({
+  page,
+}) => {
+  const koreanRoutes = [
+    "/dashboard?runtime=local&locale=ko",
+    "/portfolios?runtime=local&locale=ko",
+    "/watchlists/watchlist-default?runtime=local&locale=ko",
+    "/runs?runtime=local&locale=ko",
+    "/memory?runtime=local&locale=ko",
+    "/wiki/wiki-btc-nvda-concentration?runtime=local&locale=ko",
+    "/settings/remote-control?runtime=local&locale=ko",
+    "/remote/dashboard?remote=connected&locale=ko",
+    "/remote/portfolios/portfolio-core?remote=connected&locale=ko",
+    "/remote/watchlists/watchlist-default?remote=connected&locale=ko",
+    "/remote/runs/run-btc-nvda?remote=connected&locale=ko",
+    "/remote/settings?remote=connected&locale=ko",
+  ] as const;
+  const untranslatedChrome = [
+    "Current guardrail",
+    "Run Progress",
+    "Artifacts",
+    "No artifacts yet",
+    "No portfolio yet",
+    "No watchlist yet",
+    "No research runs yet",
+    "No memory captured yet",
+    "No wiki pages captured yet",
+    "Create Portfolio",
+    "Position Thesis Notes",
+    "Watchlist Notes",
+    "Editable Notes",
+    "Memory Activity",
+    "Activity Feed",
+    "Category Toggles",
+    "Archive memory",
+    "Forget memory",
+    "Wiki Browser",
+    "Wiki Page",
+    "Revision Timeline",
+    "Source Links",
+    "Diff View",
+    "Not Found",
+    "Remote Control",
+    "Status",
+    "Enabled",
+    "Pairing code",
+    "Connected device",
+    "Pair With Mac",
+    "Connection",
+    "Remote Portfolio",
+    "Remote Thesis Edit",
+    "Save thesis to Mac",
+    "Remote Watchlist",
+    "Remote Note Edit",
+    "Save watchlist note to Mac",
+    "Remote Run Detail",
+    "Cancel Mac-hosted run",
+    "Remote Settings",
+    "Read-only",
+    "Biometric unlock required",
+  ];
+
+  for (const route of koreanRoutes) {
+    await page.goto(route);
+    const visibleText = await page.locator("body").innerText();
+    for (const englishText of untranslatedChrome) {
+      expect(
+        visibleText,
+        `${route} still contains ${englishText}`,
+      ).not.toContain(englishText);
+    }
+  }
+
+  await page.goto("/dashboard?runtime=local&locale=ko");
+  await expect(
+    page.getByRole("heading", { name: "아직 포트폴리오 없음" }),
+  ).toBeVisible();
+  await expect(page.getByText("아직 포트폴리오 없음 포트폴리오")).toHaveCount(
+    0,
+  );
+
+  await page.goto("/settings/remote-control?runtime=local&locale=ko");
+  await expect(page.getByText("페어링 안 됨").first()).toBeVisible();
+  await expect(
+    page.getByText("기기를 페어링한 뒤 연결을 해제할 수 있습니다"),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /연결 해제/ })).toHaveCount(0);
+});
+
 test("mobile remote routes show connected, disconnected, and revoked states", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/remote/dashboard");
-  await expect(page.getByTestId("connection-state")).toHaveText("connected");
+  await expect(page.getByTestId("connection-state")).toHaveText(
+    "Connected to Plutus Mac",
+  );
   await page.goto("/connection?state=disconnected");
-  await expect(page.getByTestId("connection-state")).toHaveText("disconnected");
+  await expect(page.getByTestId("connection-state")).toHaveText("Disconnected");
   await page.goto("/remote/dashboard?state=revoked");
-  await expect(page.getByTestId("connection-state")).toHaveText("revoked");
+  await expect(page.getByTestId("connection-state")).toHaveText("Revoked");
   await expect(page.getByTestId("remote-command")).toBeDisabled();
 });
 
@@ -40,6 +152,7 @@ const hostRoutes = [
   ["/wiki/wiki-btc-nvda-concentration", "Wiki Page"],
   ["/settings/security", "Security Settings"],
   ["/settings/providers", "Provider Settings"],
+  ["/settings/preferences", "Preferences"],
   ["/settings/remote-control", "Remote Control"],
   ["/settings/import-export", "Import Export"],
 ] as const;
@@ -145,8 +258,9 @@ test("memory, wiki, and remote-control surfaces expose MVP controls", async ({
   await page.goto("/settings/remote-control?runtime=local");
   await expect(page.getByTestId("pairing-code")).toContainText("Not paired");
   await expect(
-    page.getByRole("button", { name: "Revoke No paired device" }),
+    page.getByText("Pair a device before revoking access"),
   ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Revoke/ })).toHaveCount(0);
 });
 
 test("mobile remote route exposes connected-only note and thesis mutation controls", async ({

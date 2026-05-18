@@ -41,6 +41,7 @@ macOS host app must support:
 - Remote-control service with explicit user enablement.
 - Pairing flow for mobile devices using QR code or short-lived pairing code.
 - Session approval, session revocation, and visible connected-device status.
+- Preferences for interface locale, report locale, number/date formatting locale, and time zone. Product shells sync these preferences from the Mac host to the paired mobile controller during the remote-control session; the browser preview may use URL and `localStorage` locale overrides for deterministic QA.
 
 ## 4. Mobile Remote-Control Requirements
 
@@ -86,6 +87,8 @@ The MVP should not require a Plutus-hosted relay server. If direct connectivity 
 - All risk warnings must remain visible on mobile.
 - Mobile summaries should be shorter, but full Mac-hosted artifacts must remain accessible while connected.
 - The mobile UI must make clear when it is connected, disconnected, or viewing stale cached data.
+- macOS and mobile app chrome must use the selected interface locale, while generated reports and compact mobile summaries use the selected report locale.
+- Locale-aware formatting must not rewrite canonical calculation data, instrument identities, trading currencies, market regions, or jurisdiction labels.
 
 ## 7. Offline And Connection Behavior
 

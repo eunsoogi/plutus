@@ -27,6 +27,7 @@ MVP should prove the core loop:
 - Basic long-only backtesting for single-asset and simple multi-asset strategies.
 - Risk summary and recommendation category.
 - Run cards and report artifacts.
+- English and Korean interface/report localization with locale-aware number, currency, date, and time-zone formatting.
 - Mem0-backed runtime memory adapter with automatic capture, recall, edit, archive, delete, and category controls.
 - Local Markdown wiki with autonomous LLM Wiki Curator updates, source-linked revision history, activity feed, and revert controls.
 - macOS host app with research workspace, local data store, Codex runtime, and remote-control service.
@@ -39,6 +40,7 @@ MVP should prove the core loop:
 - CSV trade import.
 - Shadow Account behavior report.
 - More robust backtest validation.
+- Additional locales beyond English and Korean, plus translation QA workflows for expanded market terminology.
 - Provider health and failover dashboard.
 - Richer notification preferences and notification history.
 - Read-only exchange/broker portfolio import.

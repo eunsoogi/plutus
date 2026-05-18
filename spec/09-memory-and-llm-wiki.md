@@ -180,7 +180,7 @@ Pipeline:
 1. `MemoryCaptureService` receives `ResearchRunCompleted`.
 2. It loads final run card, specialist findings, risk summary, generated strategy specs, backtest warnings, and source refs.
 3. `SensitivityFilter` removes credentials, private keys, raw broker tokens, unrestricted account history, and prompt-injection text.
-4. `MemoryExtractor` emits candidate atomic memories.
+4. `MemoryExtractor` emits candidate atomic memories using the active report locale for generated summaries while preserving source language and canonical refs.
 5. `CapturePolicy` classifies each candidate by kind, sensitivity, retention, and category toggle state.
 6. Enabled candidates are written through `MemoryStore.capture`.
 7. `MemoryStore` persists SQLite metadata, writes semantic text to Mem0, and records `memory_activity`.
@@ -199,6 +199,7 @@ export const MemoryCandidateSchema = z.object({
     "wiki_pointer",
   ]),
   summary: z.string().min(1),
+  locale: z.string(),
   semanticText: z.string().min(1),
   tags: z.array(z.string()),
   sourceRefs: z.array(SourceRefSchema),
@@ -258,7 +259,7 @@ Pipeline:
 
 1. `WikiCuratorService` receives `ResearchRunCompleted` and the memory capture results.
 2. It loads the run card, relevant artifacts, source summaries, recalled memories, newly captured memories, and existing related wiki pages.
-3. It asks the `llm_wiki_curator` Codex custom agent to decide whether to create, update, merge, archive, or cross-link pages.
+3. It asks the `llm_wiki_curator` Codex custom agent to decide whether to create, update, merge, archive, or cross-link pages, passing locale metadata separately from source language.
 4. The curator returns structured `WikiMaintenancePlan`.
 5. `ContradictionChecker` compares planned claims against existing page claims and source freshness.
 6. `WikiRepository` applies writes through `create_wiki_page`, `update_wiki_page`, `merge_wiki_pages`, or `archive_wiki_page`.
@@ -267,6 +268,8 @@ Pipeline:
 9. `packages/memory` captures or updates wiki pointer memories for changed pages.
 
 The curator can write pages automatically. It cannot make portfolio recommendations, change research-run recommendations, or bypass risk-manager output.
+
+Memory and wiki localization stores canonical content and locale metadata together. Localized summaries can be regenerated for English or Korean, but the source language, source refs, instrument symbols, and audit refs remain stable.
 
 ## 9. Wiki Maintenance Plan Schema
 

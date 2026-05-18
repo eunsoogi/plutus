@@ -40,6 +40,7 @@ macOS host routes:
 /wiki/:pageId
 /settings/security
 /settings/providers
+/settings/preferences
 /settings/remote-control
 /settings/import-export
 ```
@@ -85,6 +86,10 @@ export interface PlutusLocalCommands {
     start(input: StartResearchRunInput): Promise<ResearchRun>;
     get(runId: string): Promise<ResearchRunDetail>;
     cancel(runId: string): Promise<void>;
+  };
+  preferences: {
+    get(): Promise<UserPreferences>;
+    updateLocale(input: UpdateLocalePreferencesInput): Promise<UserPreferences>;
   };
   artifacts: {
     get(artifactId: string): Promise<ArtifactDetail>;
@@ -171,6 +176,7 @@ macOS must support:
 - artifact viewer for run cards, reports, charts, and strategy specs;
 - local secure credential storage through Keychain;
 - local backtest and report generation;
+- language, locale, number/date formatting, and time-zone preferences;
 - remote-control settings with enable/disable, pairing, connected devices, and revoke controls.
 
 ## 8. Mobile Remote-Control UX Surface
@@ -189,6 +195,7 @@ Mobile must support:
 - view compact run summaries and full artifacts from the Mac host;
 - edit Mac-hosted watchlist notes and position thesis notes;
 - require biometric unlock before sensitive remote-control access.
+- use the Mac host's interface locale and locale-aware formatting for app chrome, while preserving canonical portfolio and market-data values received from the host.
 
 Mobile does not run Codex, market-data jobs, or heavyweight backtests locally in MVP.
 
@@ -215,7 +222,14 @@ remote.permission_denied
 
 Mobile treats events as progress. The Mac host SQLite database remains the source of truth.
 
-## 10. Local Storage
+## 10. Localization Requirements
+
+- Host and mobile route chrome must support English and Korean for MVP. Product preference records use BCP 47 values such as `en-US` and `ko-KR`; the shared UI catalog may use normalized app language codes such as `en` and `ko`.
+- Browser preview supports `?locale=` and `localStorage` so Codex and Playwright can verify language-specific UI states without writing Mac-host profile preferences.
+- Remote-control payloads carry stable IDs, command types, numbers, timestamps, and canonical currency codes; only rendered labels and summaries are localized.
+- Generated report and mobile-summary commands receive an explicit report locale so artifacts can be reproduced in the same language later.
+
+## 11. Local Storage
 
 MVP local storage on Mac:
 
@@ -231,7 +245,7 @@ Mobile local storage:
 - small read-only stale snapshot for disconnected display;
 - no independent source-of-truth portfolio database in MVP.
 
-## 11. Import/Export And Future Remote Access
+## 12. Import/Export And Future Remote Access
 
 MVP may support local export/backup from the Mac host, but mobile control does not depend on export/import.
 
@@ -242,7 +256,7 @@ Post-MVP options:
 - optional platform push notifications after a separate design;
 - optional hosted relay only after a separate PRD.
 
-## 12. Acceptance Tests
+## 13. Acceptance Tests
 
 - User enables remote control on Mac and pairs a mobile device.
 - Mobile lists Mac-hosted portfolios while connected.

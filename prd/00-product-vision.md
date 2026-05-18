@@ -18,6 +18,7 @@ It explicitly focuses on research, simulation, and backtesting rather than live 
 - Turn natural-language requests into structured research runs, strategy drafts, portfolio analysis, and backtest reports.
 - Provide multi-agent teams for investment, quant, crypto, macro, technical analysis, and risk workflows.
 - Support a macOS host app and a mobile remote-control app from the beginning with a shared TypeScript domain layer.
+- Support user-selected interface and report locales, starting with English and Korean, with locale-aware formatting for dates, numbers, currencies, and time zones.
 - Preserve the user's preferences, watchlists, strategies, research notes, wiki pages, and prior decisions across sessions.
 - Produce auditable outputs: data sources, tool traces, assumptions, decision rationale summaries, risk checks, and generated artifacts.
 
@@ -27,6 +28,7 @@ It explicitly focuses on research, simulation, and backtesting rather than live 
 - No promise of financial advice, guaranteed returns, or autonomous capital allocation.
 - No high-frequency trading or latency-sensitive execution.
 - No support for every global exchange at launch.
+- No claim that localization expands market coverage, currency support, tax treatment, or jurisdiction-specific legal/compliance guidance.
 - No unverified social-sentiment trading signal as a primary decision driver.
 
 ## 4. Target Users
@@ -43,6 +45,7 @@ It explicitly focuses on research, simulation, and backtesting rather than live 
 - Simulation before action: strategy outputs must be backtestable and reportable before any future execution feature.
 - Human final control: the user always approves portfolio decisions and any future trade execution.
 - Mac-hosted source of truth: the macOS app owns local portfolio state, agent runs, backtests, and artifacts. The mobile app controls and views the Mac app through a paired remote-control session.
+- Locale is presentation metadata: interface locale, report locale, market region, trading currency, and legal jurisdiction must remain separate concepts.
 
 ## 6. Vibe-Trading Concepts To Adopt
 

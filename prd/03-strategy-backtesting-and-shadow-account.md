@@ -38,6 +38,7 @@ MVP backtesting must support:
 - Return, volatility, Sharpe-like risk-adjusted return, max drawdown, win rate, exposure, and turnover.
 - Exportable HTML or Markdown report.
 - Run card containing inputs, assumptions, version, data source, warnings, and artifacts.
+- Locale-aware report rendering for user-facing labels, dates, numbers, currencies, and time zones while preserving canonical backtest metrics and input data.
 
 Post-MVP backtesting:
 
@@ -67,6 +68,7 @@ Phase 2 behavior:
 - Any strategy with leverage, shorting, derivatives, or illiquid assets must trigger additional risk warnings.
 - If generated strategy code is introduced after MVP, it must run in a sandboxed environment.
 - Reports must clearly show assumptions and data limitations.
+- Localized reports must not translate away source identifiers, formula names, raw symbols, audit refs, or canonical metric fields.
 - Agents must not present backtest performance as a guarantee.
 
 ## 6. Acceptance Criteria
@@ -76,6 +78,7 @@ MVP:
 - User can ask for a BTC moving-average backtest and receive metrics, chart data, assumptions, and a report artifact.
 - User can save a generated strategy spec and rerun it later with a different date range.
 - Backtest output includes data source, fee/slippage assumptions, and risk warnings.
+- Backtest report artifacts can be rendered in English or Korean from the same canonical result.
 
 Phase 2:
 

@@ -2,8 +2,10 @@ import { useEffect, useState, type ReactNode } from "react";
 import {
   formatCurrency,
   remoteStateLabel,
+  type AppLocale,
   type RemoteVisualState,
 } from "./core";
+import { useI18n } from "./i18n";
 
 export type RouteKind = "host" | "remote";
 
@@ -185,6 +187,58 @@ function commandErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Command failed";
 }
 
+function localizedScenarioText(
+  value: string | undefined,
+  t: ReturnType<typeof useI18n>["t"],
+) {
+  if (!value) return "";
+  const knownText: Record<string, string> = {
+    "No portfolio yet": t("portfolio.empty"),
+    Core: t("portfolio.core"),
+    "No watchlist yet": t("watchlist.empty"),
+    "Default Watchlist": t("watchlist.default"),
+    "No instrument selected": t("instrument.empty"),
+    "Create a portfolio or watchlist to inspect instruments.":
+      t("runtime.body"),
+    "No research runs yet": t("runs.empty"),
+    "No runs yet": t("runs.noRunsYet"),
+    completed: t("runs.completed"),
+    "No activity": t("memory.noActivity"),
+    "No paired device": t("empty.device"),
+    "Not paired": t("empty.pairing"),
+    Paired: t("empty.paired"),
+    "BTC NVDA risk report": t("artifact.riskReport"),
+    "Security Settings": t("settings.security"),
+    "Provider Settings": t("settings.providers"),
+    Preferences: t("settings.preferences"),
+    "Import Export": t("settings.importExport"),
+  };
+  return knownText[value] ?? value;
+}
+
+function localizedCommandSource(
+  source: string,
+  t: ReturnType<typeof useI18n>["t"],
+) {
+  if (source === "Command bridge") return t("remote.commandBridge");
+  if (source === "Local runtime") return t("remote.localRuntime");
+  return source;
+}
+
+function localizedCommandStatus(
+  status: string,
+  t: ReturnType<typeof useI18n>["t"],
+) {
+  if (status === "Ready") return t("common.ready");
+  if (status === "No command bridge connected") {
+    return t("portfolio.bridgeMissing");
+  }
+  if (status.startsWith("Command bridge:")) {
+    return status.replace("Command bridge", t("remote.commandBridge"));
+  }
+  return status;
+}
+
 function buildRemoteCommand(input: {
   commandId?: string;
   sessionId: string;
@@ -241,8 +295,13 @@ async function remoteCommandCredentials(
 function preserveRuntimeSearch() {
   if (typeof window === "undefined") return "";
   const search = new URLSearchParams(window.location.search);
-  const runtime = search.get("runtime");
-  return runtime ? `?runtime=${encodeURIComponent(runtime)}` : "";
+  const params = new URLSearchParams();
+  for (const key of ["runtime", "locale"]) {
+    const value = search.get(key);
+    if (value) params.set(key, value);
+  }
+  const query = params.toString();
+  return query ? `?${query}` : "";
 }
 
 function currentRuntimeParam() {
@@ -254,27 +313,52 @@ function withRemoteQuery(path: string, remote: string) {
   const params = new URLSearchParams({ remote });
   const runtime = currentRuntimeParam();
   if (runtime) params.set("runtime", runtime);
+  if (typeof window !== "undefined") {
+    const locale = new URL(window.location.href).searchParams.get("locale");
+    if (locale) params.set("locale", locale);
+  }
   return `${path}?${params.toString()}`;
+}
+
+function LocaleSelector() {
+  const { locale, setLocale, t } = useI18n();
+  return (
+    <label className="locale-switcher">
+      <span>{t("aria.language")}</span>
+      <select
+        aria-label={t("aria.language")}
+        value={locale}
+        onChange={(event) => setLocale(event.currentTarget.value as AppLocale)}
+      >
+        <option value="en">English</option>
+        <option value="ko">한국어</option>
+      </select>
+    </label>
+  );
 }
 
 export function HostShell({ children }: HostShellProps) {
   const runtimeSearch = preserveRuntimeSearch();
+  const { t } = useI18n();
   return (
     <main
       className="app-shell"
       data-testid="route-surface"
       data-route-kind="host"
     >
-      <aside className="sidebar" aria-label="Primary navigation">
+      <aside className="sidebar" aria-label={t("aria.primaryNavigation")}>
         <strong>Plutus</strong>
+        <LocaleSelector />
         <nav>
-          <a href={`/dashboard${runtimeSearch}`}>Dashboard</a>
-          <a href={`/portfolios${runtimeSearch}`}>Portfolios</a>
-          <a href={`/watchlists${runtimeSearch}`}>Watchlists</a>
-          <a href={`/runs${runtimeSearch}`}>Runs</a>
-          <a href={`/memory${runtimeSearch}`}>Memory</a>
-          <a href={`/wiki${runtimeSearch}`}>Wiki</a>
-          <a href={`/settings/remote-control${runtimeSearch}`}>Remote</a>
+          <a href={`/dashboard${runtimeSearch}`}>{t("nav.dashboard")}</a>
+          <a href={`/portfolios${runtimeSearch}`}>{t("nav.portfolios")}</a>
+          <a href={`/watchlists${runtimeSearch}`}>{t("nav.watchlists")}</a>
+          <a href={`/runs${runtimeSearch}`}>{t("nav.runs")}</a>
+          <a href={`/memory${runtimeSearch}`}>{t("nav.memory")}</a>
+          <a href={`/wiki${runtimeSearch}`}>{t("nav.wiki")}</a>
+          <a href={`/settings/remote-control${runtimeSearch}`}>
+            {t("nav.remote")}
+          </a>
         </nav>
       </aside>
       <section className="main-surface">{children}</section>
@@ -283,6 +367,7 @@ export function HostShell({ children }: HostShellProps) {
 }
 
 export function MobileShell({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
   const remote =
     typeof window === "undefined"
       ? "connected"
@@ -295,57 +380,57 @@ export function MobileShell({ children }: { children: ReactNode }) {
       data-testid="route-surface"
       data-route-kind="remote"
     >
-      <nav className="mobile-tabs" aria-label="Remote navigation">
-        <a href={withRemoteQuery("/remote/dashboard", remote)}>Home</a>
-        <a href={withRemoteQuery("/remote/runs", remote)}>Runs</a>
-        <a href={withRemoteQuery("/remote/settings", remote)}>Settings</a>
+      <nav className="mobile-tabs" aria-label={t("aria.remoteNavigation")}>
+        <a href={withRemoteQuery("/remote/dashboard", remote)}>
+          {t("nav.home")}
+        </a>
+        <a href={withRemoteQuery("/remote/runs", remote)}>{t("nav.runs")}</a>
+        <a href={withRemoteQuery("/remote/settings", remote)}>
+          {t("nav.settings")}
+        </a>
       </nav>
+      <LocaleSelector />
       {children}
     </main>
   );
 }
 
 export function RuntimeUnavailablePage() {
+  const { t } = useI18n();
   return (
     <HostShell>
       <section className="panel" data-testid="runtime-unavailable">
-        <h1>Local Runtime Required</h1>
-        <p>
-          No local Plutus runtime bridge is connected. Start the Tauri app or
-          enable the browser local runtime bridge to load real app state.
-        </p>
+        <h1>{t("runtime.title")}</h1>
+        <p>{t("runtime.body")}</p>
       </section>
     </HostShell>
   );
 }
 
 export function RiskWarning() {
+  const { t } = useI18n();
   return (
     <section className="risk-warning" data-testid="risk-warning">
-      <strong>Risk warning</strong>
-      <span>
-        BTC and NVDA combined exposure exceeds the review threshold. Inspect
-        concentration, correlation, stale quote data, and liquidity assumptions
-        before any rebalance candidate is considered. Past performance does not
-        guarantee future results.
-      </span>
+      <strong>{t("risk.title")}</strong>
+      <span>{t("risk.body")}</span>
     </section>
   );
 }
 
 export function RiskChart() {
+  const { t } = useI18n();
   return (
     <div
       className="chart"
       data-testid="artifact-chart"
       data-rendered="true"
-      aria-label="BTC and NVDA exposure chart"
+      aria-label={t("chart.exposure")}
     >
       <svg
         data-testid="risk-chart"
         viewBox="0 0 320 120"
         role="img"
-        aria-label="BTC and NVDA exposure line chart"
+        aria-label={t("chart.exposureLine")}
       >
         <rect x="0" y="0" width="320" height="120" fill="#f7fafc" />
         <polyline
@@ -363,22 +448,25 @@ export function RiskChart() {
       </svg>
       <span style={{ height: "76%" }}>BTC</span>
       <span style={{ height: "62%" }}>NVDA</span>
-      <span style={{ height: "38%" }}>Cash</span>
+      <span style={{ height: "38%" }}>{t("chart.cash")}</span>
     </div>
   );
 }
 
 export function ArtifactList({ scenario }: { scenario: PlutusScenario }) {
+  const { t } = useI18n();
   return (
     <section className="artifact-list" data-testid="artifact-list">
-      <h2>Artifacts</h2>
+      <h2>{t("artifact.list")}</h2>
       {scenario.run.artifacts.map((artifact) => (
         <a
           key={artifact.id}
           href={`/runs/${scenario.run.id}/artifacts/${artifact.id}${preserveRuntimeSearch()}`}
-          aria-label={`Open ${artifact.name}`}
+          aria-label={t("artifact.open", {
+            name: localizedScenarioText(artifact.name, t),
+          })}
         >
-          {artifact.name}
+          {localizedScenarioText(artifact.name, t)}
         </a>
       ))}
     </section>
@@ -386,29 +474,31 @@ export function ArtifactList({ scenario }: { scenario: PlutusScenario }) {
 }
 
 export function HostDashboard({ scenario }: { scenario: PlutusScenario }) {
+  const { t } = useI18n();
   return (
     <HostShell>
       <header className="page-header">
-        <p className="eyebrow">Local runtime</p>
-        <h1>Plutus Research Desk</h1>
-        <h2>Host Dashboard</h2>
+        <p className="eyebrow">{t("dashboard.eyebrow")}</p>
+        <h1>{t("dashboard.title")}</h1>
+        <h2>{t("dashboard.host")}</h2>
       </header>
       <section className="grid two">
         <PortfolioSummary scenario={scenario} />
         {scenario.run.category ? (
           <article className="panel">
-            <h2>Current guardrail</h2>
+            <h2>{t("dashboard.currentGuardrail")}</h2>
             <RiskWarning />
           </article>
         ) : null}
         <article className="panel">
-          <h2>Run Progress</h2>
+          <h2>{t("dashboard.runProgress")}</h2>
           <RunStageList />
         </article>
         <article className="panel">
-          <h2>Artifacts</h2>
+          <h2>{t("artifact.list")}</h2>
           <p data-testid="artifact-title">
-            {scenario.run.artifacts[0]?.name ?? "No artifacts yet"}
+            {localizedScenarioText(scenario.run.artifacts[0]?.name, t) ||
+              t("artifact.none")}
           </p>
           {scenario.run.artifacts.length > 0 ? <RiskChart /> : null}
         </article>
@@ -418,11 +508,18 @@ export function HostDashboard({ scenario }: { scenario: PlutusScenario }) {
 }
 
 export function PortfolioSummary({ scenario }: { scenario: PlutusScenario }) {
+  const { locale, t } = useI18n();
+  const portfolioName = localizedScenarioText(scenario.portfolio.name, t);
+  const portfolioHeading = scenario.portfolio.id
+    ? t("portfolio.suffix", { name: portfolioName })
+    : portfolioName;
   return (
     <article className="panel" data-testid="portfolio-core">
-      <h2>{scenario.portfolio.name} portfolio</h2>
-      <p data-testid="portfolio-name">{scenario.portfolio.name}</p>
-      <p className="metric">{formatCurrency(scenario.portfolio.value)}</p>
+      <h2>{portfolioHeading}</h2>
+      <p data-testid="portfolio-name">{portfolioName}</p>
+      <p className="metric">
+        {formatCurrency(scenario.portfolio.value, "USD", locale)}
+      </p>
       <div className="position-list">
         {scenario.portfolio.positions.map((position) => (
           <div className="row" key={position.symbol}>
@@ -442,6 +539,7 @@ export function PortfoliosPage({
   scenario: PlutusScenario;
   commandClient?: PlutusCommandClient;
 }) {
+  const { t } = useI18n();
   const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [createdPortfolio, setCreatedPortfolio] = useState<{
@@ -463,7 +561,7 @@ export function PortfoliosPage({
   async function createPortfolio() {
     setMessage(null);
     if (!commandClient?.portfolios?.create) {
-      setMessage("No command bridge connected");
+      setMessage(t("portfolio.bridgeMissing"));
       return;
     }
     setCreating(true);
@@ -479,7 +577,7 @@ export function PortfoliosPage({
           name: created.name ?? "Primary Portfolio",
         });
       }
-      setMessage(`Created ${created.name ?? "portfolio"}`);
+      setMessage(t("portfolio.created", { name: created.name ?? "portfolio" }));
     } catch (error) {
       setMessage(commandErrorMessage(error));
     } finally {
@@ -489,16 +587,16 @@ export function PortfoliosPage({
 
   return (
     <HostShell>
-      <h1>Portfolios</h1>
+      <h1>{t("portfolio.title")}</h1>
       {!visibleScenario.portfolio.id ? (
         <section className="panel">
-          <h2>Create Portfolio</h2>
+          <h2>{t("portfolio.create")}</h2>
           <button
             className="primary"
             onClick={createPortfolio}
             disabled={creating}
           >
-            {creating ? "Creating Portfolio" : "Create Portfolio"}
+            {creating ? t("portfolio.creating") : t("portfolio.create")}
           </button>
         </section>
       ) : null}
@@ -513,12 +611,13 @@ export function PortfolioDetailPage({
 }: {
   scenario: PlutusScenario;
 }) {
+  const { t } = useI18n();
   return (
     <HostShell>
-      <h1>{scenario.portfolio.name}</h1>
+      <h1>{localizedScenarioText(scenario.portfolio.name, t)}</h1>
       <PortfolioRows scenario={scenario} />
       <section className="panel">
-        <h2>Position Thesis Notes</h2>
+        <h2>{t("portfolio.thesisNotes")}</h2>
         {scenario.portfolio.positions.map((position) => (
           <p key={position.symbol}>
             <strong>{position.symbol}</strong>: {position.thesis}
@@ -530,15 +629,16 @@ export function PortfolioDetailPage({
 }
 
 function PortfolioRows({ scenario }: { scenario: PlutusScenario }) {
+  const { locale, t } = useI18n();
   return (
     <article className="panel" data-testid="portfolio-core">
-      <h2>{scenario.portfolio.name}</h2>
+      <h2>{localizedScenarioText(scenario.portfolio.name, t)}</h2>
       {scenario.portfolio.positions.map((position) => (
         <div className="row" key={position.symbol}>
           <span>
             {position.symbol} - {position.name}
           </span>
-          <strong>{formatCurrency(position.value)}</strong>
+          <strong>{formatCurrency(position.value, "USD", locale)}</strong>
         </div>
       ))}
     </article>
@@ -546,10 +646,14 @@ function PortfolioRows({ scenario }: { scenario: PlutusScenario }) {
 }
 
 export function WatchlistsPage({ scenario }: { scenario: PlutusScenario }) {
+  const { t } = useI18n();
   return (
     <HostShell>
-      <h1>Watchlists</h1>
-      <WatchlistPanel scenario={scenario} title={scenario.watchlist.name} />
+      <h1>{t("watchlist.title")}</h1>
+      <WatchlistPanel
+        scenario={scenario}
+        title={localizedScenarioText(scenario.watchlist.name, t)}
+      />
     </HostShell>
   );
 }
@@ -559,13 +663,14 @@ export function WatchlistDetailPage({
 }: {
   scenario: PlutusScenario;
 }) {
+  const { t } = useI18n();
   return (
     <HostShell>
-      <h1>{scenario.watchlist.name}</h1>
-      <WatchlistPanel scenario={scenario} title="Watchlist Notes" />
+      <h1>{localizedScenarioText(scenario.watchlist.name, t)}</h1>
+      <WatchlistPanel scenario={scenario} title={t("watchlist.notes")} />
       <section className="panel">
-        <h2>Editable Notes</h2>
-        <p>NVDA note: validate AI capex assumptions before the next run.</p>
+        <h2>{t("watchlist.editableNotes")}</h2>
+        <p>{t("watchlist.noteExample")}</p>
       </section>
     </HostShell>
   );
@@ -597,14 +702,14 @@ export function InstrumentDetailPage({
 }: {
   scenario: PlutusScenario;
 }) {
+  const { t } = useI18n();
+  const instrumentName = localizedScenarioText(scenario.instrument.name, t);
   return (
     <HostShell>
-      <h1>{scenario.instrument.symbol || "Instrument"}</h1>
+      <h1>{scenario.instrument.symbol || t("instrument.empty")}</h1>
       <section className="panel">
-        <h2>
-          {scenario.instrument.symbol} - {scenario.instrument.name}
-        </h2>
-        <p>{scenario.instrument.summary}</p>
+        <h2>{scenario.instrument.symbol || instrumentName}</h2>
+        <p>{localizedScenarioText(scenario.instrument.summary, t)}</p>
         <RiskChart />
       </section>
     </HostShell>
@@ -620,10 +725,13 @@ export function RunsPage({
   commandClient?: PlutusCommandClient;
   refreshScenario?: () => Promise<PlutusScenario>;
 }) {
+  const { t } = useI18n();
   const [currentScenario, setCurrentScenario] = useState(scenario);
   const [started, setStarted] = useState(false);
   const [pending, setPending] = useState(false);
-  const [runStatus, setRunStatus] = useState(scenario.run.status);
+  const [runStatus, setRunStatus] = useState(
+    localizedScenarioText(scenario.run.status, t),
+  );
   const [commandSource, setCommandSource] = useState<
     "Command bridge" | "Local runtime"
   >("Local runtime");
@@ -631,13 +739,13 @@ export function RunsPage({
 
   useEffect(() => {
     setCurrentScenario(scenario);
-    setRunStatus(scenario.run.status);
-  }, [scenario]);
+    setRunStatus(localizedScenarioText(scenario.run.status, t));
+  }, [scenario, t]);
 
   async function startReview() {
     setCommandError(null);
     if (!commandClient || !currentScenario.portfolio.id) {
-      setCommandError("Create a portfolio before starting a research run.");
+      setCommandError(t("runs.createFirst"));
       return;
     }
 
@@ -658,7 +766,10 @@ export function RunsPage({
       setCurrentScenario(refreshedScenario);
       setStarted(true);
       setRunStatus(
-        commandStatusLabel(run.status, refreshedScenario.run.status),
+        localizedScenarioText(
+          commandStatusLabel(run.status, refreshedScenario.run.status),
+          t,
+        ),
       );
       setCommandSource("Command bridge");
       if (refreshScenario) {
@@ -667,7 +778,10 @@ export function RunsPage({
           const updatedScenario = await refreshScenario();
           setCurrentScenario(updatedScenario);
           setRunStatus(
-            commandStatusLabel(run.status, updatedScenario.run.status),
+            localizedScenarioText(
+              commandStatusLabel(run.status, updatedScenario.run.status),
+              t,
+            ),
           );
           if (
             updatedScenario.run.category ||
@@ -688,14 +802,14 @@ export function RunsPage({
 
   return (
     <HostShell>
-      <h1>Research Runs</h1>
-      <h2>Research Runs</h2>
+      <h1>{t("runs.title")}</h1>
+      <h2>{t("runs.title")}</h2>
       <button
         className="primary"
         onClick={startReview}
         disabled={pending || !currentScenario.portfolio.id}
       >
-        {pending ? "Starting Research Run" : "Start Research Run"}
+        {pending ? t("runs.starting") : t("runs.start")}
       </button>
       {commandError ? (
         <section className="risk-warning" data-testid="command-error">
@@ -706,7 +820,9 @@ export function RunsPage({
         {started ? (
           <>
             <div data-testid="run-progress">{runStatus}</div>
-            <div data-testid="command-source">{commandSource}</div>
+            <div data-testid="command-source">
+              {localizedCommandSource(commandSource, t)}
+            </div>
           </>
         ) : (
           <RunStageList />
@@ -720,19 +836,19 @@ export function RunsPage({
         <ArtifactList scenario={currentScenario} />
       </section>
       <section className="panel">
-        <h2>Memory</h2>
+        <h2>{t("memory.short")}</h2>
         <p>
           {currentScenario.memory.summary
             ? `${currentScenario.memory.activity}: ${currentScenario.memory.summary}`
-            : "No memory captured yet."}
+            : t("memory.empty")}
         </p>
       </section>
       <section className="panel">
-        <h2>Wiki</h2>
+        <h2>{t("wiki.short")}</h2>
         <p>
           {currentScenario.wiki.title
             ? `${currentScenario.wiki.title} with source-linked revision history.`
-            : "No wiki pages captured yet."}
+            : t("wiki.empty")}
         </p>
       </section>
     </HostShell>
@@ -751,13 +867,18 @@ function FinalRunCard({
   const card = run.finalCard;
   const evidence = card?.supportingEvidence ?? [];
   const checklist = card?.riskChecklist ?? [];
+  const { t } = useI18n();
   return (
     <div data-testid="final-run-card" className="final-card">
       <strong>
-        {started ? `Run status: ${status}; ` : ""}
-        Final category: {run.category || "none"}
+        {started ? t("runs.status", { status }) : ""}
+        {t("runs.finalCategory", {
+          category: run.category || t("common.none"),
+        })}
       </strong>
-      {run.confidence ? <span>Confidence: {run.confidence}</span> : null}
+      {run.confidence ? (
+        <span>{t("runs.confidence", { confidence: run.confidence })}</span>
+      ) : null}
       {card?.summary ? <p>{card.summary}</p> : null}
       {evidence.length > 0 ? (
         <ul>
@@ -770,51 +891,61 @@ function FinalRunCard({
       ) : null}
       {checklist.length > 0 ? (
         <p>
-          Risk checks:{" "}
-          {checklist
-            .slice(0, 3)
-            .map(
-              (item) => `${item.check ?? "check"}=${item.status ?? "unknown"}`,
-            )
-            .join(", ")}
+          {t("runs.riskChecks", {
+            checks: checklist
+              .slice(0, 3)
+              .map(
+                (item) =>
+                  `${item.check ?? t("common.check")}=${item.status ?? t("common.unknown")}`,
+              )
+              .join(", "),
+          })}
         </p>
       ) : null}
       {card?.limitations?.length ? (
-        <p>Limitations: {card.limitations.join("; ")}</p>
+        <p>
+          {t("runs.limitations", { limitations: card.limitations.join("; ") })}
+        </p>
       ) : null}
       {card?.nextActions?.length ? (
-        <p>Next: {card.nextActions.join("; ")}</p>
+        <p>{t("runs.next", { next: card.nextActions.join("; ") })}</p>
       ) : null}
     </div>
   );
 }
 
 function RunStageList() {
+  const { t } = useI18n();
+  const stages = [
+    ["planning", t("stage.planning")],
+    ["grounding", t("stage.grounding")],
+    ["executing", t("stage.executing")],
+    ["debating", t("stage.debating")],
+    ["validating", t("stage.validating")],
+    ["reporting", t("stage.reporting")],
+    ["completed", t("stage.completed")],
+  ] as const;
   return (
     <ol data-testid="run-progress">
-      {[
-        "planning",
-        "grounding",
-        "executing",
-        "debating",
-        "validating",
-        "reporting",
-        "completed",
-      ].map((stage) => (
-        <li key={stage}>{stage}</li>
+      {stages.map(([stage, label]) => (
+        <li key={stage}>{label}</li>
       ))}
     </ol>
   );
 }
 
 export function RunDetailPage({ scenario }: { scenario: PlutusScenario }) {
+  const { t } = useI18n();
   return (
     <HostShell>
-      <h1>{scenario.run.title}</h1>
+      <h1>{localizedScenarioText(scenario.run.title, t)}</h1>
       <RiskChart />
       <RiskWarning />
       {scenario.run.finalCard ? (
-        <FinalRunCard run={scenario.run} status={scenario.run.status} />
+        <FinalRunCard
+          run={scenario.run}
+          status={localizedScenarioText(scenario.run.status, t)}
+        />
       ) : null}
       <ArtifactList scenario={scenario} />
     </HostShell>
@@ -832,12 +963,19 @@ export function ArtifactDetailPage({
   artifactId?: string;
   runId?: string;
 }) {
+  const { t } = useI18n();
   const fallbackArtifact = artifactId
     ? (scenario.run.artifacts.find(
         (artifact) => artifact.id === artifactId,
-      ) ?? { id: "", name: "No artifact", type: "" })
-    : (scenario.run.artifacts[0] ?? { id: "", name: "No artifact", type: "" });
-  const [artifactName, setArtifactName] = useState(fallbackArtifact.name);
+      ) ?? { id: "", name: t("empty.artifact"), type: "" })
+    : (scenario.run.artifacts[0] ?? {
+        id: "",
+        name: t("empty.artifact"),
+        type: "",
+      });
+  const [artifactName, setArtifactName] = useState(
+    localizedScenarioText(fallbackArtifact.name, t),
+  );
   const [commandSource, setCommandSource] = useState<
     "Command bridge" | "Local runtime"
   >("Local runtime");
@@ -850,7 +988,10 @@ export function ArtifactDetailPage({
       .then((artifact) => {
         if (!active) return;
         setArtifactName(
-          artifact.title ?? artifact.name ?? fallbackArtifact.name,
+          localizedScenarioText(
+            artifact.title ?? artifact.name ?? fallbackArtifact.name,
+            t,
+          ),
         );
         setCommandSource("Command bridge");
       })
@@ -872,23 +1013,23 @@ export function ArtifactDetailPage({
     <HostShell>
       <h1>{artifactName}</h1>
       {scenario.run.category ? <RiskWarning /> : null}
-      <p data-testid="artifact-command-source">{commandSource}</p>
-      <p data-testid="artifact-command-title">{artifactName}</p>
-      <p>
-        Generated locally in the Mac app data directory and opened through the
-        typed artifact command.
+      <p data-testid="artifact-command-source">
+        {localizedCommandSource(commandSource, t)}
       </p>
+      <p data-testid="artifact-command-title">{artifactName}</p>
+      <p>{t("artifact.generated")}</p>
     </HostShell>
   );
 }
 
 export function StrategiesPage() {
+  const { t } = useI18n();
   return (
     <HostShell>
-      <h1>Strategies</h1>
+      <h1>{t("strategies.title")}</h1>
       <section className="panel">
-        <h2>Strategy Specs</h2>
-        <p>Risk trim strategy spec generated from the completed run.</p>
+        <h2>{t("strategies.specs")}</h2>
+        <p>{t("strategies.body")}</p>
       </section>
     </HostShell>
   );
@@ -901,6 +1042,7 @@ export function MemoryPage({
   scenario: PlutusScenario;
   commandClient?: PlutusCommandClient;
 }) {
+  const { t } = useI18n();
   const [commandStatus, setCommandStatus] = useState("Ready");
   async function runMemoryCommand(
     action: "edit" | "pin" | "archive" | "forget",
@@ -923,7 +1065,7 @@ export function MemoryPage({
       } else if (action === "archive") {
         await commandClient.memory.archive(
           scenario.memory.id,
-          "Archived from memory activity surface.",
+          t("memory.archiveReason"),
           { profileId: scenario.profileId },
         );
       } else {
@@ -950,43 +1092,46 @@ export function MemoryPage({
   }
   return (
     <HostShell>
-      <h1>Memory Activity</h1>
+      <h1>{t("memory.title")}</h1>
       <section className="grid two">
         <article className="panel" data-testid="memory-activity-feed">
-          <h2>Activity Feed</h2>
+          <h2>{t("memory.feed")}</h2>
           <p>
-            {scenario.memory.activity}: {scenario.memory.summary}
+            {localizedScenarioText(scenario.memory.activity, t)}:{" "}
+            {scenario.memory.summary}
           </p>
-          <p data-testid="memory-command-status">{commandStatus}</p>
+          <p data-testid="memory-command-status">
+            {localizedCommandStatus(commandStatus, t)}
+          </p>
           <div className="button-row">
             <button
               className="secondary"
               onClick={() => void runMemoryCommand("edit")}
             >
-              Edit memory
+              {t("memory.edit")}
             </button>
             <button
               className="secondary"
               onClick={() => void runMemoryCommand("pin")}
             >
-              Pin memory
+              {t("memory.pin")}
             </button>
             <button
               className="secondary"
               onClick={() => void runMemoryCommand("archive")}
             >
-              Archive memory
+              {t("memory.archive")}
             </button>
             <button
               className="secondary"
               onClick={() => void runMemoryCommand("forget")}
             >
-              Forget memory
+              {t("memory.forget")}
             </button>
           </div>
         </article>
         <article className="panel">
-          <h2>Category Toggles</h2>
+          <h2>{t("memory.categories")}</h2>
           <label className="toggle-row">
             <input
               type="checkbox"
@@ -998,7 +1143,7 @@ export function MemoryPage({
                 )
               }
             />
-            Research memory capture
+            {t("memory.researchCapture")}
           </label>
           <label className="toggle-row">
             <input
@@ -1011,7 +1156,7 @@ export function MemoryPage({
                 )
               }
             />
-            Wiki pointer memory
+            {t("memory.wikiPointer")}
           </label>
         </article>
       </section>
@@ -1028,6 +1173,7 @@ export function WikiPage({
   detail: boolean;
   commandClient?: PlutusCommandClient;
 }) {
+  const { t } = useI18n();
   const [commandStatus, setCommandStatus] = useState("Ready");
   async function revertRevision() {
     if (!commandClient?.wiki) {
@@ -1038,7 +1184,7 @@ export function WikiPage({
       await commandClient.wiki.revertRevision(
         scenario.wiki.id,
         scenario.wiki.revision,
-        "Reverted from wiki history surface.",
+        t("wiki.revertReason"),
       );
       setCommandStatus("Command bridge: wiki.revertRevision");
     } catch (error) {
@@ -1047,28 +1193,32 @@ export function WikiPage({
   }
   return (
     <HostShell>
-      <h1>{detail ? scenario.wiki.title || "Wiki Page" : "Wiki Browser"}</h1>
+      <h1>
+        {detail ? scenario.wiki.title || t("wiki.page") : t("wiki.browser")}
+      </h1>
       <section className="grid two">
         <article className="panel">
-          <h2>Wiki Activity Feed</h2>
-          <p>LLM Wiki Curator updated a source-linked risk lesson.</p>
+          <h2>{t("wiki.feed")}</h2>
+          <p>{t("wiki.feedBody")}</p>
         </article>
         <article className="panel" data-testid="wiki-revision-timeline">
-          <h2>Revision Timeline</h2>
-          <p>Revision: {scenario.wiki.revision}</p>
+          <h2>{t("wiki.revisionTimeline")}</h2>
+          <p>{t("wiki.revision", { revision: scenario.wiki.revision })}</p>
           <p>audit: audit-wiki-btc-nvda-revision</p>
-          <p data-testid="wiki-command-status">{commandStatus}</p>
+          <p data-testid="wiki-command-status">
+            {localizedCommandStatus(commandStatus, t)}
+          </p>
           <button className="secondary" onClick={() => void revertRevision()}>
-            Revert revision
+            {t("wiki.revert")}
           </button>
         </article>
         <article className="panel" data-testid="source-link-drawer">
-          <h2>Source Links</h2>
+          <h2>{t("wiki.sourceLinks")}</h2>
           <p>{scenario.wiki.sourceRef}</p>
         </article>
         <article className="panel" data-testid="wiki-diff-view">
-          <h2>Diff View</h2>
-          <p>Added concentration lesson and stale quote warning.</p>
+          <h2>{t("wiki.diff")}</h2>
+          <p>{t("wiki.diffBody")}</p>
         </article>
       </section>
     </HostShell>
@@ -1076,25 +1226,25 @@ export function WikiPage({
 }
 
 export function SettingsPage({ title }: { title: string }) {
+  const { t } = useI18n();
+  const localizedTitle = localizedScenarioText(title, t);
   return (
     <HostShell>
-      <h1>{title}</h1>
+      <h1>{localizedTitle}</h1>
       <section className="panel">
-        <p>
-          Seeded MVP preview route for local command and Tauri webview
-          inspection.
-        </p>
+        <p>{t("settings.preview")}</p>
       </section>
     </HostShell>
   );
 }
 
 export function NotFoundPage() {
+  const { t } = useI18n();
   return (
     <HostShell>
-      <h1>Not Found</h1>
+      <h1>{t("notFound.title")}</h1>
       <section className="panel" data-testid="not-found">
-        <p>The requested Plutus route does not exist.</p>
+        <p>{t("notFound.body")}</p>
       </section>
     </HostShell>
   );
@@ -1105,63 +1255,81 @@ export function RemoteControlSettingsPage({
 }: {
   scenario: PlutusScenario;
 }) {
+  const { t } = useI18n();
+  const hasPairedDevice = Boolean(scenario.remoteDevice.sessionId);
   return (
     <HostShell>
-      <h1>Remote Control</h1>
+      <h1>{t("remote.control")}</h1>
       <section className="panel">
         <div className="row">
-          <span>Status</span>
-          <strong>Enabled</strong>
-        </div>
-        <div className="row">
-          <span>Pairing code</span>
-          <strong data-testid="pairing-code">
-            {scenario.remoteDevice.pairingCode}
+          <span>{t("remote.status")}</span>
+          <strong>
+            {hasPairedDevice ? t("remote.enabled") : t("remote.notPaired")}
           </strong>
         </div>
         <div className="row">
-          <span>Connected device</span>
-          <strong>{scenario.remoteDevice.name}</strong>
+          <span>{t("remote.pairingCode")}</span>
+          <strong data-testid="pairing-code">
+            {localizedScenarioText(scenario.remoteDevice.pairingCode, t)}
+          </strong>
         </div>
-        <button className="secondary">
-          Revoke {scenario.remoteDevice.name}
-        </button>
+        <div className="row">
+          <span>{t("remote.connectedDevice")}</span>
+          <strong>
+            {localizedScenarioText(scenario.remoteDevice.name, t)}
+          </strong>
+        </div>
+        {hasPairedDevice ? (
+          <button className="secondary">
+            {t("remote.revoke", {
+              device: localizedScenarioText(scenario.remoteDevice.name, t),
+            })}
+          </button>
+        ) : (
+          <p>{t("remote.noDeviceAction")}</p>
+        )}
       </section>
     </HostShell>
   );
 }
 
 export function PairPage({ scenario }: { scenario: PlutusScenario }) {
+  const { t } = useI18n();
   return (
     <MobileShell>
-      <h1>Pair With Mac</h1>
+      <h1>{t("remote.pair")}</h1>
       <section className="panel">
-        <p>Scan QR code or enter the short-lived pairing code.</p>
-        <div className="pair-code">{scenario.remoteDevice.pairingCode}</div>
+        <p>{t("remote.pairBody")}</p>
+        <div className="pair-code">
+          {localizedScenarioText(scenario.remoteDevice.pairingCode, t)}
+        </div>
       </section>
     </MobileShell>
   );
 }
 
 export function RemoteStateBanner({ remote }: { remote: RemoteVisualState }) {
+  const { locale } = useI18n();
+  const label = remoteStateLabel(remote, locale);
   return (
     <>
       <section className={`remote-state ${remote}`} data-testid="remote-state">
-        {remoteStateLabel(remote)}
+        {label}
       </section>
-      <span data-testid="connection-state">{remote}</span>
+      <span data-testid="connection-state">{label}</span>
     </>
   );
 }
 
 export function ConnectionPage({ remote }: { remote: RemoteVisualState }) {
+  const { t } = useI18n();
   return (
     <MobileShell>
-      <h1>Connection</h1>
+      <h1>{t("remote.connection")}</h1>
       <RemoteStateBanner remote={remote} />
       <section className="panel">
-        <p>Host identity: Eunsoo MacBook Plutus</p>
-        <p>Heartbeat and reconnect status are shown before mutations unlock.</p>
+        <p>{t("remote.hostIdentity")}</p>
+        <p>{t("remote.heartbeat")}</p>
       </section>
     </MobileShell>
   );
@@ -1176,6 +1344,7 @@ export function RemoteDashboardPage({
   remote: RemoteVisualState;
   commandClient?: PlutusCommandClient;
 }) {
+  const { t } = useI18n();
   const disabled =
     remote !== "connected" ||
     !scenario.portfolio.id ||
@@ -1189,11 +1358,11 @@ export function RemoteDashboardPage({
   async function startRemoteReview() {
     setCommandError(null);
     if (!commandClient?.remote?.executeCommand) {
-      setCommandSource("No remote command bridge connected");
+      setCommandSource(t("remote.noBridge"));
       return;
     }
     if (!scenario.portfolio.id) {
-      setCommandError("Create a portfolio before starting a research run.");
+      setCommandError(t("runs.createFirst"));
       return;
     }
     const commandId =
@@ -1218,7 +1387,7 @@ export function RemoteDashboardPage({
         payload,
       );
       if (!credentials) {
-        setCommandError("Biometric unlock is required before remote commands.");
+        setCommandError(t("remote.unlockRequired"));
         return;
       }
       await commandClient.remote.executeCommand(
@@ -1241,36 +1410,38 @@ export function RemoteDashboardPage({
 
   return (
     <MobileShell>
-      <h1>Remote Dashboard</h1>
+      <h1>{t("remote.dashboard")}</h1>
       <RemoteStateBanner remote={remote} />
       {remote === "revoked" ? (
         <section className="risk-warning" data-testid="remote-command-error">
-          Remote command denied: permission revoked
+          {t("remote.revoked")}
         </section>
       ) : null}
       <article className="panel" data-testid="portfolio-core">
-        <p>Mobile Remote Controller</p>
+        <p>{t("remote.controller")}</p>
         <p>
-          {scenario.portfolio.name}:{" "}
+          {localizedScenarioText(scenario.portfolio.name, t)}:{" "}
           {scenario.portfolio.positions
             .map((position) => position.symbol)
-            .join(", ") || "no positions"}
+            .join(", ") || t("remote.noPositions")}
         </p>
         <button
           className="primary"
           data-testid="remote-command"
-          aria-label="Start Remote Research Run"
+          aria-label={t("runs.start")}
           disabled={disabled || pending}
           onClick={startRemoteReview}
         >
           {pending
-            ? "Starting Mac-hosted run"
+            ? t("remote.starting")
             : remote === "revoked"
-              ? "Remote command denied"
-              : "Start Mac-hosted run"}
+              ? t("remote.denied")
+              : t("remote.start")}
         </button>
         {commandSource ? (
-          <p data-testid="remote-command-status">{commandSource}</p>
+          <p data-testid="remote-command-status">
+            {localizedCommandSource(commandSource, t)}
+          </p>
         ) : null}
         {commandError ? (
           <p data-testid="remote-command-status">{commandError}</p>
@@ -1289,6 +1460,7 @@ export function RemotePortfolioPage({
   remote: RemoteVisualState;
   commandClient?: PlutusCommandClient;
 }) {
+  const { t } = useI18n();
   const [status, setStatus] = useState<string | null>(null);
   const firstPosition = scenario.portfolio.positions[0];
   const [thesis, setThesis] = useState(firstPosition?.thesis ?? "");
@@ -1302,12 +1474,12 @@ export function RemotePortfolioPage({
       !commandClient?.remote?.prepareUnlock) ||
     !commandClient?.remote?.executeCommand;
   const thesisLabel = firstPosition
-    ? `${firstPosition.symbol} thesis note`
-    : "Position thesis note";
+    ? t("portfolio.symbolThesis", { symbol: firstPosition.symbol })
+    : t("portfolio.positionThesis");
 
   async function saveThesis() {
     if (!firstPosition?.id || !commandClient?.remote?.executeCommand) {
-      setStatus("No editable position is available.");
+      setStatus(t("portfolio.noEditable"));
       return;
     }
     const commandId =
@@ -1327,7 +1499,7 @@ export function RemotePortfolioPage({
         payload,
       );
       if (!credentials) {
-        setStatus("Biometric unlock is required before remote commands.");
+        setStatus(t("remote.unlockRequired"));
         return;
       }
       await commandClient.remote.executeCommand(
@@ -1340,7 +1512,7 @@ export function RemotePortfolioPage({
           payload,
         }),
       );
-      setStatus("Saved thesis to Mac");
+      setStatus(t("remote.savedThesis"));
     } catch (error) {
       setStatus(commandErrorMessage(error));
     }
@@ -1348,11 +1520,11 @@ export function RemotePortfolioPage({
 
   return (
     <MobileShell>
-      <h1>Remote Portfolio</h1>
+      <h1>{t("remote.portfolio")}</h1>
       <RemoteStateBanner remote={remote} />
       <PortfolioSummary scenario={scenario} />
       <section className="panel">
-        <h2>Remote Thesis Edit</h2>
+        <h2>{t("remote.thesisEdit")}</h2>
         <label className="field-row">
           {thesisLabel}
           <textarea
@@ -1363,7 +1535,7 @@ export function RemotePortfolioPage({
           />
         </label>
         <button className="secondary" disabled={disabled} onClick={saveThesis}>
-          Save thesis to Mac
+          {t("remote.saveThesis")}
         </button>
         {status ? <p data-testid="remote-edit-status">{status}</p> : null}
       </section>
@@ -1380,6 +1552,7 @@ export function RemoteWatchlistPage({
   remote: RemoteVisualState;
   commandClient?: PlutusCommandClient;
 }) {
+  const { t } = useI18n();
   const firstItem = scenario.watchlist.items[0];
   const [note, setNote] = useState(firstItem?.triggerNote ?? "");
   const [status, setStatus] = useState<string | null>(null);
@@ -1393,11 +1566,11 @@ export function RemoteWatchlistPage({
       !commandClient?.remote?.prepareUnlock) ||
     !commandClient?.remote?.executeCommand;
   const noteLabel = firstItem
-    ? `${firstItem.symbol} watchlist note`
-    : "Watchlist item note";
+    ? t("watchlist.symbolNote", { symbol: firstItem.symbol })
+    : t("watchlist.itemNote");
   async function saveNote() {
     if (!firstItem?.id || !commandClient?.remote?.executeCommand) {
-      setStatus("No editable watchlist item is available.");
+      setStatus(t("watchlist.noEditable"));
       return;
     }
     const commandId =
@@ -1417,7 +1590,7 @@ export function RemoteWatchlistPage({
         payload,
       );
       if (!credentials) {
-        setStatus("Biometric unlock is required before remote commands.");
+        setStatus(t("remote.unlockRequired"));
         return;
       }
       await commandClient.remote.executeCommand(
@@ -1430,18 +1603,21 @@ export function RemoteWatchlistPage({
           payload,
         }),
       );
-      setStatus("Saved watchlist note to Mac");
+      setStatus(t("remote.savedWatchlist"));
     } catch (error) {
       setStatus(commandErrorMessage(error));
     }
   }
   return (
     <MobileShell>
-      <h1>Remote Watchlist</h1>
+      <h1>{t("remote.watchlist")}</h1>
       <RemoteStateBanner remote={remote} />
-      <WatchlistPanel scenario={scenario} title={scenario.watchlist.name} />
+      <WatchlistPanel
+        scenario={scenario}
+        title={localizedScenarioText(scenario.watchlist.name, t)}
+      />
       <section className="panel">
-        <h2>Remote Note Edit</h2>
+        <h2>{t("remote.noteEdit")}</h2>
         <label className="field-row">
           {noteLabel}
           <textarea
@@ -1452,7 +1628,7 @@ export function RemoteWatchlistPage({
           />
         </label>
         <button className="secondary" disabled={disabled} onClick={saveNote}>
-          Save watchlist note to Mac
+          {t("remote.saveWatchlist")}
         </button>
         {status ? <p data-testid="remote-watchlist-status">{status}</p> : null}
       </section>
@@ -1467,15 +1643,15 @@ export function RemoteInstrumentPage({
   scenario: PlutusScenario;
   remote: RemoteVisualState;
 }) {
+  const { t } = useI18n();
+  const instrumentName = localizedScenarioText(scenario.instrument.name, t);
   return (
     <MobileShell>
-      <h1>Remote BTC Instrument</h1>
+      <h1>{t("remote.instrument")}</h1>
       <RemoteStateBanner remote={remote} />
       <section className="panel">
-        <h2>
-          {scenario.instrument.symbol} - {scenario.instrument.name}
-        </h2>
-        <p>{scenario.instrument.summary}</p>
+        <h2>{scenario.instrument.symbol || instrumentName}</h2>
+        <p>{localizedScenarioText(scenario.instrument.summary, t)}</p>
         <RiskChart />
       </section>
     </MobileShell>
@@ -1489,12 +1665,13 @@ export function RemoteRunsPage({
   scenario: PlutusScenario;
   remote: RemoteVisualState;
 }) {
+  const { t } = useI18n();
   return (
     <MobileShell>
-      <h1>Remote Runs</h1>
+      <h1>{t("remote.runs")}</h1>
       <RemoteStateBanner remote={remote} />
       <section className="panel">
-        <p>{scenario.run.title}</p>
+        <p>{localizedScenarioText(scenario.run.title, t)}</p>
         <RiskWarning />
       </section>
     </MobileShell>
@@ -1508,15 +1685,16 @@ export function RemoteRunDetailPage({
   scenario: PlutusScenario;
   remote: RemoteVisualState;
 }) {
+  const { t } = useI18n();
   return (
     <MobileShell>
-      <h1>Remote Run Detail</h1>
+      <h1>{t("remote.runDetail")}</h1>
       <RemoteStateBanner remote={remote} />
       <section className="panel">
-        <p>{scenario.run.status}</p>
+        <p>{localizedScenarioText(scenario.run.status, t)}</p>
         <RunStageList />
         <button className="secondary" disabled={remote !== "connected"}>
-          Cancel Mac-hosted run
+          {t("remote.cancelRun")}
         </button>
       </section>
     </MobileShell>
@@ -1524,13 +1702,14 @@ export function RemoteRunDetailPage({
 }
 
 export function RemoteArtifactPage({ remote }: { remote: RemoteVisualState }) {
+  const { t } = useI18n();
   return (
     <MobileShell>
-      <h1>Remote Artifact</h1>
+      <h1>{t("remote.artifact")}</h1>
       <RemoteStateBanner remote={remote} />
       <section className="panel">
         <RiskChart />
-        <p>Compact artifact summary streamed from the Mac host.</p>
+        <p>{t("remote.artifactSummary")}</p>
       </section>
     </MobileShell>
   );
@@ -1543,13 +1722,14 @@ export function RemoteMemoryPage({
   scenario: PlutusScenario;
   remote: RemoteVisualState;
 }) {
+  const { t } = useI18n();
   return (
     <MobileShell>
-      <h1>Remote Memory</h1>
+      <h1>{t("remote.memory")}</h1>
       <RemoteStateBanner remote={remote} />
       <section className="panel" data-testid="memory-activity-feed">
         <p>{scenario.memory.summary}</p>
-        <p>Read-only on mobile for MVP.</p>
+        <p>{t("remote.readOnlyMobile")}</p>
       </section>
     </MobileShell>
   );
@@ -1564,25 +1744,27 @@ export function RemoteWikiPage({
   remote: RemoteVisualState;
   detail: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <MobileShell>
-      <h1>{detail ? "Remote Wiki Page" : "Remote Wiki"}</h1>
+      <h1>{detail ? t("remote.wikiPage") : t("remote.wiki")}</h1>
       <RemoteStateBanner remote={remote} />
       <section className="panel">
         <h2>{scenario.wiki.title}</h2>
-        <p>Read-only wiki activity and page summary.</p>
+        <p>{t("remote.readOnlyWiki")}</p>
       </section>
     </MobileShell>
   );
 }
 
 export function RemoteSettingsPage({ remote }: { remote: RemoteVisualState }) {
+  const { t } = useI18n();
   return (
     <MobileShell>
-      <h1>Remote Settings</h1>
+      <h1>{t("remote.settings")}</h1>
       <RemoteStateBanner remote={remote} />
       <section className="panel">
-        <p>Biometric unlock required before sensitive remote-control access.</p>
+        <p>{t("remote.biometricRequired")}</p>
       </section>
     </MobileShell>
   );

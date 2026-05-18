@@ -21,8 +21,8 @@ MVP local tool namespaces:
 - `plutus_backtest`: strategy spec validation, backtest execution, metrics, benchmark comparison, and artifact lookup.
 - `plutus_risk`: concentration, correlation, volatility, drawdown, liquidity, leverage, and scenario checks.
 - `plutus_research`: web/document/news retrieval through sanitized readers and citation-safe summaries.
-- `plutus_reports`: run card creation, report rendering, chart artifact registration, and mobile summary generation.
-- `plutus_memory`: user preferences, saved theses, prior research runs, strategy library, and audit-safe recall.
+- `plutus_reports`: run card creation, locale-aware report rendering, chart artifact registration, and mobile summary generation.
+- `plutus_memory`: user preferences including locale preferences, saved theses, prior research runs, strategy library, and audit-safe recall.
 - `plutus_wiki`: local wiki page search, read, autonomous page maintenance, contradiction checks, revision history, and revert support.
 - `plutus_audit`: immutable event logging, tool-call provenance, warning registration, and compliance flags.
 
@@ -42,6 +42,7 @@ Post-MVP local tool namespaces:
 - No MVP local tool may place live trades or submit broker/exchange orders.
 - Agents must receive derived portfolio context where possible instead of full raw account history.
 - Tools must return source metadata, timestamps, provider names, and freshness warnings.
+- Tools that render user-facing text must accept explicit locale/report-language metadata and must keep canonical IDs, symbols, metrics, and audit refs stable.
 - Tools must validate all inputs with Zod and reject unknown symbols, unsupported markets, and unsafe file paths.
 
 ## 4. Local Tool Inventory
@@ -96,15 +97,15 @@ Post-MVP local tool namespaces:
 
 ### `plutus_reports`
 
-- `create_run_card(runId, payload)`: create reproducible run card. This tool is restricted to `report_writer`.
-- `render_report(runId, format, sections)`: render Markdown/HTML/PDF report artifact. This tool is restricted to `report_writer`.
+- `create_run_card(runId, payload, locale)`: create reproducible run card. This tool is restricted to `report_writer`.
+- `render_report(runId, format, sections, locale)`: render Markdown/HTML/PDF report artifact. This tool is restricted to `report_writer`.
 - `create_chart_artifact(runId, chartSpec)`: create chart artifact for webview/mobile rendering. This tool is restricted to `report_writer`.
-- `create_mobile_summary(runId, payload)`: create compact mobile summary. This tool is restricted to `report_writer`.
+- `create_mobile_summary(runId, payload, locale)`: create compact mobile summary. This tool is restricted to `report_writer`.
 - `register_artifact(runId, artifact)`: attach generated files to a research run. This tool is restricted to `report_writer`.
 
 ### `plutus_memory`
 
-- `recall_user_preferences(scope)`: preferences such as risk tolerance, default benchmarks, and excluded assets.
+- `recall_user_preferences(scope)`: preferences such as risk tolerance, default benchmarks, excluded assets, interface locale, report locale, number formatting locale, and time zone.
 - `recall_prior_runs(query, filters)`: semantically search past research runs for the active profile.
 - `recall_saved_theses(instrumentIds)`: retrieve saved theses and notes.
 - `capture_research_memory(memory, sourceRefs, capturePolicy)`: automatically save durable memory through the Plutus memory adapter.

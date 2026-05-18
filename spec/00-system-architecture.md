@@ -86,6 +86,7 @@ plutus/
         primitives/
         charts/
         layouts/
+        i18n/
     test-fixtures/
       src/
   tests/
@@ -110,7 +111,7 @@ plutus/
 | `packages/local-mcp-adapter` | Local stdio MCP adapter exposing approved local tool namespaces to Codex |
 | `packages/command-client` | Typed local command client shared by Tauri and web preview |
 | `packages/remote-control` | Pairing protocol, encrypted session messages, remote command schemas, host/mobile event contracts |
-| `packages/ui` | Webview-safe UI primitives, chart wrappers, design tokens |
+| `packages/ui` | Webview-safe UI primitives, chart wrappers, design tokens, translation catalogs, locale resolution, and locale-aware formatting helpers |
 | `packages/test-fixtures` | Deterministic MVP seed fixtures shared by unit, integration, E2E, Tauri smoke, and agent harness tests |
 
 ## 5. Runtime Components
@@ -183,12 +184,22 @@ The Mac host starts a local stdio MCP adapter that exposes approved namespaces t
 6. The local runtime emits run events to the macOS webview and paired mobile controllers.
 7. Risk manager validates the recommendation and can register warnings or vetoes.
 8. Report writer creates a run card, report artifact, chart artifacts, and mobile summary.
-9. The app validates structured final output, persists artifacts, and marks run complete.
-10. Memory capture service stores eligible atomic memories through `plutus_memory`.
-11. LLM Wiki Curator maintains local wiki pages through `plutus_wiki`.
-12. Mobile views and controls the same Mac-hosted state through the paired remote-control session.
+9. Localization renders user-facing labels, report text, dates, numbers, currencies, memory summaries, and wiki summaries according to the active interface/report locale.
+10. The app validates structured final output, persists artifacts, and marks run complete.
+11. Memory capture service stores eligible atomic memories through `plutus_memory`.
+12. LLM Wiki Curator maintains local wiki pages through `plutus_wiki`.
+13. Mobile views and controls the same Mac-hosted state through the paired remote-control session.
 
-## 7. Deployment Shape
+## 7. Internationalization Flow
+
+- The Mac host stores profile-level locale preferences: `interface_locale`, `report_locale`, `number_format_locale`, and `timezone`.
+- Browser preview may override interface language through `?locale=` and `localStorage` for deterministic QA; those preview overrides are not the source of truth for product preferences.
+- Product shells use Mac-host profile settings and platform language as defaults, while `packages/ui` normalizes app-chrome language codes such as `en` and `ko` and expands them to BCP 47 locales for formatter APIs.
+- `packages/ui` owns app-chrome catalogs and formatter helpers for the React webview surfaces.
+- Report generation, mobile summaries, memory summaries, and wiki summaries receive explicit locale metadata in their structured inputs.
+- Canonical portfolio values, market-data timestamps, instrument identifiers, currencies, market regions, and jurisdiction tags stay unchanged; localization is a presentation layer.
+
+## 8. Deployment Shape
 
 MVP local development:
 
@@ -206,7 +217,7 @@ MVP production:
 - Signed iOS and Android remote-control proof-of-capability builds before beta
 - Optional user-controlled backup/export location such as local file export in a later phase
 
-## 8. Architecture Decisions
+## 9. Architecture Decisions
 
 | Decision | Rationale |
 | --- | --- |
@@ -222,7 +233,7 @@ MVP production:
 | Mobile remote control | Avoids multi-device sync while still letting the user inspect and command Mac-hosted runs from mobile |
 | Codex-verifiable development surface | Keeps implementation work reproducible by exposing deterministic fixtures, stable root scripts, mocked agent harnesses, and a browser-preview surface that Codex can inspect |
 
-## 9. Open Implementation Choices
+## 10. Open Implementation Choices
 
 - Charting library: validate TradingView Lightweight Charts and ECharts on real Tauri mobile webviews before UI freeze.
 - Equity data provider: start with a free Yahoo-compatible adapter and do not require a paid market-data subscription for MVP.

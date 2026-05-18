@@ -61,6 +61,42 @@ button:disabled {
   margin-top: 14px;
 }
 
+.locale-switcher {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.locale-switcher span {
+  color: #b8c9c0;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.locale-switcher select {
+  background: rgb(255 255 255 / 9%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 6px;
+  color: inherit;
+  font: inherit;
+  min-height: 38px;
+  padding: 0 10px;
+}
+
+.mobile-shell .locale-switcher {
+  margin-top: 0;
+}
+
+.mobile-shell .locale-switcher span {
+  color: #667085;
+}
+
+.mobile-shell .locale-switcher select {
+  background: #fff;
+  border: 1px solid #d0d5dd;
+  color: #172026;
+}
+
 .sidebar a {
   border-radius: 6px;
   padding: 10px 12px;

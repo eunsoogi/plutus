@@ -63,6 +63,7 @@ Each agent output must include:
 The final output must include:
 
 - Plain-language summary.
+- Output language and report locale selected from the run context.
 - Recommendation category: `observe`, `research_more`, `rebalance_candidate`, `strategy_candidate`, `risk_warning`, or `no_action`.
 - Supporting evidence.
 - Dissenting views.
@@ -81,6 +82,7 @@ Use the TypeScript OpenAI Codex SDK as the primary agent-control layer:
 - `runStreamed()` for progress events, intermediate items, file-change notifications, macOS live status, and mobile remote-control status forwarded by the Mac host.
 - `resumeThread(threadId)` for long-running research and macOS host app restarts.
 - JSON-schema structured output for run plans, specialist findings, risk reviews, strategy specs, and final run cards.
+- Run context must include `outputLocale`, `reportLocale`, `numberFormatLocale`, and `timezone`; report-writing stages must honor these values while preserving canonical metrics and source references.
 - Zod schemas converted to OpenAI-compatible JSON Schema for runtime validation.
 - Working-directory controls so Codex operates inside a per-run Git workspace.
 - Codex CLI `config` and `env` controls to enforce sandbox, model, approval, network, and secret boundaries.
@@ -117,5 +119,6 @@ Each custom agent must also declare an explicit local tool allowlist. Use [Agent
 - The system fetches portfolio positions, current market data, historical returns, and correlation.
 - The risk manager can veto weak recommendations.
 - The final answer contains one allowed recommendation category, citations, and a risk summary.
+- The final answer and generated report labels render in the selected report locale without changing IDs, numbers, timestamps, or audit refs.
 - The run is saved in the macOS host app and visible/controllable from mobile through the paired remote-control session.
 - The LLM Wiki Curator can create or update local wiki pages from the run card without changing the finance recommendation.

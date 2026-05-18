@@ -69,6 +69,10 @@ export const RunPlanSchema = z.object({
   requiredInstruments: z.array(z.string()),
   requiredPortfolioIds: z.array(z.string().uuid()),
   requiredTools: z.array(z.string()),
+  outputLocale: z.string(),
+  reportLocale: z.string(),
+  numberFormatLocale: z.string(),
+  timezone: z.string(),
   validationLevel: z.enum(["standard", "enhanced_risk", "blocking_risk"]),
   rationale: z.string(),
 });
@@ -87,6 +91,7 @@ Fetch data through local tools only:
 - prior run summaries;
 - recalled memories;
 - relevant wiki page summaries;
+- locale preferences for interface text, report text, number/date formatting, and time zone;
 - provider freshness.
 
 Output:

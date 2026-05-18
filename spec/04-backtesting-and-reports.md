@@ -15,6 +15,7 @@ Supported:
 - fixed fee and slippage assumptions;
 - benchmark comparison;
 - deterministic report generation.
+- locale-aware report rendering from canonical result data.
 - app-local execution without Redis or a hosted job runner.
 
 Not supported in MVP:
@@ -155,6 +156,8 @@ Backtest reports produce:
 - past-performance disclaimer;
 - rerun instructions.
 
+Reports receive an explicit report locale and number/date formatting locale. Renderers localize labels, explanatory copy, dates, numbers, currencies, and time zones, but they keep strategy IDs, instrument symbols, source refs, metric keys, and audit refs unchanged so the artifact can be reproduced and verified.
+
 Artifact types:
 
 - `strategy_spec`
@@ -181,6 +184,7 @@ Artifact types:
 - Include this report caveat in every backtest artifact: "Past performance does not guarantee future results."
 - Generated strategy code, if introduced later, runs only in a sandboxed workspace.
 - Backtest results must not be converted into trade orders in MVP.
+- Localized report text must not imply different market coverage, currency support, tax treatment, or jurisdiction-specific advice.
 
 ## 9. Phase 2 Shadow Account
 
@@ -223,3 +227,4 @@ The Shadow Account report compares actual behavior with a rule-based replay when
 - A backtest result includes metrics, chart data, assumptions, data source refs, fee/slippage, and warnings.
 - A leverage strategy request is rejected or marked with enhanced risk warning.
 - The report artifact includes the past-performance caveat.
+- The same canonical backtest result can render English and Korean report artifacts with identical metric values and source refs.

@@ -26,4 +26,5 @@ This folder contains requirement-level PRDs for Plutus, a TypeScript-first multi
 - Use the LLM Wiki Curator as a separate agent-maintained knowledge workflow: it autonomously creates, updates, cross-links, and archives local Markdown wiki pages through `plutus_wiki`, while Mem0 stores only atomic recall records, wiki source memories, and wiki pointers.
 - Borrow Vibe-Trading's strongest concepts: plan-ground-execute-validate-deliver runs, specialist agent teams, research memory, backtests, run cards, Phase 2 Shadow Account analysis, and no live trading in MVP.
 - Use Tauri 2 as the shared app shell, with macOS as the deep research workstation and source-of-truth host, and mobile as a paired remote-control surface for the Mac app.
+- Treat internationalization (i18n) as a shared product capability: app chrome, report rendering, memory summaries, wiki summaries, and locale-aware formatting must honor the user's interface and report locale without changing canonical portfolio data.
 - Start with research, portfolio management, and simulation. Reserve live trading for a separate future PRD.
