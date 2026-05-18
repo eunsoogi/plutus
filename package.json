@@ -2,8 +2,11 @@
   "name": "plutus",
   "private": true,
   "version": "0.1.0",
-  "packageManager": "pnpm@9.15.5",
+  "packageManager": "pnpm@11.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "dev": "turbo dev",
     "dev:web": "pnpm --filter @plutus/web-preview dev",

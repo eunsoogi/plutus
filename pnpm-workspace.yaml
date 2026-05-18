@@ -2,3 +2,10 @@ packages:
   - "apps/*"
   - "packages/*"
   - "tests/e2e"
+allowBuilds:
+  esbuild: true
+
+minimumReleaseAge: 20160
+minimumReleaseAgeIgnoreMissingTime: false
+minimumReleaseAgeStrict: true
+pmOnFail: error
