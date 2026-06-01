@@ -37,7 +37,7 @@ export function normalizeTradingState(
       Array.isArray(parsed.tradingProviders) &&
       parsed.tradingProviders.length > 0
         ? parsed.tradingProviders.map((provider) =>
-            TradingProviderConfigSchema.parse(provider),
+            normalizeTradingProvider(provider),
           )
         : fallback.tradingProviders,
     tradingDecisions: Array.isArray(parsed.tradingDecisions)
@@ -160,4 +160,13 @@ function providerRank(provider: TradingProviderConfig): number {
 
 function assertNever(value: never): never {
   throw new Error(`Unsupported decision action: ${String(value)}`);
+}
+
+function normalizeTradingProvider(provider: unknown): TradingProviderConfig {
+  const parsed = TradingProviderConfigSchema.parse(provider);
+  if (parsed.credentialRef || parsed.health !== "connected") return parsed;
+  return {
+    ...parsed,
+    health: "not_configured",
+  };
 }

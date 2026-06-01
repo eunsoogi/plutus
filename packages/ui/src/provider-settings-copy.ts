@@ -58,7 +58,7 @@ export const providerSettingsCopy = {
     killSwitch: "Live order kill switch active",
   },
   ko: {
-    title: "공급자 설정",
+    title: "거래 연동 설정",
     subtitle:
       "승인 기반 실거래 경로 전에 드라이런 거래 공급자를 먼저 설정합니다.",
     connections: "연결",
@@ -128,5 +128,43 @@ export function providerEndpoint(providerId: string): string {
       return "/api/v3/order/test";
     default:
       return "dry-run://provider/order";
+  }
+}
+
+export function providerDisplayName(
+  providerId: string,
+  fallback: string,
+  locale: AppLocale,
+): string {
+  if (locale !== "ko") return fallback;
+  switch (providerId) {
+    case "kiwoom":
+      return "키움증권";
+    case "upbit":
+      return "업비트";
+    case "coinbase":
+      return "코인베이스";
+    case "binance":
+      return "바이낸스";
+    default:
+      return fallback;
+  }
+}
+
+export function providerMarketLabel(
+  providerId: string,
+  fallback: string,
+  locale: AppLocale,
+): string {
+  if (locale !== "ko") return fallback;
+  switch (providerId) {
+    case "kiwoom":
+      return "국내 주식";
+    case "upbit":
+    case "coinbase":
+    case "binance":
+      return "현물 암호화폐";
+    default:
+      return fallback;
   }
 }

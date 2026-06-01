@@ -6,7 +6,10 @@ test("provider settings exposes health, permission chips, and decision evidence"
   await page.goto("/settings/providers?runtime=local");
 
   await expect(page.getByTestId("provider-health-summary")).toContainText(
-    "Connected",
+    "Not configured4",
+  );
+  await expect(page.getByTestId("provider-health-summary")).not.toContainText(
+    "Connected3",
   );
   await page.getByTestId("provider-binance").click();
   await expect(page.getByTestId("provider-permissions")).toContainText(

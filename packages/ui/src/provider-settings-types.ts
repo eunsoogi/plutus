@@ -99,20 +99,26 @@ export const fallbackProviders: readonly TradingProviderConfig[] = [
     "KR",
     "not_configured",
   ),
-  providerFixture("upbit", "Upbit", "Spot crypto", "KR/SG/ID/TH", "connected"),
+  providerFixture(
+    "upbit",
+    "Upbit",
+    "Spot crypto",
+    "KR/SG/ID/TH",
+    "not_configured",
+  ),
   providerFixture(
     "coinbase",
     "Coinbase Advanced Trade",
     "Spot crypto",
     "US/global",
-    "connected",
+    "not_configured",
   ),
   providerFixture(
     "binance",
     "Binance Spot",
     "Spot crypto",
     "Global",
-    "connected",
+    "not_configured",
   ),
 ];
 

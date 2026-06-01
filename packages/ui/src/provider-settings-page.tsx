@@ -8,7 +8,10 @@ import {
   ProviderList,
   ProviderMatrix,
 } from "./provider-settings-panels";
-import { providerSettingsCopy } from "./provider-settings-copy";
+import {
+  providerDisplayName,
+  providerSettingsCopy,
+} from "./provider-settings-copy";
 import {
   editProvider,
   fallbackProviders,
@@ -194,11 +197,18 @@ export function ProviderSettingsPage({
           selectedId={selectedId}
           text={text}
           title={text.connections}
+          locale={locale}
         />
         <article className="panel provider-detail">
           <div className="provider-detail-heading">
             <span>{text.selected}</span>
-            <strong>{provider.displayName}</strong>
+            <strong>
+              {providerDisplayName(
+                provider.providerId,
+                provider.displayName,
+                locale,
+              )}
+            </strong>
           </div>
           <ModeControl
             mode={mode}
@@ -208,7 +218,12 @@ export function ProviderSettingsPage({
             }}
             text={text}
           />
-          <ProviderMatrix provider={providerForMode} mode={mode} text={text} />
+          <ProviderMatrix
+            provider={providerForMode}
+            mode={mode}
+            text={text}
+            locale={locale}
+          />
           <div className="provider-actions">
             <button onClick={saveProvider} type="button">
               {text.save}

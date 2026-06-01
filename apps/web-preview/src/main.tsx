@@ -4,9 +4,9 @@ import {
   createTauriCommandBridge,
 } from "@plutus/command-client";
 import { renderPlutusRoute, scenarioFromSnapshot } from "@plutus/tauri";
-import type { RemoteVisualState } from "@plutus/ui";
 import { createLocalWebCommandBridge } from "./local-runtime";
 import "./provider-settings.css";
+import { routeContextFromLocation } from "./route-context";
 import "./styles.css";
 
 declare global {
@@ -15,16 +15,6 @@ declare global {
     __TAURI__?: unknown;
     __PLUTUS_COMMAND_BRIDGE__?: Parameters<typeof createCommandClient>[0];
   }
-}
-
-function routeContextFromLocation(location: Location) {
-  const url = new URL(location.href);
-  return {
-    path: url.pathname,
-    remote: (url.searchParams.get("remote") ??
-      url.searchParams.get("state") ??
-      "connected") as RemoteVisualState,
-  };
 }
 
 async function createRuntimeClient(location: Location) {

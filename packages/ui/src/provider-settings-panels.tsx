@@ -1,4 +1,9 @@
-import { providerEndpoint } from "./provider-settings-copy";
+import type { AppLocale } from "./core";
+import {
+  providerDisplayName,
+  providerEndpoint,
+  providerMarketLabel,
+} from "./provider-settings-copy";
 import type {
   DryRunOrderResult,
   ProviderId,
@@ -12,12 +17,14 @@ export function ProviderList({
   selectedId,
   text,
   title,
+  locale,
   onSelect,
 }: {
   providers: readonly TradingProviderConfig[];
   selectedId: ProviderId;
   text: Record<string, string>;
   title: string;
+  locale: AppLocale;
   onSelect: (provider: TradingProviderConfig) => void;
 }) {
   const healthRows = providerHealthRows(providers, text);
@@ -46,10 +53,18 @@ export function ProviderList({
           type="button"
         >
           <span>
-            <strong>{provider.displayName}</strong>
-            <small>{provider.market}</small>
+            <strong>
+              {providerDisplayName(
+                provider.providerId,
+                provider.displayName,
+                locale,
+              )}
+            </strong>
+            <small>
+              {providerMarketLabel(provider.providerId, provider.market, locale)}
+            </small>
           </span>
-          <i>{provider.health.replace("_", " ")}</i>
+          <i>{providerHealthLabel(provider.health, text)}</i>
         </button>
       ))}
     </article>
@@ -91,19 +106,28 @@ export function ProviderMatrix({
   provider,
   mode,
   text,
+  locale,
 }: {
   provider: TradingProviderConfig;
   mode: ProviderMode;
   text: Record<string, string>;
+  locale: AppLocale;
 }) {
   const rows = [
-    [text.market, provider.market],
+    [
+      text.market,
+      providerMarketLabel(provider.providerId, provider.market, locale),
+    ],
     [text.region, provider.region],
     [text.endpoint, providerEndpoint(provider.providerId)],
     [text.credentials, provider.credentialRef ?? text.noCredential],
     [
       text.status,
-      mode === "live_requires_approval" ? text.liveBlocked : text.dryRunReady,
+      mode === "live_requires_approval"
+        ? text.liveBlocked
+        : provider.health === "connected"
+          ? text.dryRunReady
+          : providerHealthLabel(provider.health, text),
     ],
     [text.permissions, provider.permissions.join(", ")],
   ];
@@ -126,6 +150,28 @@ export function ProviderMatrix({
       </div>
     </>
   );
+}
+
+function providerHealthLabel(
+  health: TradingProviderConfig["health"],
+  text: Record<string, string>,
+): string {
+  switch (health) {
+    case "connected":
+      return text.connected;
+    case "degraded":
+      return text.degraded;
+    case "not_configured":
+      return text.notConfigured;
+    case "blocked":
+      return text.blocked;
+    default:
+      return assertNever(health);
+  }
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unsupported provider health: ${String(value)}`);
 }
 
 export function DecisionPanel({

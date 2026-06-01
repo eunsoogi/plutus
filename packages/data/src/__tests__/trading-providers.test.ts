@@ -23,6 +23,12 @@ describe("@plutus/data trading provider registry", () => {
     expect(service.listProviders().map((provider) => provider.providerId)).toEqual(
       ["kiwoom", "upbit", "coinbase", "binance"],
     );
+    expect(service.listProviders().map((provider) => provider.health)).toEqual([
+      "not_configured",
+      "not_configured",
+      "not_configured",
+      "not_configured",
+    ]);
     expect(
       service
         .listProviders()

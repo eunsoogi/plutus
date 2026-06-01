@@ -394,6 +394,9 @@ export function HostShell({ children }: HostShellProps) {
           <a href={`/portfolios${runtimeSearch}`}>{t("nav.portfolios")}</a>
           <a href={`/watchlists${runtimeSearch}`}>{t("nav.watchlists")}</a>
           <a href={`/runs${runtimeSearch}`}>{t("nav.runs")}</a>
+          <a href={`/settings/providers${runtimeSearch}`}>
+            {t("nav.providers")}
+          </a>
           <a href={`/memory${runtimeSearch}`}>{t("nav.memory")}</a>
           <a href={`/wiki${runtimeSearch}`}>{t("nav.wiki")}</a>
           <a href={`/settings/remote-control${runtimeSearch}`}>

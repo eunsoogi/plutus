@@ -40,6 +40,7 @@ test("Korean locale covers host and remote UI chrome without English leftovers",
     "/portfolios?runtime=local&locale=ko",
     "/watchlists/watchlist-default?runtime=local&locale=ko",
     "/runs?runtime=local&locale=ko",
+    "/settings/providers?runtime=local&locale=ko",
     "/memory?runtime=local&locale=ko",
     "/wiki/wiki-btc-nvda-concentration?runtime=local&locale=ko",
     "/settings/remote-control?runtime=local&locale=ko",
@@ -90,6 +91,7 @@ test("Korean locale covers host and remote UI chrome without English leftovers",
     "Remote Run Detail",
     "Cancel Mac-hosted run",
     "Remote Settings",
+    "Provider Settings",
     "Read-only",
     "Biometric unlock required",
     "MVP",
@@ -126,6 +128,28 @@ test("Korean locale covers host and remote UI chrome without English leftovers",
     page.getByText("기기를 페어링한 뒤 연결을 해제할 수 있습니다"),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: /연결 해제/ })).toHaveCount(0);
+
+  await page.goto("/dashboard?runtime=local&locale=ko");
+  await expect(page.getByRole("link", { name: "거래 연동" })).toBeVisible();
+  await expect(page.getByText("거래 Provider")).toHaveCount(0);
+  await page.getByRole("link", { name: "거래 연동" }).click();
+  await expect(
+    page.getByRole("heading", { name: "거래 연동 설정" }).first(),
+  ).toBeVisible();
+  await expect(page.getByTestId("provider-kiwoom")).toContainText("키움증권");
+  await expect(page.getByTestId("provider-upbit")).toContainText("업비트");
+  await expect(page.getByTestId("provider-coinbase")).toContainText(
+    "코인베이스",
+  );
+  await expect(page.getByTestId("provider-binance")).toContainText(
+    "바이낸스",
+  );
+  await expect(page.getByTestId("provider-health-summary")).toContainText(
+    "설정 안 됨4",
+  );
+  await expect(page.getByTestId("provider-health-summary")).not.toContainText(
+    "연결됨3",
+  );
 });
 
 test("mobile remote routes show connected, disconnected, and revoked states", async ({
@@ -182,7 +206,9 @@ test("web preview covers every mac host route from spec 05", async ({
 test("provider settings previews dry-run and blocks live trading candidates", async ({
   page,
 }) => {
-  await page.goto("/settings/providers?runtime=local");
+  await page.goto("/dashboard?runtime=local");
+  await page.getByRole("link", { name: "Trading Providers" }).click();
+  await expect(page).toHaveURL(/\/settings\/providers\?runtime=local$/);
   await expect(
     page.getByRole("heading", { name: "Provider Settings" }).first(),
   ).toBeVisible();
