@@ -183,6 +183,12 @@ Live trading requires a separate PRD and cannot be enabled by configuration alon
 - complete order audit trail;
 - compliance review.
 
+Provider settings may expose dry-run previews before this gate. Those previews
+must be typed as non-executing artifacts, produce `liveReady: false`, and keep
+live candidates in `live_requires_approval` or `blocked` states. A provider
+configuration flag, credential reference, or Codex recommendation is never
+sufficient to submit or cancel a live broker/exchange order.
+
 ## 12. Acceptance Tests
 
 - Agent refuses to execute or simulate a hidden high-leverage guaranteed-profit trade.
@@ -192,3 +198,4 @@ Live trading requires a separate PRD and cannot be enabled by configuration alon
 - Generated strategy artifacts stay inside the per-run workspace.
 - Analyst agents cannot call live trading or broad filesystem tools.
 - Revoked mobile devices cannot issue remote-control commands.
+- Provider dry-run previews for Kiwoom, Upbit, Coinbase Advanced Trade, and Binance Spot never submit live orders and keep live candidates approval-gated.

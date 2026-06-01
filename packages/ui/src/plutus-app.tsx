@@ -6,6 +6,12 @@ import {
   type RemoteVisualState,
 } from "./core";
 import { useI18n } from "./i18n";
+import type {
+  DryRunOrderResult,
+  TradingDecision,
+  TradingOrderIntent,
+  TradingProviderConfig,
+} from "./provider-settings-types";
 
 export type RouteKind = "host" | "remote";
 
@@ -112,6 +118,21 @@ export type PlutusCommandClient = {
       triggerNote?: string;
       targetZone?: string;
     }) => Promise<Record<string, unknown>>;
+  };
+  providers?: {
+    list: () => Promise<TradingProviderConfig[]>;
+    save: (input: TradingProviderConfig) => Promise<TradingProviderConfig>;
+  };
+  trading?: {
+    previewDecision: (input: {
+      provider: TradingProviderConfig;
+      intent: TradingOrderIntent;
+    }) => Promise<TradingDecision>;
+    submitDryRunOrder: (input: {
+      provider: TradingProviderConfig;
+      intent: TradingOrderIntent;
+      decision?: TradingDecision;
+    }) => Promise<DryRunOrderResult>;
   };
   researchRuns: {
     start: (input: {

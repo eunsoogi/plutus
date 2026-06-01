@@ -1,15 +1,27 @@
-import type { CommandBridge, CommandEnvelope } from "@plutus/command-client";
+import type {
+  AgentArtifact,
+  AppSnapshot,
+  CommandBridge,
+  CommandEnvelope,
+  Portfolio,
+  ResearchRun,
+  Watchlist,
+} from "@plutus/command-client";
 
-type LocalState = {
-  profileId: string;
-  portfolios: any[];
-  watchlists: any[];
-  runs: any[];
-  artifacts: any[];
-  memoryActivity: any[];
-  wikiPages: any[];
-  remoteDevices: any[];
-};
+import {
+  emptyTradingState,
+  normalizeTradingState,
+  previewTradingDecision,
+  saveTradingProvider,
+  submitDryRunOrder,
+  type LocalTradingState,
+} from "./local-trading-runtime";
+
+type LocalState = Omit<
+  AppSnapshot,
+  "tradingProviders" | "tradingDecisions" | "dryRunOrders"
+> &
+  LocalTradingState;
 
 const STORAGE_KEY = "plutus.localRuntime.v1";
 const PROFILE_ID = "local-browser-profile";
@@ -24,6 +36,7 @@ function emptyState(): LocalState {
     memoryActivity: [],
     wikiPages: [],
     remoteDevices: [],
+    ...emptyTradingState(new Date().toISOString()),
   };
 }
 
@@ -35,17 +48,20 @@ function readState(): LocalState {
     return {
       profileId:
         typeof parsed.profileId === "string" ? parsed.profileId : PROFILE_ID,
-      portfolios: Array.isArray(parsed.portfolios) ? parsed.portfolios : [],
-      watchlists: Array.isArray(parsed.watchlists) ? parsed.watchlists : [],
-      runs: Array.isArray(parsed.runs) ? parsed.runs : [],
-      artifacts: Array.isArray(parsed.artifacts) ? parsed.artifacts : [],
-      memoryActivity: Array.isArray(parsed.memoryActivity)
-        ? parsed.memoryActivity
-        : [],
-      wikiPages: Array.isArray(parsed.wikiPages) ? parsed.wikiPages : [],
-      remoteDevices: Array.isArray(parsed.remoteDevices)
-        ? parsed.remoteDevices
-        : [],
+      portfolios: arrayOrEmpty<Portfolio>(parsed.portfolios),
+      watchlists: arrayOrEmpty<Watchlist>(parsed.watchlists),
+      runs: arrayOrEmpty<ResearchRun & { title?: string; category?: string }>(
+        parsed.runs,
+      ),
+      artifacts: arrayOrEmpty<AgentArtifact>(parsed.artifacts),
+      memoryActivity: arrayOrEmpty<Record<string, unknown>>(
+        parsed.memoryActivity,
+      ),
+      wikiPages: arrayOrEmpty<Record<string, unknown>>(parsed.wikiPages),
+      remoteDevices: arrayOrEmpty<Record<string, unknown>>(
+        parsed.remoteDevices,
+      ),
+      ...normalizeTradingState(parsed, new Date().toISOString()),
     };
   } catch {
     return emptyState();
@@ -54,6 +70,10 @@ function readState(): LocalState {
 
 function writeState(state: LocalState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function arrayOrEmpty<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
 }
 
 function newId(prefix: string) {
@@ -66,6 +86,30 @@ export function createLocalWebCommandBridge(): CommandBridge {
     switch (envelope.command) {
       case "app.getSnapshot":
         return state as T;
+      case "providers.list":
+        return state.tradingProviders as T;
+      case "providers.save": {
+        const [input] = envelope.args;
+        const provider = saveTradingProvider(state, input);
+        writeState(state);
+        return provider as T;
+      }
+      case "trading.previewDecision": {
+        const [input] = envelope.args;
+        const decision = previewTradingDecision(
+          state,
+          input,
+          new Date().toISOString(),
+        );
+        writeState(state);
+        return decision as T;
+      }
+      case "trading.submitDryRunOrder": {
+        const [input] = envelope.args;
+        const order = submitDryRunOrder(state, input, new Date().toISOString());
+        writeState(state);
+        return order as T;
+      }
       case "portfolios.list":
         return state.portfolios as T;
       case "portfolios.create": {
@@ -157,9 +201,8 @@ export function createLocalWebCommandBridge(): CommandBridge {
       case "portfolios.addPosition":
       case "portfolios.updatePosition":
       case "portfolios.updatePositionThesis":
-        throw new Error(
-          `${envelope.command} is not available in local browser runtime yet`,
-        );
+      case "remote.prepareUnlock":
+      case "remote.executeCommand":
       case "watchlists.addItem":
       case "watchlists.updateItem":
         throw new Error(

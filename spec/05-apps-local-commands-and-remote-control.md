@@ -175,9 +175,15 @@ macOS must support:
 - local run progress;
 - artifact viewer for run cards, reports, charts, and strategy specs;
 - local secure credential storage through Keychain;
+- provider settings for Kiwoom, Upbit, Coinbase Advanced Trade, and Binance Spot with dry-run/live mode separation;
+- Codex decision-review visibility for provider previews, including analyst, risk, execution, and human-approval states;
 - local backtest and report generation;
 - language, locale, number/date formatting, and time-zone preferences;
 - remote-control settings with enable/disable, pairing, connected devices, and revoke controls.
+
+`/settings/providers` must allow a dry-run order preview to be simulated without
+credential input or network order submission. Switching the page to live mode
+must show that live trading is blocked or approval-gated by the Mac host.
 
 ## 8. Mobile Remote-Control UX Surface
 

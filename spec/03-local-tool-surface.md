@@ -152,6 +152,25 @@ Required behavior:
 - Do not expose credentials or broker account secrets.
 - Include cost-basis and holdings data only for the requested portfolio.
 
+### `plutus_trading_provider`
+
+MVP agents may inspect provider configuration and build dry-run previews only.
+
+Tools:
+
+- `list_trading_providers()`
+- `preview_order_intent(orderIntent)`
+- `get_provider_payload_template(providerId, orderType)`
+
+Required behavior:
+
+- Include Kiwoom, Upbit, Coinbase Advanced Trade, and Binance Spot provider metadata.
+- Return provider-shaped dry-run payloads without submitting network requests.
+- Return blocking warnings for disabled providers, missing secure credential references on live candidates, or unavailable live permissions.
+- Return approval-required warnings for any live candidate even when credentials are present.
+- Do not expose raw API keys, access tokens, account secrets, or broker session material.
+- Do not place, cancel, amend, or simulate a hidden live order. Hidden or guaranteed-profit trading requests must be blocked by risk controls.
+
 ### `plutus_backtest`
 
 Tools:

@@ -179,6 +179,40 @@ test("web preview covers every mac host route from spec 05", async ({
   }
 });
 
+test("provider settings previews dry-run and blocks live trading candidates", async ({
+  page,
+}) => {
+  await page.goto("/settings/providers?runtime=local");
+  await expect(
+    page.getByRole("heading", { name: "Provider Settings" }).first(),
+  ).toBeVisible();
+  await expect(page.getByTestId("provider-upbit")).toBeVisible();
+  await page.getByTestId("provider-binance").click();
+  await expect(page.getByText("/api/v3/order/test")).toBeVisible();
+
+  await page.getByTestId("simulate-provider-preview").click();
+  await expect(page.getByTestId("provider-preview-status")).toContainText(
+    "Dry-run preview accepted",
+  );
+  await expect(page.getByTestId("trading-decision-panel")).toContainText(
+    "risk manager",
+  );
+  await expect(page.getByTestId("provider-payload")).toContainText(
+    "/api/v3/order/test",
+  );
+
+  await page.getByTestId("provider-mode-live").click();
+  await expect(page.getByText("Live blocked")).toBeVisible();
+  await page.getByTestId("generate-provider-decision").click();
+  await expect(page.getByTestId("trading-decision-panel")).toContainText(
+    "live_requires_approval",
+  );
+  await page.getByTestId("simulate-provider-preview").click();
+  await expect(page.getByTestId("provider-preview-status")).toContainText(
+    "explicit user approval",
+  );
+});
+
 test("unknown host subroutes render not found without a runtime bridge", async ({
   page,
 }) => {

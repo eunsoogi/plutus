@@ -102,6 +102,14 @@ Live trading must require:
 - Full audit trail.
 - Exchange/broker permission scoping.
 
+Dry-run provider previews are allowed before the live-trading PRD only when:
+
+- The result is clearly non-executing and cannot submit or cancel live orders.
+- Provider payloads use test, preview, mock, or dry-run endpoints where available.
+- Codex outputs remain in the allowed recommendation categories and never become `buy`, `sell`, or `place_order`.
+- Live credentials are represented only as secure references and are not visible to agents or React UI.
+- A risk-manager view and human-approval state are shown before any live candidate can proceed.
+
 ## 8. Acceptance Criteria
 
 - Agent refuses to execute or simulate a hidden high-leverage trade as a guaranteed profit.
@@ -110,3 +118,4 @@ Live trading must require:
 - Traces and logs do not contain raw API keys.
 - Generated code runs only in a sandboxed context.
 - Revoked mobile devices cannot control the Mac host.
+- Provider settings dry-run previews do not submit broker/exchange orders, while live candidates remain blocked or approval-gated.

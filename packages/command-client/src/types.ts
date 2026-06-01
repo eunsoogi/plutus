@@ -56,15 +56,15 @@ export interface TradingProviderConfig {
   region: string;
   environment: "mock" | "sandbox" | "paper" | "live";
   mode: "disabled" | "read_only" | "dry_run" | "live_requires_approval";
-  permissions: string[];
+  permissions: readonly string[];
   health: "connected" | "degraded" | "not_configured" | "blocked";
   lastCheckedAt: string;
   credentialRef: string | null;
-  warnings: Array<{
+  warnings: readonly {
     code: string;
     severity: "info" | "warning" | "blocking";
     message: string;
-  }>;
+  }[];
 }
 
 export interface TradingOrderIntent {
@@ -89,13 +89,13 @@ export interface TradingDecision {
     | "blocked"
     | "live_requires_approval";
   confidence: "low" | "medium" | "high";
-  agentViews: Array<{
+  agentViews: readonly {
     role: string;
     stance: string;
     summary: string;
-  }>;
-  blockingReasons: string[];
-  evidenceRefs: string[];
+  }[];
+  blockingReasons: readonly string[];
+  evidenceRefs: readonly string[];
   warnings: TradingProviderConfig["warnings"];
   approvalRequired: boolean;
   createdAt: string;
@@ -108,7 +108,7 @@ export interface DryRunOrderResult {
   liveReady: boolean;
   providerPayload: Record<string, unknown>;
   warnings: TradingProviderConfig["warnings"];
-  auditRefs: string[];
+  auditRefs: readonly string[];
   decision: TradingDecision;
   createdAt: string;
 }

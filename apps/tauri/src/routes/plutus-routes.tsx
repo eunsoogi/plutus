@@ -15,6 +15,7 @@ import {
   PairPage,
   PortfolioDetailPage,
   PortfoliosPage,
+  ProviderSettingsPage,
   RemoteArtifactPage,
   RemoteControlSettingsPage,
   RemoteDashboardPage,
@@ -501,7 +502,7 @@ function renderPlutusRouteContent({
     return <SettingsPage title="Security Settings" />;
   }
   if (path === "/settings/providers") {
-    return <SettingsPage title="Provider Settings" />;
+    return <ProviderSettingsPage commandClient={resolvedCommandClient} />;
   }
   if (path === "/settings/preferences") {
     return <SettingsPage title="Preferences" />;

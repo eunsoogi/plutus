@@ -1,0 +1,248 @@
+.provider-header {
+  min-height: 168px;
+}
+
+.provider-layout {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(250px, 0.82fr) minmax(420px, 1.35fr);
+}
+
+.provider-list,
+.provider-detail,
+.provider-decision {
+  align-content: start;
+  display: grid;
+  gap: 12px;
+}
+
+.provider-decision {
+  grid-column: 1 / -1;
+}
+
+.provider-card {
+  background: #0d141c;
+  border-color: var(--border-soft);
+  color: var(--text);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 68px;
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.provider-card.selected {
+  background: rgb(86 182 199 / 12%);
+  border-color: rgb(86 182 199 / 44%);
+}
+
+.provider-card span,
+.provider-card strong,
+.provider-card small {
+  display: block;
+  min-width: 0;
+}
+
+.provider-card strong,
+.provider-detail-heading strong {
+  color: #f8fafc;
+}
+
+.provider-card small,
+.provider-card i,
+.provider-detail-heading span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.provider-detail-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.provider-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.provider-actions button:first-child {
+  background: #182331;
+  border-color: var(--border);
+  color: #d7dee8;
+}
+
+.provider-actions button:nth-child(2),
+.provider-actions button:nth-child(3) {
+  background: linear-gradient(180deg, #67c7d7, #3f9cad);
+  border-color: rgb(255 255 255 / 16%);
+  color: #061117;
+}
+
+.provider-workbench {
+  margin-top: 14px;
+}
+
+.segmented-control {
+  background: #0b1118;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 4px;
+}
+
+.segmented-control button {
+  background: transparent;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.segmented-control button.active {
+  background: rgb(86 182 199 / 15%);
+  border-color: rgb(86 182 199 / 28%);
+  color: var(--accent-strong);
+}
+
+.segmented-control button.active.danger {
+  background: rgb(239 107 98 / 13%);
+  border-color: rgb(239 107 98 / 32%);
+  color: #ffaaa4;
+}
+
+.provider-matrix {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  overflow: hidden;
+}
+
+.provider-matrix div {
+  background: #0d141c;
+  border-top: 1px solid var(--border-soft);
+  display: grid;
+  gap: 4px;
+  min-height: 70px;
+  padding: 10px 12px;
+}
+
+.provider-matrix div:nth-child(1),
+.provider-matrix div:nth-child(2) {
+  border-top: 0;
+}
+
+.provider-matrix dt {
+  color: var(--faint);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.provider-matrix dd {
+  color: #d7dee8;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.provider-form-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.provider-form-grid label,
+.provider-rationale {
+  color: var(--muted);
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 7px;
+}
+
+.provider-form-grid input,
+.provider-form-grid select {
+  background: #0b1118;
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  color: var(--text);
+  min-height: 38px;
+  min-width: 0;
+  padding: 0 10px;
+}
+
+.provider-rationale {
+  margin-top: 12px;
+}
+
+.payload-preview {
+  background: #05080c;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  color: #d7dee8;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  margin: 0;
+  max-height: 280px;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+
+.preview-line {
+  background: #0b1118;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  margin: 0;
+  padding: 10px 12px;
+}
+
+.decision-lanes {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.decision-lane {
+  background: #0d141c;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  min-height: 112px;
+  padding: 12px;
+}
+
+.decision-lane strong {
+  color: #f8fafc;
+}
+
+.decision-lane span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 860px) {
+  .provider-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .provider-decision {
+    grid-column: auto;
+  }
+
+  .provider-matrix,
+  .decision-lanes {
+    grid-template-columns: 1fr;
+  }
+
+  .provider-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

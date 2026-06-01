@@ -51,6 +51,22 @@ Production/premium provider options:
 - CoinMarketCap, Kaiko, or CryptoCompare for crypto market data.
 - Broker read-only integrations after security review.
 
+## 4.1 Trading Provider Configuration Preview
+
+The provider settings surface may list future trading providers before live
+trading is enabled. MVP supports configuration and dry-run previews for:
+
+- Kiwoom OpenAPI for Korean equities.
+- Upbit spot crypto.
+- Coinbase Advanced Trade spot crypto.
+- Binance Spot crypto.
+
+Provider configuration must separate `dry_run` from live mode. Dry-run previews
+can build provider-shaped payloads and audit refs without credentials or network
+submission. Live mode must remain blocked or approval-gated, use only secure
+credential references such as `secure://...`, and never expose raw API keys to
+React UI, Codex prompts, traces, or local-tool responses.
+
 ## 5. Portfolio Requirements
 
 Users must be able to:
@@ -98,3 +114,4 @@ Core entities:
 - User can ask for allocation by asset class and receive a table plus risk notes.
 - User can ask for a BTC/NVDA correlation check and receive a data freshness warning if provider data is stale.
 - User can open the same Mac-hosted portfolio state from mobile through a paired remote-control session.
+- User can open `/settings/providers`, inspect Kiwoom, Upbit, Coinbase Advanced Trade, and Binance Spot, run a dry-run preview, and see live mode remain blocked pending explicit approval and secure credentials.

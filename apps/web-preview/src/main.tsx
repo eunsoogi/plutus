@@ -6,6 +6,7 @@ import {
 import { renderPlutusRoute, scenarioFromSnapshot } from "@plutus/tauri";
 import type { RemoteVisualState } from "@plutus/ui";
 import { createLocalWebCommandBridge } from "./local-runtime";
+import "./provider-settings.css";
 import "./styles.css";
 
 declare global {
