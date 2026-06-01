@@ -1,13 +1,8 @@
+import { PAST_PERFORMANCE_CAVEAT } from "@plutus/backtest";
 import type { NamespaceHandler } from "./common";
-import {
-  contentHash,
-  ok,
-  storagePath,
-  warning,
-  writeDurableJson,
-  writeDurableText,
-} from "./common";
+import { ok, storagePath, warning, writeDurableJson } from "./common";
 import type { SourceRef } from "../schemas/envelope";
+import { artifactFor, normalizeSourceRefs, renderReportContent, reportLocaleValue, reportMimeType, type ReportFormat } from "./report-artifacts";
 import {
   FakeMem0Adapter,
   MemoryCaptureService,
@@ -16,9 +11,6 @@ import {
 } from "@plutus/memory";
 import { WikiCuratorService, WikiRepository } from "@plutus/wiki";
 
-const PAST_PERFORMANCE_CAVEAT =
-  "Past performance does not guarantee future results.";
-
 export const handleReports: NamespaceHandler = async ({
   call,
   context,
@@ -26,8 +18,13 @@ export const handleReports: NamespaceHandler = async ({
   auditRef,
 }) => {
   if (call.tool === "create_run_card") {
-    const payload =
-      (call.input as { payload?: Record<string, unknown> }).payload ?? {};
+    const input = call.input as {
+      payload?: Record<string, unknown>;
+      locale?: string;
+      reportLocale?: string;
+    };
+    const payload = input.payload ?? {};
+    const locale = reportLocaleValue(input.locale ?? input.reportLocale);
     const category = payload.category;
     if (category !== "risk_warning" && category !== "no_action") {
       return ok(auditRef, "plutus_reports", undefined, [
@@ -42,6 +39,7 @@ export const handleReports: NamespaceHandler = async ({
       runId: context.runId,
       profileId: context.profileId,
       ...payload,
+      locale,
     };
     const cardPath = writeDurableJson(
       runtime,
@@ -73,10 +71,18 @@ export const handleReports: NamespaceHandler = async ({
   }
 
   if (call.tool === "create_mobile_summary") {
+    const input = call.input as {
+      locale?: string;
+      reportLocale?: string;
+      payload?: Record<string, unknown>;
+    };
+    const payload = input.payload ?? call.input;
+    const locale = reportLocaleValue(input.locale ?? input.reportLocale);
     const summary = {
       runId: context.runId,
       profileId: context.profileId,
-      ...(call.input as object),
+      ...(payload as object),
+      locale,
     };
     runtime.records.set(`mobile_summary_${context.runId}`, summary);
     writeDurableJson(
@@ -90,25 +96,28 @@ export const handleReports: NamespaceHandler = async ({
 
   if (call.tool === "render_report") {
     const input = call.input as {
-      format?: "markdown" | "html" | "pdf";
+      format?: ReportFormat;
+      locale?: string;
+      reportLocale?: string;
       sections?: Array<{ title: string; body: string }>;
       sourceRefs?: Partial<SourceRef>[];
     };
     const format = input.format ?? "markdown";
-    const content = renderReportContent(input.sections ?? [], format);
+    const locale = reportLocaleValue(input.locale ?? input.reportLocale);
+    const content = renderReportContent({
+      sections: input.sections ?? [],
+      format,
+      locale,
+    });
     const artifact = artifactFor({
       runtime,
       context,
       runId: context.runId,
       kind: "report",
       content,
-      mimeType:
-        format === "html"
-          ? "text/html"
-          : format === "pdf"
-            ? "application/pdf"
-            : "text/markdown",
+      mimeType: reportMimeType(format),
       sourceRefs: normalizeSourceRefs(input.sourceRefs),
+      locale,
     });
     runtime.records.set(artifact.id, artifact);
     runtime.records.set(`report_artifact_${context.runId}`, artifact);
@@ -176,80 +185,6 @@ export const handleReports: NamespaceHandler = async ({
     ),
   ]);
 };
-
-function renderReportContent(
-  sections: Array<{ title: string; body: string }>,
-  format: "markdown" | "html" | "pdf",
-) {
-  const markdown = [
-    "# Plutus Research Report",
-    "",
-    ...sections.flatMap((section) => [
-      `## ${section.title}`,
-      "",
-      section.body,
-      "",
-    ]),
-    "## Caveat",
-    "",
-    PAST_PERFORMANCE_CAVEAT,
-    "",
-  ].join("\n");
-  if (format === "html") {
-    return markdown
-      .split("\n")
-      .map((line) =>
-        line.startsWith("# ")
-          ? `<h1>${line.slice(2)}</h1>`
-          : line.startsWith("## ")
-            ? `<h2>${line.slice(3)}</h2>`
-            : line
-              ? `<p>${line}</p>`
-              : "",
-      )
-      .join("\n");
-  }
-  return markdown;
-}
-
-function artifactFor(input: {
-  runtime: Parameters<NamespaceHandler>[0]["runtime"];
-  context: Parameters<NamespaceHandler>[0]["context"];
-  runId: string;
-  kind: string;
-  content: string;
-  mimeType: string;
-  sourceRefs: SourceRef[];
-}) {
-  const hash = contentHash(input.content);
-  const extension =
-    input.mimeType === "text/markdown"
-      ? "md"
-      : input.mimeType === "text/html"
-        ? "html"
-        : input.mimeType === "application/json"
-          ? "json"
-          : "artifact";
-  const id = `artifact_${input.kind}_${hash.slice(7, 19)}`;
-  const path = writeDurableText(
-    input.runtime,
-    input.context,
-    ["artifacts", `${id}.${extension}`],
-    input.content,
-  );
-  return {
-    id,
-    runId: input.runId,
-    kind: input.kind,
-    content: input.content,
-    contentHash: hash,
-    path,
-    mimeType: input.mimeType,
-    sourceRefs: input.sourceRefs,
-    caveats: [PAST_PERFORMANCE_CAVEAT],
-    createdAt: new Date(0).toISOString(),
-  };
-}
 
 async function automateRunCardCapture(
   runtime: Parameters<NamespaceHandler>[0]["runtime"],
@@ -319,19 +254,4 @@ async function automateRunCardCapture(
     memoryPath,
     wikiPath: wikiRoot,
   };
-}
-
-function normalizeSourceRefs(
-  refs: Partial<SourceRef>[] | undefined,
-): SourceRef[] {
-  return (
-    refs?.length ? refs : [{ id: "local-run", provider: "plutus_reports" }]
-  ).map((ref) => ({
-    id: ref.id ?? "local-run",
-    provider: ref.provider ?? "plutus_reports",
-    title: ref.title,
-    url: ref.url,
-    asOf: ref.asOf,
-    retrievedAt: ref.retrievedAt ?? new Date(0).toISOString(),
-  }));
 }
