@@ -14,11 +14,11 @@ Lazyweb research references used for this direction:
 
 ## 2. Principles
 
-- Status before action: show provider health, permissions, and mode before order controls.
+- Status before action: show venue health, permissions, and mode before order controls.
 - Dry-run first: paper execution is the default path, with live trading visibly gated.
 - Evidence density: compact tables, chips, and panels are preferred over oversized hero layouts.
 - Inspectable automation: agent decisions expose dissent, risk checks, and payloads.
-- Local-first trust: credential state is represented by opaque secure refs, never raw secrets.
+- Local-first trust: setup forms may accept credentials, but saved provider state displays opaque secure refs and clears raw secrets from the screen.
 
 ## 3. Visual Tokens
 
@@ -36,21 +36,23 @@ Cards keep an `8px` maximum radius. Button text must not overflow; icon-only con
 
 ## 4. Component Patterns
 
-- Provider Card: display name, market, environment, mode, health, permissions, last check.
+- Trading Venue Selector: searchable CCXT catalog plus pinned Kiwoom entry, with compact status cards for matching venues.
 - Permission Chips: small labels for `market_data`, `account_read`, `trade_dry_run`, `trade_live`.
 - Mode Control: segmented select for `disabled`, `read_only`, `dry_run`, `live_requires_approval`.
-- Decision Composer: provider, symbol, side, order type, quantity, limit price, and rationale.
+- Credential Setup Form: API key/app key, secret key, optional passphrase, and account/label fields with a generated `secure://plutus/...` storage ref preview; raw values are cleared after save.
+- Decision Composer: trading venue, symbol, side, order type, quantity, limit price, and rationale.
 - Consensus Panel: bull, bear, risk, execution viewpoints and final action.
 - Audit Payload: monospace JSON block for provider-specific dry-run payloads.
 
 ## 5. Layout
 
-Desktop provider settings use a two-column workbench:
+Desktop provider settings use a dense two-row operations console sized for the default app window:
 
-- left: provider cards and connection/permission state;
-- right: decision composer and dry-run audit result.
+- top-left: searchable trading venue catalog and health summary;
+- top-right: setup checklist, credential form, generated storage ref, mode, and permission state;
+- bottom: order composer plus decision/payload preview.
 
-Mobile collapses to a single column with provider cards first, then decision composer. Primary action remains visible without horizontal scrolling.
+Mobile collapses to a single column with venue search first, then setup, then decision composer. Long catalogs scroll inside their panel, not at the document level on desktop.
 
 ## 6. Content Rules
 

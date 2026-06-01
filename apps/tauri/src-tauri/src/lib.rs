@@ -39,6 +39,10 @@ pub fn registered_command_names() -> &'static [&'static str] {
         "get_wiki_page",
         "list_wiki_activity",
         "revert_wiki_revision",
+        "list_trading_providers",
+        "save_trading_provider",
+        "preview_trading_decision",
+        "submit_dry_run_order",
         "revoke_remote_device",
         "list_remote_devices",
         "prepare_remote_unlock",
@@ -54,6 +58,10 @@ pub fn run() {
             let db = PlutusDatabase::open(&paths.database)?;
             db.ensure_default_profile()?;
             app.manage(AppState::new(db, paths));
+            if let Some(window) = app.get_webview_window("main") {
+                window.show()?;
+                window.set_focus()?;
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -83,6 +91,10 @@ pub fn run() {
             commands::get_wiki_page,
             commands::list_wiki_activity,
             commands::revert_wiki_revision,
+            commands::trading::list_trading_providers,
+            commands::trading::save_trading_provider,
+            commands::trading::preview_trading_decision,
+            commands::trading::submit_dry_run_order,
             commands::revoke_remote_device,
             commands::list_remote_devices,
             commands::prepare_remote_unlock,
@@ -122,6 +134,10 @@ mod tests {
             "get_wiki_page",
             "list_wiki_activity",
             "revert_wiki_revision",
+            "list_trading_providers",
+            "save_trading_provider",
+            "preview_trading_decision",
+            "submit_dry_run_order",
             "revoke_remote_device",
             "list_remote_devices",
             "prepare_remote_unlock",

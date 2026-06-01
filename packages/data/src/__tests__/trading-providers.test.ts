@@ -7,7 +7,7 @@ import {
 } from "../providers/trading";
 
 function requireProvider(
-  providerId: (typeof defaultTradingProviderConfigs)[number]["providerId"],
+  providerId: string,
 ) {
   const provider = defaultTradingProviderConfigs.find(
     (candidate) => candidate.providerId === providerId,
@@ -17,23 +17,56 @@ function requireProvider(
 }
 
 describe("@plutus/data trading provider registry", () => {
-  it("lists Kiwoom, Upbit, Coinbase, and Binance dry-run capable providers", () => {
+  it("lists Kiwoom plus the current CCXT exchange catalog as dry-run capable providers", () => {
     const service = createTradingProviderService();
+    const providerIds = service.listProviders().map((provider) => provider.providerId);
 
-    expect(service.listProviders().map((provider) => provider.providerId)).toEqual(
-      ["kiwoom", "upbit", "coinbase", "binance"],
+    expect(providerIds[0]).toBe("kiwoom");
+    expect(providerIds).toEqual(
+      expect.arrayContaining(["upbit", "coinbase", "binance", "kraken", "okx"]),
     );
-    expect(service.listProviders().map((provider) => provider.health)).toEqual([
-      "not_configured",
-      "not_configured",
-      "not_configured",
-      "not_configured",
-    ]);
+    expect(providerIds.length).toBeGreaterThanOrEqual(112);
+    expect(
+      service
+        .listProviders()
+        .every((provider) => provider.health === "not_configured"),
+    ).toBe(true);
     expect(
       service
         .listProviders()
         .every((provider) => provider.permissions.includes("trade_dry_run")),
     ).toBe(true);
+  });
+
+  it("maps any supported CCXT exchange to the generic dry-run createOrder payload", () => {
+    const payload = buildTradingProviderPayload({
+      clientOrderId: "client-kraken",
+      intent: {
+        providerId: "kraken",
+        symbol: "BTC/USDT",
+        side: "sell",
+        orderType: "limit",
+        quantity: 0.2,
+        limitPrice: 65000,
+        quoteCurrency: "USDT",
+      },
+    });
+
+    expect(payload).toMatchObject({
+      endpoint: "ccxt://kraken/createOrder",
+      body: {
+        exchange: "kraken",
+        symbol: "BTC/USDT",
+        side: "sell",
+        type: "limit",
+        amount: "0.2",
+        price: "65000",
+        params: {
+          clientOrderId: "client-kraken",
+          dryRun: true,
+        },
+      },
+    });
   });
 
   it("creates a dry-run preview without credentials or network calls", () => {
@@ -52,7 +85,7 @@ describe("@plutus/data trading provider registry", () => {
     expect(result.status).toBe("accepted");
     expect(result.liveReady).toBe(false);
     expect(result.providerPayload).toMatchObject({
-      endpoint: "/api/v3/order/test",
+      endpoint: "ccxt://binance/createOrder",
       mode: "dry_run",
     });
     expect(result.decision.finalAction).toBe("dry_run_allowed");
@@ -85,54 +118,6 @@ describe("@plutus/data trading provider registry", () => {
     });
     expect(
       buildTradingProviderPayload({
-        clientOrderId: "client-upbit",
-        intent: {
-          providerId: "upbit",
-          symbol: "BTC",
-          side: "buy",
-          orderType: "market",
-          quantity: 50000,
-          quoteCurrency: "KRW",
-        },
-      }),
-    ).toMatchObject({
-      endpoint: "/v1/orders",
-      body: {
-        market: "KRW-BTC",
-        side: "bid",
-        ord_type: "price",
-        price: "50000",
-        identifier: "client-upbit",
-      },
-    });
-    expect(
-      buildTradingProviderPayload({
-        clientOrderId: "client-coinbase",
-        intent: {
-          providerId: "coinbase",
-          symbol: "BTC",
-          side: "sell",
-          orderType: "market",
-          quantity: 0.02,
-          quoteCurrency: "USD",
-        },
-      }),
-    ).toMatchObject({
-      endpoint: "/api/v3/brokerage/orders/preview",
-      body: {
-        client_order_id: "client-coinbase",
-        product_id: "BTC-USD",
-        side: "SELL",
-        order_configuration: {
-          market_market_ioc: {
-            base_size: "0.02",
-            rfq_disabled: true,
-          },
-        },
-      },
-    });
-    expect(
-      buildTradingProviderPayload({
         clientOrderId: "client-binance",
         intent: {
           providerId: "binance",
@@ -145,15 +130,17 @@ describe("@plutus/data trading provider registry", () => {
         },
       }),
     ).toMatchObject({
-      endpoint: "/api/v3/order/test",
+      endpoint: "ccxt://binance/createOrder",
       body: {
-        symbol: "BTCUSDT",
-        side: "BUY",
-        type: "LIMIT",
-        timeInForce: "GTC",
-        quantity: "0.01",
+        symbol: "BTC/USDT",
+        side: "buy",
+        type: "limit",
+        amount: "0.01",
         price: "65000",
-        newClientOrderId: "client-binance",
+        params: {
+          clientOrderId: "client-binance",
+          dryRun: true,
+        },
       },
     });
   });

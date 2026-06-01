@@ -2,15 +2,15 @@
 
 ## 1. Goal
 
-Specify the safe provider configuration, dry-run order, and multi-agent decision support path for Kiwoom, Upbit, Coinbase, and Binance.
+Specify the safe provider configuration, dry-run order, and multi-agent decision support path for Kiwoom Securities plus the current CCXT-supported exchange catalog.
 
-The implementation must make provider-specific order payloads inspectable while keeping live execution blocked unless a future approval workflow explicitly enables it.
+The implementation must make Kiwoom and CCXT dry-run payloads inspectable while keeping live execution blocked unless a future approval workflow explicitly enables it.
 
 ## 2. Domain Model
 
 Trading provider records use:
 
-- `providerId`: `kiwoom`, `upbit`, `coinbase`, or `binance`;
+- `providerId`: `kiwoom` or an official lower-case CCXT exchange id;
 - `displayName`;
 - `market`;
 - `region`;
@@ -19,7 +19,7 @@ Trading provider records use:
 - `permissions`: `market_data`, `account_read`, `trade_dry_run`, `trade_live`;
 - `health`: `connected`, `degraded`, `not_configured`, or `blocked`;
 - `lastCheckedAt`;
-- `credentialRef`: opaque `secure://` reference only.
+- `credentialRef`: generated opaque `secure://` reference stored on the provider record.
 
 Order intent records use:
 
@@ -52,28 +52,13 @@ Kiwoom:
 - include `endpoint: /api/dostk/ordr`;
 - use production domain only when live mode is approved; mock domain otherwise.
 
-Upbit:
+CCXT exchanges:
 
-- map provider symbol to market format such as `SGD-BTC`, `KRW-BTC`, or `USDT-BTC`;
-- map side to `bid` or `ask`;
-- map `market` order to `price` for buy or `volume` for sell;
-- map `limit` order to `ord_type: limit`, `volume`, and `price`;
-- include optional client identifier.
-
-Coinbase:
-
-- map provider symbol to product ID such as `BTC-USD`;
-- map side to `BUY` or `SELL`;
-- place quantity and price data under `order_configuration`;
-- include `client_order_id`.
-
-Binance:
-
-- map symbol to exchange pair such as `BTCUSDT`;
-- map side to `BUY` or `SELL`;
-- map order type to `MARKET` or `LIMIT`;
-- use `/api/v3/order/test` for dry-run validation concepts;
-- include `newClientOrderId`.
+- include `endpoint: ccxt://{exchangeId}/createOrder`;
+- preserve the official CCXT lower-case exchange id in `exchange`;
+- normalize `BTC-USDT` style pairs to `BTC/USDT` while preserving already slash-delimited symbols;
+- map `side`, `orderType`, quantity, optional limit price, and client order id into a dry-run `createOrder` payload;
+- keep `dryRun: true` in payload metadata and do not call the real exchange from browser preview.
 
 ## 4. Command Surface
 
@@ -82,17 +67,26 @@ The browser-preview command bridge must support:
 ```ts
 providers.list(): Promise<TradingProviderConfig[]>
 providers.save(input: TradingProviderConfig): Promise<TradingProviderConfig>
-trading.previewDecision(input: TradingOrderIntent): Promise<TradingDecision>
-trading.submitDryRunOrder(input: TradingOrderIntent): Promise<DryRunOrderResult>
+trading.previewDecision(input: {
+  provider: TradingProviderConfig
+  intent: TradingOrderIntent
+}): Promise<TradingDecision>
+trading.submitDryRunOrder(input: {
+  provider: TradingProviderConfig
+  intent: TradingOrderIntent
+  decision?: TradingDecision
+}): Promise<DryRunOrderResult>
 ```
 
-Native Tauri persistence may follow in a later implementation wave, but the command contract must redact secret-like fields and never expose raw credentials.
+Native Tauri persistence may follow in a later implementation wave. The browser-preview UI may accept credential field input during setup, but the command contract stores only the generated secure reference and clears raw field values after save.
 
 ## 5. UI Requirements
 
 `/settings/providers` renders:
 
-- provider status cards;
+- searchable trading venue selector backed by Kiwoom plus the CCXT exchange catalog;
+- setup checklist for exchange selection, credential field entry, generated secure reference handling, and dry-run/live mode;
+- credential setup form with API key/app key, secret key, optional passphrase, and account/label fields;
 - permission chips;
 - segmented environment/mode controls;
 - provider health summary;
@@ -100,7 +94,7 @@ Native Tauri persistence may follow in a later implementation wave, but the comm
 - multi-agent consensus panel;
 - dry-run order preview and audit result.
 
-The UI must keep all controls reachable on desktop and mobile-width web preview. Live execution copy must always state that user approval, risk validation, and audit are required.
+The UI must keep all controls reachable on desktop and mobile-width web preview. Desktop provider settings should fit the default app window without document-level scrolling; long exchange catalogs use internal scrolling. Live execution copy must always state that user approval, risk validation, and audit are required.
 
 ## 6. Agent Decision Rules
 
@@ -118,6 +112,7 @@ The decision engine must:
 ## 7. Safety Invariants
 
 - Raw provider secrets are never stored in local browser runtime.
+- Raw provider secret inputs are cleared from the React form after provider settings are saved.
 - Live execution is never performed by browser preview.
 - Dry-run order results are audit artifacts, not broker/exchange confirmations.
 - Risk manager veto changes final action to `blocked` or `needs_review`.

@@ -137,15 +137,19 @@ test("Korean locale covers host and remote UI chrome without English leftovers",
     page.getByRole("heading", { name: "거래 연동 설정" }).first(),
   ).toBeVisible();
   await expect(page.getByTestId("provider-kiwoom")).toContainText("키움증권");
+  await page.getByTestId("provider-search").fill("업비트");
   await expect(page.getByTestId("provider-upbit")).toContainText("업비트");
+  await page.getByTestId("provider-search").fill("코인베이스");
   await expect(page.getByTestId("provider-coinbase")).toContainText(
     "코인베이스",
   );
+  await page.getByTestId("provider-search").fill("바이낸스");
   await expect(page.getByTestId("provider-binance")).toContainText(
     "바이낸스",
   );
+  await page.getByTestId("provider-search").fill("");
   await expect(page.getByTestId("provider-health-summary")).toContainText(
-    "설정 안 됨4",
+    "설정 안 됨112",
   );
   await expect(page.getByTestId("provider-health-summary")).not.toContainText(
     "연결됨3",
@@ -212,9 +216,11 @@ test("provider settings previews dry-run and blocks live trading candidates", as
   await expect(
     page.getByRole("heading", { name: "Provider Settings" }).first(),
   ).toBeVisible();
-  await expect(page.getByTestId("provider-upbit")).toBeVisible();
+  await page.getByTestId("provider-select").selectOption("upbit");
+  await expect(page.getByTestId("selected-provider-name")).toContainText("Upbit");
+  await page.getByTestId("provider-search").fill("binance");
   await page.getByTestId("provider-binance").click();
-  await expect(page.getByText("/api/v3/order/test")).toBeVisible();
+  await expect(page.getByText("ccxt://binance/createOrder")).toBeVisible();
 
   await page.getByTestId("simulate-provider-preview").click();
   await expect(page.getByTestId("provider-preview-status")).toContainText(
@@ -224,7 +230,7 @@ test("provider settings previews dry-run and blocks live trading candidates", as
     "risk manager",
   );
   await expect(page.getByTestId("provider-payload")).toContainText(
-    "/api/v3/order/test",
+    "ccxt://binance/createOrder",
   );
 
   await page.getByTestId("provider-mode-live").click();

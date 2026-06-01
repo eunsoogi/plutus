@@ -3,6 +3,7 @@ import {
   createDefaultTradingProviderConfigs,
 } from "../../../packages/data/src/providers/trading";
 import {
+  CCXT_EXCHANGE_IDS,
   DryRunOrderResultSchema,
   TradingOrderIntentSchema,
   TradingProviderConfigSchema,
@@ -32,14 +33,15 @@ export function normalizeTradingState(
   now: string,
 ): LocalTradingState {
   const fallback = emptyTradingState(now);
+  const persistedProviders =
+    Array.isArray(parsed.tradingProviders) && parsed.tradingProviders.length > 0
+      ? parsed.tradingProviders.map((provider) => normalizeTradingProvider(provider))
+      : [];
   return {
-    tradingProviders:
-      Array.isArray(parsed.tradingProviders) &&
-      parsed.tradingProviders.length > 0
-        ? parsed.tradingProviders.map((provider) =>
-            normalizeTradingProvider(provider),
-          )
-        : fallback.tradingProviders,
+    tradingProviders: mergeTradingProviders(
+      fallback.tradingProviders,
+      persistedProviders,
+    ),
     tradingDecisions: Array.isArray(parsed.tradingDecisions)
       ? parsed.tradingDecisions.map((decision) => decision)
       : fallback.tradingDecisions,
@@ -59,7 +61,7 @@ export function saveTradingProvider(
     ...state.tradingProviders.filter(
       (candidate) => candidate.providerId !== provider.providerId,
     ),
-  ].sort((left, right) => providerRank(left) - providerRank(right));
+  ].sort(compareProviders);
   return provider;
 }
 
@@ -149,13 +151,34 @@ function orderStatus(
 }
 
 function providerRank(provider: TradingProviderConfig): number {
-  const ranks: Record<TradingProviderConfig["providerId"], number> = {
-    kiwoom: 0,
-    upbit: 1,
-    coinbase: 2,
-    binance: 3,
-  };
-  return ranks[provider.providerId];
+  if (provider.providerId === "kiwoom") return 0;
+  const ccxtRank = CCXT_EXCHANGE_IDS.findIndex(
+    (exchangeId) => exchangeId === provider.providerId,
+  );
+  return ccxtRank === -1 ? 1000 : 1 + ccxtRank;
+}
+
+function compareProviders(
+  left: TradingProviderConfig,
+  right: TradingProviderConfig,
+): number {
+  const rankDelta = providerRank(left) - providerRank(right);
+  return rankDelta === 0
+    ? left.providerId.localeCompare(right.providerId)
+    : rankDelta;
+}
+
+function mergeTradingProviders(
+  fallbackProviders: readonly TradingProviderConfig[],
+  persistedProviders: readonly TradingProviderConfig[],
+): TradingProviderConfig[] {
+  const providersById = new Map(
+    fallbackProviders.map((provider) => [provider.providerId, provider]),
+  );
+  for (const provider of persistedProviders) {
+    providersById.set(provider.providerId, provider);
+  }
+  return Array.from(providersById.values()).sort(compareProviders);
 }
 
 function assertNever(value: never): never {

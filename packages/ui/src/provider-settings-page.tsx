@@ -2,16 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useI18n } from "./i18n";
 import { HostShell } from "./plutus-app";
+import {
+  emptyCredentialDraft,
+  errorMessage,
+  providerCredentialRef,
+  selectProvider,
+  updateCredentialDraft,
+} from "./provider-settings-credentials";
+import { ProviderDetail } from "./provider-settings-detail";
 import { ProviderWorkbench } from "./provider-settings-composer";
-import {
-  ModeControl,
-  ProviderList,
-  ProviderMatrix,
-} from "./provider-settings-panels";
-import {
-  providerDisplayName,
-  providerSettingsCopy,
-} from "./provider-settings-copy";
+import { ProviderList } from "./provider-settings-provider-list";
+import { providerSettingsCopy } from "./provider-settings-copy";
+import { createTradingOrderIntent } from "./provider-settings-order";
 import {
   editProvider,
   fallbackProviders,
@@ -30,20 +32,6 @@ type ProviderSettingsPageProps = {
   commandClient?: ProviderCommandClient;
 };
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Command failed";
-}
-
-function selectProvider(
-  providers: readonly TradingProviderConfig[],
-  selectedId: ProviderId,
-) {
-  return (
-    providers.find((provider) => provider.providerId === selectedId) ??
-    fallbackProviders[0]
-  );
-}
-
 export function ProviderSettingsPage({
   commandClient,
 }: ProviderSettingsPageProps) {
@@ -59,6 +47,8 @@ export function ProviderSettingsPage({
   const [quantity, setQuantity] = useState("0.01");
   const [limitPrice, setLimitPrice] = useState("65000");
   const [quoteCurrency, setQuoteCurrency] = useState("USDT");
+  const [credentialRef, setCredentialRef] = useState("");
+  const [credentialDraft, setCredentialDraft] = useState(emptyCredentialDraft);
   const [rationale, setRationale] = useState(
     "Dry-run entry after agent review.",
   );
@@ -71,9 +61,22 @@ export function ProviderSettingsPage({
     [providers, selectedId],
   );
   const providerForMode = useMemo(
-    () => editProvider(provider, mode),
-    [mode, provider],
+    () =>
+      editProvider(provider, {
+        credentialRef: providerCredentialRef(
+          provider.providerId,
+          credentialDraft,
+          credentialRef,
+        ),
+        mode,
+      }),
+    [credentialDraft, credentialRef, mode, provider],
   );
+
+  useEffect(() => {
+    setCredentialRef(provider.credentialRef ?? "");
+    setCredentialDraft(emptyCredentialDraft);
+  }, [provider.credentialRef, provider.providerId]);
 
   useEffect(() => {
     let active = true;
@@ -91,20 +94,17 @@ export function ProviderSettingsPage({
   }, [commandClient, text.unavailable]);
 
   function buildIntent(): TradingOrderIntent {
-    const intent: TradingOrderIntent = {
+    return createTradingOrderIntent({
       providerId: provider.providerId,
       symbol,
       side,
       orderType,
-      quantity: Number.parseFloat(quantity),
+      quantity,
+      limitPrice,
       quoteCurrency,
       rationale,
-      liveRequested: mode === "live_requires_approval",
-    };
-    const parsedLimit = Number.parseFloat(limitPrice);
-    return orderType === "limit" && Number.isFinite(parsedLimit)
-      ? { ...intent, limitPrice: parsedLimit }
-      : intent;
+      mode,
+    });
   }
 
   function resetPreview() {
@@ -118,8 +118,19 @@ export function ProviderSettingsPage({
       setStatus(text.unavailable);
       return;
     }
+    const nextCredentialRef = providerCredentialRef(
+      provider.providerId,
+      credentialDraft,
+      credentialRef,
+    );
+    if (nextCredentialRef && !nextCredentialRef.startsWith("secure://plutus/")) {
+      setStatus(text.credentialInvalid);
+      return;
+    }
     try {
       const saved = await commandClient.providers.save(providerForMode);
+      setCredentialDraft(emptyCredentialDraft);
+      setCredentialRef(saved.credentialRef ?? "");
       setProviders((current) =>
         current.map((candidate) =>
           candidate.providerId === saved.providerId ? saved : candidate,
@@ -177,97 +188,74 @@ export function ProviderSettingsPage({
 
   return (
     <HostShell>
-      <header className="page-header provider-header">
-        <h1>{text.title}</h1>
-        <p>{text.subtitle}</p>
-        <div className="pill-row" aria-label={text.safety}>
-          <span className="pill">{text.readOnly}</span>
-          <span className="pill">{text.dryRunOnly}</span>
-          <span className="pill">{text.killSwitch}</span>
-        </div>
-      </header>
-
-      <section className="provider-layout">
-        <ProviderList
-          onSelect={(nextProvider) => {
-            setSelectedId(nextProvider.providerId);
-            resetPreview();
-          }}
-          providers={providers}
-          selectedId={selectedId}
-          text={text}
-          title={text.connections}
-          locale={locale}
-        />
-        <article className="panel provider-detail">
-          <div className="provider-detail-heading">
-            <span>{text.selected}</span>
-            <strong>
-              {providerDisplayName(
-                provider.providerId,
-                provider.displayName,
-                locale,
-              )}
-            </strong>
+      <div className="provider-page">
+        <header className="page-header provider-header">
+          <h1>{text.title}</h1>
+          <p>{text.subtitle}</p>
+          <div className="pill-row" aria-label={text.safety}>
+            <span className="pill">{text.readOnly}</span>
+            <span className="pill">{text.dryRunOnly}</span>
+            <span className="pill">{text.killSwitch}</span>
           </div>
-          <ModeControl
+        </header>
+
+        <section className="provider-layout">
+          <ProviderList
+            onSelect={(nextProvider) => {
+              setSelectedId(nextProvider.providerId);
+              resetPreview();
+            }}
+            providers={providers}
+            selectedId={selectedId}
+            text={text}
+            title={text.connections}
+            locale={locale}
+          />
+          <ProviderDetail
+            credentialDraft={credentialDraft}
+            credentialStorageRef={providerForMode.credentialRef ?? text.noCredential}
+            locale={locale}
             mode={mode}
+            onCredentialDraft={(field, value) => {
+              setCredentialDraft((draft) =>
+                updateCredentialDraft(draft, field, value),
+              );
+              resetPreview();
+            }}
+            onGenerate={previewDecision}
             onMode={(nextMode) => {
               setMode(nextMode);
               resetPreview();
             }}
+            onSave={saveProvider}
+            onSubmit={submitPreview}
+            provider={provider}
+            providerForMode={providerForMode}
+            status={status}
             text={text}
           />
-          <ProviderMatrix
-            provider={providerForMode}
-            mode={mode}
-            text={text}
-            locale={locale}
-          />
-          <div className="provider-actions">
-            <button onClick={saveProvider} type="button">
-              {text.save}
-            </button>
-            <button
-              data-testid="generate-provider-decision"
-              onClick={previewDecision}
-              type="button"
-            >
-              {text.generate}
-            </button>
-            <button
-              data-testid="simulate-provider-preview"
-              onClick={submitPreview}
-              type="button"
-            >
-              {text.submit}
-            </button>
-          </div>
-          <p className="preview-line" data-testid="provider-preview-status">
-            {status}
-          </p>
-        </article>
-      </section>
+        </section>
 
-      <ProviderWorkbench
-        decision={decision}
-        limitPrice={limitPrice}
-        order={order}
-        orderType={orderType}
-        quantity={quantity}
-        quoteCurrency={quoteCurrency}
-        rationale={rationale}
-        side={side}
-        symbol={symbol}
-        text={text}
-        setLimitPrice={setLimitPrice}
-        setOrderType={setOrderType}
-        setQuantity={setQuantity}
-        setQuoteCurrency={setQuoteCurrency}
-        setRationale={setRationale}
-        setSide={setSide}
-        setSymbol={setSymbol}
-      />
+        <ProviderWorkbench
+          decision={decision}
+          limitPrice={limitPrice}
+          order={order}
+          orderType={orderType}
+          quantity={quantity}
+          quoteCurrency={quoteCurrency}
+          rationale={rationale}
+          side={side}
+          symbol={symbol}
+          text={text}
+          setLimitPrice={setLimitPrice}
+          setOrderType={setOrderType}
+          setQuantity={setQuantity}
+          setQuoteCurrency={setQuoteCurrency}
+          setRationale={setRationale}
+          setSide={setSide}
+          setSymbol={setSymbol}
+        />
+      </div>
     </HostShell>
   );
 }

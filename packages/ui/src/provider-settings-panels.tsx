@@ -1,75 +1,15 @@
 import type { AppLocale } from "./core";
 import {
-  providerDisplayName,
   providerEndpoint,
   providerMarketLabel,
 } from "./provider-settings-copy";
+import { providerHealthLabel } from "./provider-settings-health";
 import type {
   DryRunOrderResult,
-  ProviderId,
   ProviderMode,
   TradingDecision,
   TradingProviderConfig,
 } from "./provider-settings-types";
-
-export function ProviderList({
-  providers,
-  selectedId,
-  text,
-  title,
-  locale,
-  onSelect,
-}: {
-  providers: readonly TradingProviderConfig[];
-  selectedId: ProviderId;
-  text: Record<string, string>;
-  title: string;
-  locale: AppLocale;
-  onSelect: (provider: TradingProviderConfig) => void;
-}) {
-  const healthRows = providerHealthRows(providers, text);
-  return (
-    <article className="panel provider-list" data-testid="provider-list">
-      <h2>{title}</h2>
-      <dl
-        className="provider-health-summary"
-        data-testid="provider-health-summary"
-      >
-        {healthRows.map(([label, count]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{count}</dd>
-          </div>
-        ))}
-      </dl>
-      {providers.map((provider) => (
-        <button
-          className={`provider-card ${
-            selectedId === provider.providerId ? "selected" : ""
-          }`}
-          data-testid={`provider-${provider.providerId}`}
-          key={provider.providerId}
-          onClick={() => onSelect(provider)}
-          type="button"
-        >
-          <span>
-            <strong>
-              {providerDisplayName(
-                provider.providerId,
-                provider.displayName,
-                locale,
-              )}
-            </strong>
-            <small>
-              {providerMarketLabel(provider.providerId, provider.market, locale)}
-            </small>
-          </span>
-          <i>{providerHealthLabel(provider.health, text)}</i>
-        </button>
-      ))}
-    </article>
-  );
-}
 
 export function ModeControl({
   mode,
@@ -133,7 +73,7 @@ export function ProviderMatrix({
   ];
   return (
     <>
-      <dl className="provider-matrix">
+      <dl className="provider-matrix" data-testid="provider-matrix">
         {rows.map(([label, value]) => (
           <div key={label}>
             <dt>{label}</dt>
@@ -150,28 +90,6 @@ export function ProviderMatrix({
       </div>
     </>
   );
-}
-
-function providerHealthLabel(
-  health: TradingProviderConfig["health"],
-  text: Record<string, string>,
-): string {
-  switch (health) {
-    case "connected":
-      return text.connected;
-    case "degraded":
-      return text.degraded;
-    case "not_configured":
-      return text.notConfigured;
-    case "blocked":
-      return text.blocked;
-    default:
-      return assertNever(health);
-  }
-}
-
-function assertNever(value: never): never {
-  throw new Error(`Unsupported provider health: ${String(value)}`);
 }
 
 export function DecisionPanel({
@@ -213,30 +131,6 @@ export function DecisionPanel({
       ) : null}
     </section>
   );
-}
-
-function providerHealthRows(
-  providers: readonly TradingProviderConfig[],
-  text: Record<string, string>,
-) {
-  const counts = providers.reduce(
-    (summary, provider) => ({
-      ...summary,
-      [provider.health]: summary[provider.health] + 1,
-    }),
-    {
-      connected: 0,
-      degraded: 0,
-      not_configured: 0,
-      blocked: 0,
-    },
-  );
-  return [
-    [text.connected, counts.connected],
-    [text.degraded, counts.degraded],
-    [text.notConfigured, counts.not_configured],
-    [text.blocked, counts.blocked],
-  ] as const;
 }
 
 export function PayloadPanel({

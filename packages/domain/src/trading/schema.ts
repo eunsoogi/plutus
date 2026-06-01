@@ -2,13 +2,16 @@ import { z } from "zod";
 
 import { Confidence, WarningSchema } from "../common";
 import { IsoUtcDateTimeSchema, UuidSchema } from "../ids";
+import { isCcxtExchangeId } from "./ccxt-exchanges";
 
-export const TradingProviderId = z.enum([
-  "kiwoom",
-  "upbit",
-  "coinbase",
-  "binance",
-]);
+export const TradingProviderId = z
+  .string()
+  .min(1)
+  .regex(/^[a-z0-9]+$/u)
+  .refine(
+    (providerId) => providerId === "kiwoom" || isCcxtExchangeId(providerId),
+    "Unsupported trading provider.",
+  );
 
 export const TradingProviderEnvironment = z.enum([
   "mock",

@@ -16,7 +16,7 @@
     "test:commands": "cargo test --manifest-path src-tauri/Cargo.toml --lib commands::",
     "test:remote-control": "cargo test --manifest-path src-tauri/Cargo.toml --lib remote_control::",
     "test:tauri": "cargo test --manifest-path src-tauri/Cargo.toml --lib",
-    "tauri": "cargo run --manifest-path src-tauri/Cargo.toml --bin plutus-tauri --"
+    "tauri": "tauri"
   },
   "dependencies": {
     "@plutus/command-client": "workspace:*",
@@ -25,6 +25,7 @@
     "react": "^19.1.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "2.8.4",
     "@types/react": "^19.1.8",
     "typescript": "^5.8.3",
     "vitest": "^3.1.4"

@@ -47,7 +47,7 @@ export interface RemoteUnlockPrepared {
   };
 }
 
-export type TradingProviderId = "kiwoom" | "upbit" | "coinbase" | "binance";
+export type TradingProviderId = string;
 
 export interface TradingProviderConfig {
   providerId: TradingProviderId;

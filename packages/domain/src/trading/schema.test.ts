@@ -35,6 +35,34 @@ describe("trading provider domain schemas", () => {
     ).toBe(false);
   });
 
+  it("accepts CCXT exchange ids outside the original curated set", () => {
+    const provider = TradingProviderConfigSchema.parse({
+      providerId: "kraken",
+      displayName: "Kraken",
+      market: "Spot crypto",
+      region: "CCXT",
+      environment: "sandbox",
+      mode: "dry_run",
+      permissions: ["market_data", "account_read", "trade_dry_run"],
+      health: "not_configured",
+      lastCheckedAt: now,
+      credentialRef: null,
+      warnings: [],
+    });
+
+    expect(provider.providerId).toBe("kraken");
+    expect(
+      TradingOrderIntentSchema.safeParse({
+        providerId: "okx",
+        symbol: "BTC/USDT",
+        side: "buy",
+        orderType: "market",
+        quantity: 0.1,
+        quoteCurrency: "USDT",
+      }).success,
+    ).toBe(true);
+  });
+
   it("requires limit prices only for limit order intents", () => {
     expect(
       TradingOrderIntentSchema.safeParse({

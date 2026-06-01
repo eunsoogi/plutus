@@ -13,10 +13,10 @@
     "windows": [
       {
         "title": "Plutus",
-        "width": 1280,
-        "height": 860,
-        "minWidth": 960,
-        "minHeight": 640
+        "width": 1440,
+        "height": 960,
+        "minWidth": 1100,
+        "minHeight": 720
       }
     ],
     "security": {

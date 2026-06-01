@@ -7,6 +7,7 @@ export * from "./portfolio/schema";
 export * from "./remote-control/schema";
 export * from "./research-run/schema";
 export * from "./strategy/schema";
+export * from "./trading/ccxt-exchanges";
 export * from "./trading/schema";
 export * from "./watchlist/schema";
 export * from "./wiki/schema";

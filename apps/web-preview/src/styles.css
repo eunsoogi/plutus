@@ -41,6 +41,7 @@ body {
     linear-gradient(135deg, #090d12 0%, #0c1118 52%, #0f141b 100%);
   margin: 0;
   min-width: 320px;
+  overflow: hidden;
 }
 
 a {
@@ -64,7 +65,7 @@ button {
   font-weight: 700;
   gap: 8px;
   justify-content: center;
-  min-height: 36px;
+  min-height: 40px;
   padding: 0 13px;
 }
 
@@ -86,7 +87,9 @@ textarea {
 .app-shell {
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
 }
 
 .sidebar {
@@ -169,7 +172,9 @@ textarea {
   align-content: start;
   display: grid;
   gap: 16px;
+  height: 100vh;
   min-width: 0;
+  overflow: auto;
   padding: 18px;
 }
 

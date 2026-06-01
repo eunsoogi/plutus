@@ -2,7 +2,7 @@
 
 ## 1. Objective
 
-Enable Plutus to configure Kiwoom, Upbit, Coinbase, and Binance as trading providers, then use Codex multi-agent decision support to produce inspectable dry-run order recommendations.
+Enable Plutus to configure Kiwoom Securities plus every CCXT-supported exchange as trading venues, then use Codex multi-agent decision support to produce inspectable dry-run order recommendations.
 
 This PRD upgrades provider setup and paper execution readiness without weakening the MVP safety boundary. Live execution remains disabled until a separate approval workflow, order audit, and compliance review are shipped.
 
@@ -10,11 +10,11 @@ This PRD upgrades provider setup and paper execution readiness without weakening
 
 Included:
 
-- Provider configuration UI for Kiwoom, Upbit, Coinbase, and Binance.
+- Provider configuration UI for Kiwoom and the current CCXT exchange catalog.
 - Provider capability, environment, permission, and health status display.
 - Dry-run order preview for stocks and spot crypto.
 - Multi-agent trading decision package with bull, bear, risk, and execution viewpoints.
-- Provider-specific payload mapping for order preview and audit.
+- Kiwoom-specific and CCXT `createOrder` payload mapping for order preview and audit.
 - Clear separation of read-only data, dry-run trading, and future live trading.
 
 Excluded from this PRD:
@@ -23,27 +23,26 @@ Excluded from this PRD:
 - High-frequency or latency-sensitive execution.
 - Margin, derivatives, futures, options, lending, staking, or leverage workflows.
 - Tax, legal, or jurisdiction-specific advice.
-- Provider credential collection in plain text fields.
+- Persistent raw credential storage in browser preview or agent memory.
 
-## 3. Supported Providers
+## 3. Supported Trading Venues
 
-| Provider | Primary Market | Initial Mode | Notes |
+| Venue family | Primary Market | Initial Mode | Notes |
 | --- | --- | --- | --- |
 | Kiwoom | Korean equities | dry-run | Uses REST/OpenAPI concepts with mock and production domains tracked separately. |
-| Upbit | Spot crypto | dry-run | Region-specific base URLs and order-placement permission are surfaced. |
-| Coinbase | Spot crypto | dry-run | Uses Advanced Trade order concepts and client order IDs. |
-| Binance | Spot crypto | dry-run | Uses Spot order and test-order concepts with explicit signature requirement. |
+| CCXT exchanges | Crypto spot / derivatives | dry-run | Uses the official CCXT exchange id catalog, including Upbit, Coinbase, Binance, Kraken, OKX, Bybit, and other supported exchanges. |
 
 ## 4. User Experience
 
 The `/settings/providers` screen must behave like an operations console, not a marketing page:
 
-- Show each provider as a compact status card with market, environment, permissions, health, and last check.
+- Show each trading venue as a compact searchable selector with market, environment, permissions, health, and last check.
+- Display a setup checklist that explains exchange selection, credential field entry, generated secure reference handling, and dry-run/live approval mode.
 - Make dry-run the default and safest active state.
 - Surface missing live permissions as blocked, not hidden.
 - Provide one decision panel where the user can choose provider, symbol, side, type, quantity, and optional limit price.
 - Show the multi-agent consensus before any dry-run submission.
-- Keep order payloads inspectable and provider-specific.
+- Keep order payloads inspectable: Kiwoom uses its own preview endpoint, while CCXT venues use a generic dry-run `createOrder` payload.
 
 ## 5. Multi-Agent Decision Contract
 
@@ -71,16 +70,16 @@ The final decision cannot authorize live execution unless all of these are true:
 
 ## 6. Acceptance Criteria
 
-- User can open `/settings/providers` and see Kiwoom, Upbit, Coinbase, and Binance.
+- User can open `/settings/providers` and see Kiwoom plus the full current CCXT exchange catalog.
+- User can search/select CCXT exchanges and enter API key, secret, optional passphrase, and account/label fields.
+- Saved provider state clears raw credential fields from the screen and keeps only a generated `secure://plutus/...` reference.
 - User can save provider mode/permission settings in browser preview local runtime.
 - User can generate a dry-run trading decision for each provider family.
-- User can submit a dry-run order and inspect provider-specific payload fields.
+- User can submit a dry-run order and inspect Kiwoom or CCXT payload fields.
 - UI labels and state make clear that live execution is disabled without approval.
 - Tests cover provider schemas, provider payload adapters, decision orchestration, command-client contracts, and UI behavior.
 
 ## 7. Source Notes
 
-- Upbit Developer Center Create Order: region-specific `POST /v1/orders`, order-placement permission, and self-match prevention fields.
-- Coinbase Advanced Trade Create Order: `POST /api/v3/brokerage/orders`, `client_order_id`, `product_id`, `side`, and `order_configuration`.
-- Binance Spot API New Order: `POST /api/v3/order` and `POST /api/v3/order/test` for validating without matching-engine submission.
+- CCXT package/docs: `ccxt.exchanges` is the source of supported exchange ids; non-Kiwoom crypto venues map to dry-run `createOrder` intent payloads.
 - Kiwoom REST API guide: production and mock domains, OAuth token flow, and domestic stock order categories.

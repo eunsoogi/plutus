@@ -1,4 +1,9 @@
-export type ProviderId = "kiwoom" | "upbit" | "coinbase" | "binance";
+import {
+  CCXT_EXCHANGE_IDS,
+  ccxtExchangeDisplayName,
+} from "@plutus/domain";
+
+export type ProviderId = string;
 export type ProviderMode =
   | "disabled"
   | "read_only"
@@ -91,56 +96,54 @@ export type ProviderCommandClient = {
   };
 };
 
+export const ccxtExchangeCount = CCXT_EXCHANGE_IDS.length;
+
 export const fallbackProviders: readonly TradingProviderConfig[] = [
-  providerFixture(
-    "kiwoom",
-    "Kiwoom Securities",
-    "Korean equities",
-    "KR",
-    "not_configured",
-  ),
-  providerFixture(
-    "upbit",
-    "Upbit",
-    "Spot crypto",
-    "KR/SG/ID/TH",
-    "not_configured",
-  ),
-  providerFixture(
-    "coinbase",
-    "Coinbase Advanced Trade",
-    "Spot crypto",
-    "US/global",
-    "not_configured",
-  ),
-  providerFixture(
-    "binance",
-    "Binance Spot",
-    "Spot crypto",
-    "Global",
-    "not_configured",
+  providerFixture("kiwoom", "Kiwoom Securities", "Korean equities", "KR"),
+  ...CCXT_EXCHANGE_IDS.map((exchangeId) =>
+    providerFixture(
+      exchangeId,
+      ccxtExchangeDisplayName(exchangeId),
+      "Spot crypto / derivatives via CCXT",
+      "CCXT",
+    ),
   ),
 ];
 
 export function editProvider(
   provider: TradingProviderConfig,
-  mode: ProviderMode,
+  settings: {
+    readonly credentialRef: string | null;
+    readonly mode: ProviderMode;
+  },
 ): TradingProviderConfig {
-  const tradeLive = mode === "live_requires_approval";
+  const tradeLive = settings.mode === "live_requires_approval";
+  const health =
+    settings.credentialRef && provider.health === "not_configured"
+      ? "degraded"
+      : settings.credentialRef
+        ? provider.health
+        : "not_configured";
   const permissions = tradeLive
     ? Array.from(new Set([...provider.permissions, "trade_live"]))
     : provider.permissions.filter((permission) => permission !== "trade_live");
   return {
     ...provider,
-    mode,
+    credentialRef: settings.credentialRef,
+    mode: settings.mode,
     environment: tradeLive
       ? "live"
       : provider.environment === "live"
         ? "sandbox"
         : provider.environment,
+    health,
     permissions,
     lastCheckedAt: new Date().toISOString(),
   };
+}
+
+export function defaultCredentialRef(providerId: ProviderId): string {
+  return `secure://plutus/providers/${providerId}/main`;
 }
 
 function providerFixture(
@@ -148,7 +151,6 @@ function providerFixture(
   displayName: string,
   market: string,
   region: string,
-  health: TradingProviderConfig["health"],
 ): TradingProviderConfig {
   return {
     providerId,
@@ -158,7 +160,7 @@ function providerFixture(
     environment: providerId === "kiwoom" ? "mock" : "sandbox",
     mode: "dry_run",
     permissions: ["market_data", "account_read", "trade_dry_run"],
-    health,
+    health: "not_configured",
     lastCheckedAt: "2026-06-02T00:00:00.000Z",
     credentialRef: null,
     warnings: [],

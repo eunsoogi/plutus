@@ -22,9 +22,14 @@ use crate::security::{assert_no_trade_tool, redact_secret_values, redact_secrets
 use crate::storage::{
     new_id, now, sha256_hex, AppDataPaths, AppendRunEvent, Artifact, EnqueueLocalJob, FinalOutput,
     LocalJob, NewPosition, NewResearchRun, PersistFinalOutput, PlutusDatabase, Portfolio,
-    PortfolioRepository, Position, ResearchRun, RunEvent, Watchlist, WriteArtifactFile, MVP_BTC_ID,
-    MVP_MANUAL_ACCOUNT_ID, MVP_PROFILE_ID, MVP_WATCHLIST_ID,
+    PortfolioRepository, Position, ResearchRun, RunEvent, Watchlist, WriteArtifactFile,
+    MVP_MANUAL_ACCOUNT_ID, MVP_PROFILE_ID,
 };
+
+pub mod trading;
+mod trading_catalog;
+mod trading_payload;
+mod trading_types;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreatePortfolioInput {
@@ -2655,7 +2660,7 @@ pub fn seed_run_artifact(db: &PlutusDatabase, run_id: &str) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::storage::{PlutusDatabase, MVP_PORTFOLIO_ID};
+    use crate::storage::{PlutusDatabase, MVP_BTC_ID, MVP_PORTFOLIO_ID, MVP_WATCHLIST_ID};
 
     fn valid_final_card(summary: &str, category: &str) -> Value {
         json!({
