@@ -32,6 +32,49 @@
   width: 100%;
 }
 
+.provider-health-summary,
+.permission-chip-row,
+.decision-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.provider-health-summary {
+  margin: 0;
+}
+
+.provider-health-summary div,
+.permission-chip,
+.decision-meta span {
+  background: #0b1118;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  color: #d7dee8;
+  min-height: 34px;
+  padding: 7px 9px;
+}
+
+.provider-health-summary dt,
+.decision-meta strong {
+  color: var(--faint);
+  font-size: 0.68rem;
+  font-weight: 850;
+  margin-right: 6px;
+  text-transform: uppercase;
+}
+
+.provider-health-summary dd {
+  display: inline;
+  margin: 0;
+}
+
+.permission-chip {
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
 .provider-card.selected {
   background: rgb(86 182 199 / 12%);
   border-color: rgb(86 182 199 / 44%);

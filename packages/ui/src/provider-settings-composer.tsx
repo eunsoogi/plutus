@@ -82,7 +82,11 @@ export function ProviderWorkbench(props: {
       </article>
       <article className="panel provider-detail">
         <PayloadPanel order={props.order} title={props.text.payload} />
-        <DecisionPanel decision={props.decision} title={props.text.decision} />
+        <DecisionPanel
+          decision={props.decision}
+          text={props.text}
+          title={props.text.decision}
+        />
       </article>
     </section>
   );

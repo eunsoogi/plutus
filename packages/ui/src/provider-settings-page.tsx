@@ -192,6 +192,7 @@ export function ProviderSettingsPage({
           }}
           providers={providers}
           selectedId={selectedId}
+          text={text}
           title={text.connections}
         />
         <article className="panel provider-detail">

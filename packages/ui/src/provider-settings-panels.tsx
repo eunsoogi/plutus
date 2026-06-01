@@ -10,17 +10,31 @@ import type {
 export function ProviderList({
   providers,
   selectedId,
+  text,
   title,
   onSelect,
 }: {
   providers: readonly TradingProviderConfig[];
   selectedId: ProviderId;
+  text: Record<string, string>;
   title: string;
   onSelect: (provider: TradingProviderConfig) => void;
 }) {
+  const healthRows = providerHealthRows(providers, text);
   return (
     <article className="panel provider-list" data-testid="provider-list">
       <h2>{title}</h2>
+      <dl
+        className="provider-health-summary"
+        data-testid="provider-health-summary"
+      >
+        {healthRows.map(([label, count]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{count}</dd>
+          </div>
+        ))}
+      </dl>
       {providers.map((provider) => (
         <button
           className={`provider-card ${
@@ -94,22 +108,33 @@ export function ProviderMatrix({
     [text.permissions, provider.permissions.join(", ")],
   ];
   return (
-    <dl className="provider-matrix">
-      {rows.map(([label, value]) => (
-        <div key={label}>
-          <dt>{label}</dt>
-          <dd>{value}</dd>
-        </div>
-      ))}
-    </dl>
+    <>
+      <dl className="provider-matrix">
+        {rows.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="permission-chip-row" data-testid="provider-permissions">
+        {provider.permissions.map((permission) => (
+          <span className="permission-chip" key={permission}>
+            {permission}
+          </span>
+        ))}
+      </div>
+    </>
   );
 }
 
 export function DecisionPanel({
   decision,
+  text,
   title,
 }: {
   decision: TradingDecision | undefined;
+  text: Record<string, string>;
   title: string;
 }) {
   return (
@@ -124,12 +149,48 @@ export function DecisionPanel({
         ))}
       </div>
       {decision ? (
-        <p className="preview-line">
-          {decision.finalAction} / {decision.confidence}
-        </p>
+        <>
+          <p className="preview-line">
+            {decision.finalAction} / {decision.confidence}
+          </p>
+          <div className="decision-meta">
+            <span>
+              <strong>{text.blockingReasons}</strong>
+              {decision.blockingReasons.join(", ") || text.noBlockingReasons}
+            </span>
+            <span>
+              <strong>{text.evidence}</strong>
+              {decision.evidenceRefs.join(", ")}
+            </span>
+          </div>
+        </>
       ) : null}
     </section>
   );
+}
+
+function providerHealthRows(
+  providers: readonly TradingProviderConfig[],
+  text: Record<string, string>,
+) {
+  const counts = providers.reduce(
+    (summary, provider) => ({
+      ...summary,
+      [provider.health]: summary[provider.health] + 1,
+    }),
+    {
+      connected: 0,
+      degraded: 0,
+      not_configured: 0,
+      blocked: 0,
+    },
+  );
+  return [
+    [text.connected, counts.connected],
+    [text.degraded, counts.degraded],
+    [text.notConfigured, counts.not_configured],
+    [text.blocked, counts.blocked],
+  ] as const;
 }
 
 export function PayloadPanel({
