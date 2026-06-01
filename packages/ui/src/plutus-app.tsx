@@ -1079,7 +1079,7 @@ function FinalRunCard({
   );
 }
 
-function RunStageList() {
+export function RunStageList() {
   const { t } = useI18n();
   const stages = [
     ["planning", t("stage.planning")],
@@ -1853,29 +1853,6 @@ export function RemoteRunsPage({
       <section className="panel">
         <p>{localizedScenarioText(scenario.run.title, t)}</p>
         <RiskWarning />
-      </section>
-    </MobileShell>
-  );
-}
-
-export function RemoteRunDetailPage({
-  scenario,
-  remote,
-}: {
-  scenario: PlutusScenario;
-  remote: RemoteVisualState;
-}) {
-  const { t } = useI18n();
-  return (
-    <MobileShell>
-      <h1>{t("remote.runDetail")}</h1>
-      <RemoteStateBanner remote={remote} />
-      <section className="panel">
-        <p>{localizedScenarioText(scenario.run.status, t)}</p>
-        <RunStageList />
-        <button className="secondary" disabled={remote !== "connected"}>
-          {t("remote.cancelRun")}
-        </button>
       </section>
     </MobileShell>
   );

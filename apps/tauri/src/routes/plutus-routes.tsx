@@ -553,7 +553,7 @@ function renderPlutusRouteContent({
     return <RemoteRunsPage scenario={resolvedScenario} remote={remote} />;
   }
   if (remoteOneSegmentRoute(path, "runs")) {
-    return <RemoteRunDetailPage scenario={resolvedScenario} remote={remote} />;
+    return <RemoteRunDetailPage scenario={resolvedScenario} remote={remote} commandClient={resolvedCommandClient} />;
   }
   if (remoteOneSegmentRoute(path, "artifacts")) {
     return <RemoteArtifactPage remote={remote} />;
