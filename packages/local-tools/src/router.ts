@@ -10,8 +10,8 @@ import { createInMemoryToolRuntime } from "./audit/in-memory-audit";
 import type { LocalToolCall, LocalToolRunContext } from "./context";
 import type { LocalToolResponse, LocalToolWarning } from "./schemas/envelope";
 import { localToolResponseSchema } from "./schemas/envelope";
+import { handleAudit } from "./namespaces/audit";
 import { handleBacktest } from "./namespaces/backtest";
-import { handleGeneric } from "./namespaces/generic";
 import { handleMarketData } from "./namespaces/market-data";
 import { handleMemory } from "./namespaces/memory";
 import { handlePortfolio } from "./namespaces/portfolio";
@@ -29,7 +29,7 @@ const handlers = {
   plutus_research: handleResearch,
   plutus_memory: handleMemory,
   plutus_wiki: handleWiki,
-  plutus_audit: handleGeneric,
+  plutus_audit: handleAudit,
 };
 
 export class LocalToolRouter {
