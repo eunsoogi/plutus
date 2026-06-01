@@ -2,6 +2,7 @@ import { z } from "zod";
 import { RecommendationCategory, ResearchRunStatus } from "@plutus/domain";
 import type { ResearchRunHandle } from "./codex-run-host/codex-run-host";
 export { CodexSdkRunHost } from "./codex-run-host/codex-sdk-run-host";
+export { evaluateTradingDecision } from "./trading-decision";
 export {
   codexRunEventSchema,
   finalRecommendationCategorySchema,
