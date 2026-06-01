@@ -1,6 +1,7 @@
 import { TradingProviderConfigSchema } from "@plutus/domain";
 
 import {
+  buildTradingProviderPayload,
   createTradingProviderService,
   defaultTradingProviderConfigs,
 } from "../providers/trading";
@@ -50,6 +51,105 @@ describe("@plutus/data trading provider registry", () => {
     });
     expect(result.decision.finalAction).toBe("dry_run_allowed");
     expect(result.decision.approvalRequired).toBe(false);
+  });
+
+  it("maps every supported provider to its dry-run order payload shape", () => {
+    expect(
+      buildTradingProviderPayload({
+        clientOrderId: "client-kiwoom",
+        intent: {
+          providerId: "kiwoom",
+          symbol: "005930",
+          side: "buy",
+          orderType: "limit",
+          quantity: 3,
+          limitPrice: 78000,
+          quoteCurrency: "KRW",
+        },
+      }),
+    ).toMatchObject({
+      endpoint: "/api/dostk/ordr",
+      body: {
+        client_order_id: "client-kiwoom",
+        symbol: "005930",
+        order_type: "limit",
+        quantity: "3",
+        limit_price: "78000",
+      },
+    });
+    expect(
+      buildTradingProviderPayload({
+        clientOrderId: "client-upbit",
+        intent: {
+          providerId: "upbit",
+          symbol: "BTC",
+          side: "buy",
+          orderType: "market",
+          quantity: 50000,
+          quoteCurrency: "KRW",
+        },
+      }),
+    ).toMatchObject({
+      endpoint: "/v1/orders",
+      body: {
+        market: "KRW-BTC",
+        side: "bid",
+        ord_type: "price",
+        price: "50000",
+        identifier: "client-upbit",
+      },
+    });
+    expect(
+      buildTradingProviderPayload({
+        clientOrderId: "client-coinbase",
+        intent: {
+          providerId: "coinbase",
+          symbol: "BTC",
+          side: "sell",
+          orderType: "market",
+          quantity: 0.02,
+          quoteCurrency: "USD",
+        },
+      }),
+    ).toMatchObject({
+      endpoint: "/api/v3/brokerage/orders/preview",
+      body: {
+        client_order_id: "client-coinbase",
+        product_id: "BTC-USD",
+        side: "SELL",
+        order_configuration: {
+          market_market_ioc: {
+            base_size: "0.02",
+            rfq_disabled: true,
+          },
+        },
+      },
+    });
+    expect(
+      buildTradingProviderPayload({
+        clientOrderId: "client-binance",
+        intent: {
+          providerId: "binance",
+          symbol: "BTC-USDT",
+          side: "buy",
+          orderType: "limit",
+          quantity: 0.01,
+          limitPrice: 65000,
+          quoteCurrency: "USDT",
+        },
+      }),
+    ).toMatchObject({
+      endpoint: "/api/v3/order/test",
+      body: {
+        symbol: "BTCUSDT",
+        side: "BUY",
+        type: "LIMIT",
+        timeInForce: "GTC",
+        quantity: "0.01",
+        price: "65000",
+        newClientOrderId: "client-binance",
+      },
+    });
   });
 
   it("blocks live previews unless credentials and explicit live permission exist", () => {
