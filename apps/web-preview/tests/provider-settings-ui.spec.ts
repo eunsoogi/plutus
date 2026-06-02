@@ -103,3 +103,44 @@ test("provider settings accepts credential fields without leaving raw secrets on
   await expect(page.getByTestId("credential-passphrase-input")).toHaveValue("");
   await expect(page.locator("body")).not.toContainText("upbit-secret-key");
 });
+
+test("provider settings keeps raw credential edits out of storage and provider switches", async ({
+  page,
+}) => {
+  await page.goto("/settings/providers?runtime=local&locale=ko");
+  await page.getByTestId("provider-select").selectOption("upbit");
+
+  await page.getByTestId("credential-api-key-input").fill("upbit-edit-api-key");
+  await page.getByTestId("credential-secret-input").fill("upbit-edit-secret");
+  await page.getByRole("button", { name: "거래 연동 저장" }).click();
+
+  await expect(page.getByTestId("provider-matrix")).toContainText(
+    "secure://plutus/providers/upbit/main",
+  );
+
+  await page.getByTestId("credential-secret-input").fill("upbit-rotated-secret");
+  await page.getByRole("button", { name: "거래 연동 저장" }).click();
+
+  const savedStorage = await page.evaluate(() =>
+    localStorage.getItem("plutus.localRuntime.v1"),
+  );
+  expect(savedStorage).toContain("secure://plutus/providers/upbit/main");
+  expect(savedStorage).not.toContain("upbit-edit-api-key");
+  expect(savedStorage).not.toContain("upbit-edit-secret");
+  expect(savedStorage).not.toContain("upbit-rotated-secret");
+
+  await page.getByTestId("provider-select").selectOption("kraken");
+  await page.getByTestId("credential-api-key-input").fill("kraken-unsaved-key");
+  await page.getByTestId("credential-secret-input").fill("kraken-unsaved-secret");
+  await page.getByTestId("provider-select").selectOption("binance");
+
+  await expect(page.getByTestId("credential-api-key-input")).toHaveValue("");
+  await expect(page.getByTestId("credential-secret-input")).toHaveValue("");
+  await expect(page.locator("body")).not.toContainText("kraken-unsaved-secret");
+
+  const switchedStorage = await page.evaluate(() =>
+    localStorage.getItem("plutus.localRuntime.v1"),
+  );
+  expect(switchedStorage).not.toContain("kraken-unsaved-key");
+  expect(switchedStorage).not.toContain("kraken-unsaved-secret");
+});
