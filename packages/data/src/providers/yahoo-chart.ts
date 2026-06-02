@@ -41,6 +41,29 @@ function readOptionalNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function readOptionalAdjustedCloseValues(indicators: Record<string, unknown>) {
+  const adjclose = indicators["adjclose"];
+  if (adjclose === undefined) {
+    return [];
+  }
+
+  const adjcloseGroups = readArray(adjclose, "indicators.adjclose");
+  if (adjcloseGroups.length === 0) {
+    return [];
+  }
+
+  const firstAdjclose = readRecord(
+    adjcloseGroups[0],
+    "indicators.adjclose[0]",
+  );
+  const adjustedCloseValues = firstAdjclose["adjclose"];
+  if (adjustedCloseValues === undefined) {
+    return [];
+  }
+
+  return readArray(adjustedCloseValues, "adjclose.adjclose");
+}
+
 function chartUrl(request: OhlcvRequest, options: YahooChartOptions): URL {
   const symbol = resolveProviderSymbol(request, provider);
   const url = new URL(
@@ -85,10 +108,6 @@ export async function fetchYahooCandles(
     readArray(indicators["quote"], "indicators.quote")[0],
     "indicators.quote[0]",
   );
-  const adjclose = readRecord(
-    readArray(indicators["adjclose"], "indicators.adjclose")[0],
-    "indicators.adjclose[0]",
-  );
   const meta = readRecord(firstResult["meta"], "meta");
   const timezone =
     typeof meta["timezone"] === "string" ? meta["timezone"] : "UTC";
@@ -97,10 +116,7 @@ export async function fetchYahooCandles(
   const lowValues = readArray(quote["low"], "quote.low");
   const closeValues = readArray(quote["close"], "quote.close");
   const volumeValues = readArray(quote["volume"], "quote.volume");
-  const adjustedCloseValues = readArray(
-    adjclose["adjclose"],
-    "adjclose.adjclose",
-  );
+  const adjustedCloseValues = readOptionalAdjustedCloseValues(indicators);
 
   return normalizeCandles({
     instrumentId: request.instrumentId,

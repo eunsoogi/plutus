@@ -136,6 +136,62 @@ describe("@plutus/data provider adapters", () => {
     );
   });
 
+  it("normalizes Yahoo-compatible network candles without adjusted close values", async () => {
+    // Given: Yahoo chart returns quote candles without an adjclose indicator.
+    const provider = createYahooCompatibleProvider({
+      useNetwork: true,
+      fetch: async () =>
+        new Response(
+          JSON.stringify({
+            chart: {
+              result: [
+                {
+                  timestamp: [1778803200],
+                  meta: { timezone: "America/New_York" },
+                  indicators: {
+                    quote: [
+                      {
+                        open: [922],
+                        high: [930],
+                        low: [918],
+                        close: [928],
+                        volume: [41000000],
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          }),
+        ),
+    });
+    const getOhlcv = provider.getOhlcv;
+    if (!getOhlcv) {
+      throw new Error("Yahoo-compatible provider must expose getOhlcv.");
+    }
+
+    // When: the provider is asked for network candles.
+    const candles = await getOhlcv({
+      instrumentId: "018f3f5d-0000-7000-8000-000000000101",
+      symbol: "NVDA",
+      assetType: "stock",
+      currency: "USD",
+      interval: "1d",
+      start: "2026-05-15T00:00:00.000Z",
+      end: "2026-05-16T00:00:00.000Z",
+    });
+
+    // Then: quote-only chart rows still normalize with nullable adjusted close.
+    expect(candles).toHaveLength(1);
+    expect(candles[0]).toEqual(
+      expect.objectContaining({
+        timestamp: "2026-05-15T00:00:00.000Z",
+        close: 928,
+        adjustedClose: null,
+      }),
+    );
+  });
+
   it("normalizes CCXT-compatible fixture candles with source metadata", async () => {
     const provider = createCcxtFixtureProvider();
 
