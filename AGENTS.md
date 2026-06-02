@@ -13,9 +13,9 @@
 
 ## Planning and Goals
 
-- Start non-trivial work in goal mode: define the concrete objective, keep a short plan, and update that plan as evidence changes.
-- For feature, UX, cleanup, or bug work, write or identify the PRD/SPEC/issue intent before editing code. If the scope is missing, create or update a GitHub issue before implementation.
-- Prefer tests-first development for behavior changes and bug fixes. Add a failing regression test or document why existing coverage is already sufficient before changing implementation.
+- Start non-trivial work in local goal-mode: define the concrete objective, keep a short plan, and update that plan as evidence changes.
+- For feature, UX, cleanup, or bug work, write or identify the PRD/SPEC/issue intent before editing code. Update that source of truth before implementation when behavior or user-facing scope changes.
+- Prefer tests-first development for behavior changes and bug fixes. Add or identify the failing regression coverage, then change implementation; document why existing coverage is sufficient when no new test is added.
 - Keep each branch tied to one issue-sized outcome. Split unrelated fixes, broad cleanup, and follow-up hardening into separate issues and PRs.
 
 ## OMO and Skills
@@ -27,6 +27,7 @@
 ## Multi-Agent Coordination
 
 - Assign each agent a unique worktree, branch, issue, and owned file/module list. Agents must assume other branches may be changing nearby files.
+- For multi-thread efforts, keep each thread tied to its own issue/PR or explicit sub-scope, then have the coordinator reconcile results before downstream branches finalize.
 - Do not revert or overwrite another agent's edits. If two branches need the same file, coordinate ownership first and prefer serializing the work.
 - Workers should report changed files, tests run, PR URL, blockers, and whether they need a refresh from `main`.
 - Coordinators should pause downstream PR finalization when repository process rules change, merge the process update first, then have workers refresh from `main`.
