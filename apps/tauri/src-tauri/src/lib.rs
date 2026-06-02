@@ -6,7 +6,7 @@ pub mod secure_store;
 pub mod security;
 pub mod storage;
 
-use tauri::Manager;
+use tauri::{utils::config::WindowConfig, Manager, WebviewWindowBuilder};
 
 use crate::commands::AppState;
 use crate::storage::{AppDataPaths, PlutusDatabase};
@@ -50,6 +50,13 @@ pub fn registered_command_names() -> &'static [&'static str] {
     ]
 }
 
+fn startup_window_config(windows: &[WindowConfig]) -> Option<&WindowConfig> {
+    windows
+        .iter()
+        .find(|window| window.label == "main" && window.create)
+        .or_else(|| windows.iter().find(|window| window.create))
+}
+
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
@@ -58,10 +65,16 @@ pub fn run() {
             let db = PlutusDatabase::open(&paths.database)?;
             db.ensure_default_profile()?;
             app.manage(AppState::new(db, paths));
-            if let Some(window) = app.get_webview_window("main") {
-                window.show()?;
-                window.set_focus()?;
-            }
+            let window = match app.get_webview_window("main") {
+                Some(window) => window,
+                None => {
+                    let config = startup_window_config(&app.config().app.windows)
+                        .ok_or_else(|| anyhow::anyhow!("missing startup window config"))?;
+                    WebviewWindowBuilder::from_config(app.handle(), config)?.build()?
+                }
+            };
+            window.show()?;
+            window.set_focus()?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -106,6 +119,8 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
+    use tauri::utils::config::WindowConfig;
+
     #[test]
     fn registers_product_tauri_commands() {
         let commands = crate::registered_command_names();
@@ -145,5 +160,23 @@ mod tests {
         ] {
             assert!(commands.contains(&command), "missing command {command}");
         }
+    }
+
+    #[test]
+    fn selects_configured_main_window_when_runtime_has_not_created_one() {
+        let secondary = WindowConfig {
+            label: "secondary".to_string(),
+            ..WindowConfig::default()
+        };
+        let main = WindowConfig {
+            label: "main".to_string(),
+            ..WindowConfig::default()
+        };
+        let windows = vec![secondary, main];
+
+        let selected =
+            super::startup_window_config(&windows).expect("main window config should exist");
+
+        assert_eq!(selected.label, "main");
     }
 }
