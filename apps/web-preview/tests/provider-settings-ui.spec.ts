@@ -34,6 +34,9 @@ test("provider settings fits the desktop shell and explains CCXT setup", async (
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.goto("/settings/providers?runtime=local&locale=ko");
 
+  await expect(page.getByTestId("selected-provider-name")).toContainText(
+    "키움증권",
+  );
   await expect(page.getByTestId("provider-setup-guide")).toContainText(
     "API 키",
   );
@@ -56,18 +59,24 @@ test("provider settings fits the desktop shell and explains CCXT setup", async (
     const select = document.querySelector<HTMLSelectElement>(
       "[data-testid='provider-select']",
     );
+    const mainSurface = document.querySelector<HTMLElement>(".main-surface");
     return {
       bodyOverflows:
         document.documentElement.scrollHeight > window.innerHeight + 1,
+      mainSurfaceOverflows:
+        mainSurface === null
+          ? true
+          : mainSurface.scrollHeight > mainSurface.clientHeight + 1,
       inputHeight: input?.getBoundingClientRect().height ?? 0,
       selectHeight: select?.getBoundingClientRect().height ?? 0,
     };
   });
 
   expect(metrics.bodyOverflows).toBe(false);
-  expect(Math.abs(metrics.inputHeight - metrics.selectHeight)).toBeLessThanOrEqual(
-    1,
-  );
+  expect(metrics.mainSurfaceOverflows).toBe(false);
+  expect(
+    Math.abs(metrics.inputHeight - metrics.selectHeight),
+  ).toBeLessThanOrEqual(1);
 });
 
 test("provider settings accepts credential fields without leaving raw secrets onscreen", async ({
@@ -78,7 +87,9 @@ test("provider settings accepts credential fields without leaving raw secrets on
 
   await page.getByTestId("credential-api-key-input").fill("upbit-api-key");
   await page.getByTestId("credential-secret-input").fill("upbit-secret-key");
-  await page.getByTestId("credential-passphrase-input").fill("upbit-passphrase");
+  await page
+    .getByTestId("credential-passphrase-input")
+    .fill("upbit-passphrase");
   await page.getByRole("button", { name: "거래 연동 저장" }).click();
 
   await expect(page.getByTestId("provider-preview-status")).toContainText(

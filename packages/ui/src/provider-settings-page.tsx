@@ -39,7 +39,7 @@ export function ProviderSettingsPage({
   const text = providerSettingsCopy[locale];
   const [providers, setProviders] =
     useState<readonly TradingProviderConfig[]>(fallbackProviders);
-  const [selectedId, setSelectedId] = useState<ProviderId>("upbit");
+  const [selectedId, setSelectedId] = useState<ProviderId>("kiwoom");
   const [mode, setMode] = useState<ProviderMode>("dry_run");
   const [symbol, setSymbol] = useState("BTC");
   const [side, setSide] = useState<OrderSide>("buy");
@@ -123,7 +123,10 @@ export function ProviderSettingsPage({
       credentialDraft,
       credentialRef,
     );
-    if (nextCredentialRef && !nextCredentialRef.startsWith("secure://plutus/")) {
+    if (
+      nextCredentialRef &&
+      !nextCredentialRef.startsWith("secure://plutus/")
+    ) {
       setStatus(text.credentialInvalid);
       return;
     }
@@ -213,7 +216,9 @@ export function ProviderSettingsPage({
           />
           <ProviderDetail
             credentialDraft={credentialDraft}
-            credentialStorageRef={providerForMode.credentialRef ?? text.noCredential}
+            credentialStorageRef={
+              providerForMode.credentialRef ?? text.noCredential
+            }
             locale={locale}
             mode={mode}
             onCredentialDraft={(field, value) => {
