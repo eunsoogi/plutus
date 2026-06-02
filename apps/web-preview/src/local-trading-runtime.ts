@@ -186,10 +186,34 @@ function assertNever(value: never): never {
 }
 
 function normalizeTradingProvider(provider: unknown): TradingProviderConfig {
-  const parsed = TradingProviderConfigSchema.parse(provider);
+  const parsed = TradingProviderConfigSchema.parse(
+    scrubRawCredentialRef(provider),
+  );
   if (parsed.credentialRef || parsed.health !== "connected") return parsed;
   return {
     ...parsed,
     health: "not_configured",
+  };
+}
+
+function scrubRawCredentialRef(provider: unknown): unknown {
+  if (!provider || typeof provider !== "object") return provider;
+  const providerEntries = Object.entries(provider);
+  const credentialRef = providerEntries.find(
+    ([key]) => key === "credentialRef",
+  )?.[1];
+  if (
+    credentialRef === null ||
+    credentialRef === undefined ||
+    (typeof credentialRef === "string" &&
+      credentialRef.startsWith("secure://plutus/"))
+  ) {
+    return provider;
+  }
+  const health = providerEntries.find(([key]) => key === "health")?.[1];
+  return {
+    ...Object.fromEntries(providerEntries),
+    credentialRef: null,
+    health: health === "connected" ? "not_configured" : health,
   };
 }
