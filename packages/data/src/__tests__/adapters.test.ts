@@ -4,6 +4,7 @@ import {
   createYahooCompatibleProvider,
   normalizeCandles,
 } from "../index";
+import { describe, expect, it } from "vitest";
 
 describe("@plutus/data provider adapters", () => {
   it("returns deterministic Yahoo-compatible equity quotes without network calls", async () => {
@@ -186,6 +187,61 @@ describe("@plutus/data provider adapters", () => {
     expect(candles[0]).toEqual(
       expect.objectContaining({
         timestamp: "2026-05-15T00:00:00.000Z",
+        close: 928,
+        adjustedClose: null,
+      }),
+    );
+  });
+
+  it("normalizes Yahoo-compatible network candles when adjusted close is missing", async () => {
+    // Given: Yahoo returns valid quote OHLCV data without an adjclose block.
+    const provider = createYahooCompatibleProvider({
+      useNetwork: true,
+      fetch: async () =>
+        new Response(
+          JSON.stringify({
+            chart: {
+              result: [
+                {
+                  timestamp: [1778803200],
+                  meta: { timezone: "America/New_York" },
+                  indicators: {
+                    quote: [
+                      {
+                        open: [922],
+                        high: [930],
+                        low: [918],
+                        close: [928],
+                        volume: [41000000],
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          }),
+        ),
+    });
+    const getOhlcv = provider.getOhlcv;
+    if (!getOhlcv) {
+      throw new Error("Yahoo-compatible provider must expose getOhlcv.");
+    }
+
+    // When: the provider is asked for network candles.
+    const candles = await getOhlcv({
+      instrumentId: "018f3f5d-0000-7000-8000-000000000101",
+      symbol: "NVDA",
+      assetType: "stock",
+      currency: "USD",
+      interval: "1d",
+      start: "2026-05-15T00:00:00.000Z",
+      end: "2026-05-16T00:00:00.000Z",
+    });
+
+    // Then: the missing adjusted-close series is represented as null.
+    expect(candles).toHaveLength(1);
+    expect(candles[0]).toEqual(
+      expect.objectContaining({
         close: 928,
         adjustedClose: null,
       }),
