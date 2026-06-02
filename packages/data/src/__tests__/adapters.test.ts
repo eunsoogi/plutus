@@ -65,6 +65,133 @@ describe("@plutus/data provider adapters", () => {
     expect(quote.freshness.delayStatus).toBe("realtime");
   });
 
+  it("normalizes Yahoo-compatible network candles from an injected chart response", async () => {
+    // Given: network mode is enabled with a Yahoo chart-compatible fetch.
+    const requestedUrls: string[] = [];
+    const provider = createYahooCompatibleProvider({
+      useNetwork: true,
+      fetch: async (input) => {
+        const url = input instanceof URL ? input : new URL(String(input));
+        requestedUrls.push(url.toString());
+        return new Response(
+          JSON.stringify({
+            chart: {
+              result: [
+                {
+                  timestamp: [1778803200, 1778889600],
+                  meta: { timezone: "America/New_York" },
+                  indicators: {
+                    quote: [
+                      {
+                        open: [922, 924],
+                        high: [930, 932],
+                        low: [918, 921],
+                        close: [928, 929.5],
+                        volume: [41000000, 39000000],
+                      },
+                    ],
+                    adjclose: [{ adjclose: [927.8, 929.25] }],
+                  },
+                },
+              ],
+            },
+          }),
+        );
+      },
+    });
+    const getOhlcv = provider.getOhlcv;
+    if (!getOhlcv) {
+      throw new Error("Yahoo-compatible provider must expose getOhlcv.");
+    }
+
+    // When: the provider is asked for network candles.
+    const candles = await getOhlcv({
+      instrumentId: "018f3f5d-0000-7000-8000-000000000101",
+      symbol: "NVDA",
+      assetType: "stock",
+      currency: "USD",
+      interval: "1d",
+      start: "2026-05-15T00:00:00.000Z",
+      end: "2026-05-17T00:00:00.000Z",
+    });
+
+    // Then: the Yahoo chart response is normalized into price bars.
+    expect(requestedUrls[0]).toContain("/v8/finance/chart/NVDA");
+    expect(requestedUrls[0]).toContain("interval=1d");
+    expect(requestedUrls[0]).toContain("period1=1778803200");
+    expect(candles).toHaveLength(2);
+    expect(candles[0]).toEqual(
+      expect.objectContaining({
+        provider: "yahoo-compatible",
+        interval: "1d",
+        timestamp: "2026-05-15T00:00:00.000Z",
+        open: 922,
+        close: 928,
+        adjustedClose: 927.8,
+        sourceMetadata: expect.objectContaining({
+          source: "yahoo-compatible-chart",
+          timezone: "America/New_York",
+        }),
+      }),
+    );
+  });
+
+  it("normalizes Yahoo-compatible network candles without adjusted close values", async () => {
+    // Given: Yahoo chart returns quote candles without an adjclose indicator.
+    const provider = createYahooCompatibleProvider({
+      useNetwork: true,
+      fetch: async () =>
+        new Response(
+          JSON.stringify({
+            chart: {
+              result: [
+                {
+                  timestamp: [1778803200],
+                  meta: { timezone: "America/New_York" },
+                  indicators: {
+                    quote: [
+                      {
+                        open: [922],
+                        high: [930],
+                        low: [918],
+                        close: [928],
+                        volume: [41000000],
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          }),
+        ),
+    });
+    const getOhlcv = provider.getOhlcv;
+    if (!getOhlcv) {
+      throw new Error("Yahoo-compatible provider must expose getOhlcv.");
+    }
+
+    // When: the provider is asked for network candles.
+    const candles = await getOhlcv({
+      instrumentId: "018f3f5d-0000-7000-8000-000000000101",
+      symbol: "NVDA",
+      assetType: "stock",
+      currency: "USD",
+      interval: "1d",
+      start: "2026-05-15T00:00:00.000Z",
+      end: "2026-05-16T00:00:00.000Z",
+    });
+
+    // Then: quote-only chart rows still normalize with nullable adjusted close.
+    expect(candles).toHaveLength(1);
+    expect(candles[0]).toEqual(
+      expect.objectContaining({
+        timestamp: "2026-05-15T00:00:00.000Z",
+        close: 928,
+        adjustedClose: null,
+      }),
+    );
+  });
+
   it("normalizes CCXT-compatible fixture candles with source metadata", async () => {
     const provider = createCcxtFixtureProvider();
 

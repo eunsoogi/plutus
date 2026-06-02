@@ -6,6 +6,7 @@ import {
   type MarketDataProvider,
   type ProviderInstrumentRequest,
 } from "./provider";
+import { fetchYahooCandles, type YahooChartOptions } from "./yahoo-chart";
 import { normalizeCandles } from "../normalization/candles";
 
 type YahooFixture = {
@@ -17,7 +18,7 @@ type YahooFixture = {
   regularMarketTime: string;
 };
 
-export type YahooCompatibleOptions = {
+export type YahooCompatibleOptions = YahooChartOptions & {
   fetch?: typeof fetch;
   useNetwork?: boolean;
   endpoint?: string;
@@ -102,7 +103,7 @@ export function createYahooCompatibleProvider(
     id: provider,
     label: "Yahoo-compatible free market data",
     supportedAssetTypes: ["stock", "etf"],
-    supportedData: options.useNetwork ? ["quote"] : ["quote", "ohlcv"],
+    supportedData: ["quote", "ohlcv"],
     async getHealth() {
       return {
         provider,
@@ -153,9 +154,7 @@ export function createYahooCompatibleProvider(
     },
     async getOhlcv(request) {
       if (options.useNetwork) {
-        throw new Error(
-          "Yahoo-compatible network OHLCV is not implemented; configure a real chart provider before requesting candles.",
-        );
+        return fetchYahooCandles(request, options);
       }
       return normalizeCandles({
         instrumentId: request.instrumentId,
