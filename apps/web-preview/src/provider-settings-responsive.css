@@ -1,0 +1,38 @@
+@media (max-width: 860px) {
+  .provider-page {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    height: auto;
+  }
+
+  .provider-header,
+  .provider-layout {
+    grid-column: auto;
+  }
+
+  .provider-layout,
+  .provider-layout:not(.provider-workbench) {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .provider-list,
+  .provider-detail,
+  .provider-workbench .provider-detail,
+  .provider-decision {
+    grid-column: auto;
+  }
+
+  .provider-workbench {
+    height: auto;
+  }
+
+  .provider-matrix,
+  .decision-lanes {
+    grid-template-columns: 1fr;
+  }
+
+  .provider-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

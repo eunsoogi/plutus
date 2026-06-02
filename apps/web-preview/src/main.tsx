@@ -6,6 +6,10 @@ import {
 import { renderPlutusRoute, scenarioFromSnapshot } from "@plutus/tauri";
 import { createLocalWebCommandBridge } from "./local-runtime";
 import "./provider-settings.css";
+import "./provider-settings-list.css";
+import "./provider-settings-detail.css";
+import "./provider-settings-workbench.css";
+import "./provider-settings-responsive.css";
 import { routeContextFromLocation } from "./route-context";
 import "./styles.css";
 
@@ -31,7 +35,11 @@ async function createRuntimeClient(location: Location) {
   return createCommandClient(createLocalWebCommandBridge());
 }
 
-const root = createRoot(document.getElementById("root")!);
+const rootElement = document.getElementById("root");
+if (!rootElement) {
+  throw new Error("Plutus root element was not found.");
+}
+const root = createRoot(rootElement);
 
 void (async () => {
   const routeContext = routeContextFromLocation(window.location);
@@ -46,7 +54,11 @@ void (async () => {
         )
       : undefined;
   } catch (error) {
-    console.error("Failed to load Plutus runtime", error);
+    const runtimeError =
+      error instanceof Error
+        ? error
+        : new Error("Unknown Plutus runtime error.");
+    console.error("Failed to load Plutus runtime", runtimeError);
     commandClient = undefined;
     scenario = undefined;
   }
