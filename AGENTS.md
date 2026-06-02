@@ -2,7 +2,11 @@
 
 ## Workflow
 
-- Work on `main`; after each completed task, make a conventional commit and push directly to `origin/main`.
+- Keep `main` as the protected integration branch. Do not implement feature, fix, cleanup, or UX work directly on `main`.
+- Start each task in an isolated git worktree with a topic branch. Use the `eunsoogi/` branch prefix unless the user requests another naming scheme.
+- Make conventional commits on the topic branch, push the branch, and open a pull request for review/merge.
+- Merge completed work through pull requests. Push directly to `origin/main` only for explicit repository-wide process updates that must be visible before parallel work starts.
+- When coordinating multiple agents, give each agent its own worktree and branch, and include the task scope in the branch name.
 - Keep handoff notes general. Do not hardcode transient commit hashes, process IDs, or local build artifact paths.
 
 ## Trading Providers
