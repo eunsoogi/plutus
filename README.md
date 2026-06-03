@@ -1,8 +1,20 @@
-# Plutus
+<p align="center">
+  <img alt="Node >=22.13" src="https://img.shields.io/badge/node-%3E%3D22.13-339933?logo=node.js&logoColor=white">
+  <img alt="pnpm 11.0.0" src="https://img.shields.io/badge/pnpm-11.0.0-F69220?logo=pnpm&logoColor=white">
+  <img alt="TypeScript 5.8" src="https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white">
+  <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-FFC131?logo=tauri&logoColor=111111">
+  <img alt="MVP local-first" src="https://img.shields.io/badge/status-MVP%20local--first-5A67D8">
+</p>
 
-![Plutus README hero](./assets/readme/plutus-hero.png)
+<h1 align="center">Plutus</h1>
 
-[한국어 README](./README.ko.md)
+<p align="center">
+  <a href="./README.ko.md">ko</a>
+</p>
+
+<p align="center">
+  <img alt="Plutus README hero" src="./assets/readme/plutus-hero.png">
+</p>
 
 Plutus is a local-first trading research workspace centered on a macOS host. It coordinates Codex-powered specialist agents for market research, portfolio review, backtesting, risk analysis, and report generation, while keeping the user in control of the final decision.
 
