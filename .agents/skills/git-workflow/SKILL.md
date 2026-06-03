@@ -167,17 +167,23 @@ PR body must include:
 - `## Not Run`: any verification that could not be run and why, or `None`.
 - `## Follow-ups`: known follow-ups, or `None`.
 
-Put the issue closing reference only on the final line:
+When a matching issue exists, put the issue closing reference only on the final line:
 
 ```text
 Fixes #<issue-number>
 ```
 
-Do not put closing references in the middle of the PR body.
+Do not put closing references in the middle of the PR body. If the work is scoped only by a direct user request and no matching issue exists, omit the closing reference instead of inventing an issue number.
 
 ## Merge Rules
 
-Do not merge until required checks pass or a human maintainer explicitly accepts residual risk.
+Do not merge until required checks pass, the expected Codex review has completed, and every actionable Codex review comment is addressed or explicitly accepted by a human maintainer in the current thread.
+
+When Codex review is expected, wait for it before merging. Treat a Codex review with actionable inline comments as blocking. Fix the feedback in the PR branch, push the follow-up commit, and request or wait for a fresh Codex review before merging. Passing means the latest reviewed head has no unresolved actionable Codex feedback; a thumbs-up/no-suggestion Codex result is acceptable.
+
+Use `gh pr merge --squash --delete-branch --auto` only when repository branch rules, required checks, or a merge queue define the requirements that GitHub should wait for. Pair merges with `--match-head-commit <sha>` using the reviewed PR head SHA when possible so a stale or newly-pushed head cannot be merged by accident.
+
+`gh pr merge` does not have a standalone flag that means "Codex review passed." `--auto` only waits for requirements configured in GitHub, and `--admin` bypasses requirements; do not use `--admin` to skip Codex review, required checks, or review-thread cleanup.
 
 Merge completed work through pull requests. Use squash merge by default so `main` receives one reviewable commit per issue-sized outcome.
 
@@ -215,5 +221,6 @@ After resolving, stage only the resolved files and run the verification relevant
 - No force push or force-with-lease is used.
 - Verification covers touched surfaces, including manual QA evidence when required.
 - PR is draft until local verification and reviewer gates are complete.
-- PR body has structured sections and ends with exactly one `Fixes #<issue-number>` line.
+- PR body has structured sections and ends with exactly one `Fixes #<issue-number>` line only when a matching issue exists.
+- Expected Codex review completed on the latest PR head, and no unresolved actionable Codex feedback remains.
 - Merge is squash merge through the PR workflow.
