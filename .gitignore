@@ -11,3 +11,5 @@ docs/superpowers/
 .env.local
 .plutus-data/
 .plutus-local-tools/
+.omo/
+.lazyweb/
