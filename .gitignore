@@ -12,6 +12,4 @@ docs/superpowers/
 .plutus-data/
 .plutus-local-tools/
 .omo/
-.lazyweb/*
-!.lazyweb/design-improve/
-!.lazyweb/design-improve/**
+.lazyweb/
