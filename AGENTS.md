@@ -18,6 +18,22 @@
 - Prefer tests-first development for behavior changes and bug fixes. Add or identify the failing regression coverage, then change implementation; document why existing coverage is sufficient when no new test is added.
 - Keep each branch tied to one issue-sized outcome. Split unrelated fixes, broad cleanup, and follow-up hardening into separate issues and PRs.
 
+## Startup Map
+
+Use this map to choose the first files to inspect for a task. Keep startup reads scoped to the issue; open deeper files only when the task touches that area.
+
+| Path                                                | Why it matters                                                                                      | Open when                                                                                              |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `README.md`                                         | Gives the first-pass project story, architecture summary, setup commands, and documentation route.  | At the start of any task when you need project context or handoff language.                            |
+| `package.json`                                      | Shows the pnpm/Turbo scripts, Node floor, and verification command names.                           | Before running installs, tests, builds, or workspace-wide commands.                                    |
+| `prd/README.md`                                     | Indexes requirement-level product intent and MVP boundaries.                                        | When a task changes user-facing behavior, roadmap scope, agent roles, or risk posture.                 |
+| `spec/README.md`                                    | Indexes implementation specs, package boundaries, local-tool surfaces, and completion gates.        | When a task changes architecture, data contracts, runtime flows, local commands, or package ownership. |
+| `packages/domain/src` and `packages/data/src`       | Hold canonical domain defaults, provider catalogs, and data contracts.                              | Before changing trading-provider identity, defaults, labels, or persistence-facing shapes.             |
+| `packages/ui/src/provider-settings-*.ts*`           | Holds the provider setup experience and related UI copy, ordering, health, credentials, and panels. | For provider settings UX, credential-entry behavior, localization, and layout work.                    |
+| `apps/web-preview/src` and `apps/web-preview/tests` | Browser-preview route, local runtime harness, CSS, and Playwright UI coverage used by Codex.        | For rendered UI work, responsive checks, route behavior, and provider settings e2e coverage.           |
+| `apps/tauri`                                        | Tauri shell and packaged-app integration surface.                                                   | When browser-preview behavior must also be validated in the macOS app bundle.                          |
+| `tests/e2e` and `playwright.config.ts`              | Cross-workspace Playwright setup and projects.                                                      | Before adding, moving, or debugging e2e coverage.                                                      |
+
 ## OMO and Skills
 
 - Use the relevant OMO skill guidance before editing code: `omo:programming` for TypeScript or TSX, `omo:debugging` for runtime failures, `omo:frontend-ui-ux` for rendered UI work, and `omo:remove-ai-slops` for cleanup passes.
