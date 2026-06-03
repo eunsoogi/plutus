@@ -11,5 +11,5 @@ docs/superpowers/
 .env.local
 .plutus-data/
 .plutus-local-tools/
-.sysiphus/
+.omo/
 .lazyweb/
