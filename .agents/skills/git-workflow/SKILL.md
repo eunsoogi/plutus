@@ -1,11 +1,11 @@
 ---
 name: git-workflow
-description: Use when planning or performing Plutus git work: worktrees, branches, commits, pushes, GitHub issues or PRs, squash merges, main sync, agent coordination, or branch workflow questions.
+description: Use when planning or performing Plutus git work: goal-mode setup, task-thread worktrees, branches, commits, pushes, GitHub issues or PRs, squash merges, main sync, agent coordination, or branch workflow questions.
 ---
 
 # Git Workflow
 
-Use this skill before Plutus git, branch, commit, push, pull request, merge, or multi-agent coordination work.
+Use this skill before Plutus git, branch, commit, push, pull request, merge, task-thread split, or multi-agent coordination work.
 
 ## Authority
 
@@ -21,9 +21,13 @@ Use local `git` for checkout, worktree, diff, staging, commit, rebase, and pull 
 4. Create an isolated worktree and topic branch for each task. Use the `eunsoogi/` branch prefix unless the user requests another scheme.
 5. Keep each branch to one issue-sized outcome. Split unrelated fixes, broad cleanup, and follow-up hardening into separate issues and PRs.
 
-## Multi-Agent Work
+## Thread-First OMO Work
 
-Give each agent a unique worktree, branch, issue or sub-scope, and owned file/module list. Assume other agents may be changing nearby files. Do not revert or overwrite another agent's edits; coordinate first when ownership overlaps.
+For non-trivial work, the main thread acts as coordinator. Start local goal-mode, decompose the work, then create task threads for independent scopes before implementation begins.
+
+Give each task thread and agent a unique worktree, branch, issue or explicit sub-scope, and owned file/module list. Assume other branches may be changing nearby files. Do not revert or overwrite another thread or agent's edits; coordinate first when ownership overlaps.
+
+Use multi-agent delegation when it improves coverage, but keep the task-thread boundary as the source of truth for branch ownership, verification, and PR scope.
 
 Worker handoffs should report changed files, verification commands and results, PR URL when opened, blockers, and whether the branch needs a refresh from `main`.
 
@@ -84,6 +88,8 @@ Build the Tauri app when packaged macOS behavior changes. If verification cannot
 ## Pull Requests
 
 Open PRs with GitHub or `gh`. Keep PRs draft until local verification has run or the missing verification is documented.
+
+Split PRs by task thread or issue-sized scope by default. Do not bundle unrelated thread outputs into one PR unless a human maintainer explicitly requests a combined PR.
 
 PR bodies should include:
 
