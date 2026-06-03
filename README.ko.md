@@ -1,8 +1,20 @@
-# Plutus
+<p align="center">
+  <img alt="Node 22.13+" src="https://img.shields.io/badge/node-22.13%2B-339933?logo=node.js&amp;logoColor=white" />
+  <img alt="pnpm 11.0.0" src="https://img.shields.io/badge/pnpm-11.0.0-F69220?logo=pnpm&amp;logoColor=white" />
+  <img alt="TypeScript 5.8" src="https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&amp;logoColor=white" />
+  <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-FFC131?logo=tauri&amp;logoColor=111111" />
+  <img alt="MVP local-first" src="https://img.shields.io/badge/status-MVP%20local--first-5A67D8" />
+</p>
 
-![Plutus README hero](./assets/readme/plutus-hero.png)
+<h1 align="center">Plutus</h1>
 
-[English README](./README.md)
+<p align="center">
+  <a href="./README.md">en</a>
+</p>
+
+<p align="center">
+  <img alt="Plutus README hero" src="./assets/readme/plutus-hero.png" />
+</p>
 
 Plutus는 macOS를 중심으로 동작하는 로컬 우선 투자 리서치 워크스페이스입니다. Codex 기반 멀티 에이전트 팀이 시장 데이터 수집, 포트폴리오 점검, 백테스트, 리스크 리뷰, 보고서 작성을 나누어 수행하고, 사용자는 그 결과를 근거와 함께 검토합니다.
 
