@@ -18,6 +18,16 @@
 - Prefer tests-first development for behavior changes and bug fixes. Add or identify the failing regression coverage, then change implementation; document why existing coverage is sufficient when no new test is added.
 - Keep each branch tied to one issue-sized outcome. Split unrelated fixes, broad cleanup, and follow-up hardening into separate issues and PRs.
 
+## Mandatory OMO Orchestration
+
+- Use OMO orchestration for non-trivial Plutus work. The main thread must enter local goal-mode before edits, keep an active plan, and update that plan when evidence changes.
+- Split independent work with the active client's thread-creation or task-thread mechanism before implementation begins. Do not serialize separable work in one thread when multiple owned scopes can run safely in parallel.
+- Treat the main thread as the coordinator for multi-thread work. It owns decomposition, worktree/branch assignment, evidence review, conflict resolution, and final handoff; implementation should be delegated to worker threads whenever the scope can be isolated.
+- Give each task thread a unique worktree, `eunsoogi/` branch, issue or explicit sub-scope, and owned file/module list. Threads must assume nearby files may be changing in other branches.
+- Use multi-agent delegation inside the thread plan when it improves coverage, but keep the task-thread boundary as the source of truth for branch, ownership, and PR scope.
+- Split pull requests by task thread or issue-sized scope by default. Do not bundle unrelated thread outputs into one PR unless a human maintainer explicitly requests a combined PR.
+- Reconcile downstream branches only after upstream process or shared-contract PRs merge and `main` has been refreshed with `git pull --ff-only origin main`.
+
 ## Startup Map
 
 Use this map to choose the first files to inspect for a task. Keep startup reads scoped to the issue; open deeper files only when the task touches that area.
@@ -37,12 +47,13 @@ Use this map to choose the first files to inspect for a task. Keep startup reads
 ## OMO and Skills
 
 - Use the relevant OMO skill guidance before editing code: `omo:programming` for TypeScript or TSX, `omo:debugging` for runtime failures, `omo:frontend-ui-ux` for rendered UI work, and `omo:remove-ai-slops` for cleanup passes.
+- Use the project-local `.agents/skills/git-workflow` skill, when present, before Git, branch, worktree, commit, push, pull request, merge, or post-merge sync work.
 - When applying OMO guidance, mention the relevant skill in worker handoff notes and final PR summaries, including any verification or review constraints it introduced.
 - Keep strict TypeScript behavior and local project patterns. Avoid broad rewrites, public API changes, or dependency additions unless the issue specifically requires them.
 
-## Multi-Agent Coordination
+## Thread and Multi-Agent Coordination
 
-- Assign each agent a unique worktree, branch, issue, and owned file/module list. Agents must assume other branches may be changing nearby files.
+- Assign each task thread and agent a unique worktree, branch, issue or explicit sub-scope, and owned file/module list. Threads and agents must assume other branches may be changing nearby files.
 - For multi-thread efforts, keep each thread tied to its own issue/PR or explicit sub-scope, then have the coordinator reconcile results before downstream branches finalize.
 - Do not revert or overwrite another agent's edits. If two branches need the same file, coordinate ownership first and prefer serializing the work.
 - Workers should report changed files, tests run, PR URL, blockers, and whether they need a refresh from `main`.
