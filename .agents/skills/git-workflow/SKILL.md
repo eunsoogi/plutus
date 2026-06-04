@@ -145,6 +145,8 @@ Build the Tauri app when packaged macOS behavior changes. If verification cannot
 
 Open PRs with GitHub or `gh`. Keep PRs draft until local verification has run or the missing verification is documented.
 
+Create or confirm a GitHub issue before opening a pull request. Do not open a pull request until the matching issue exists unless a human maintainer explicitly scopes an issue-free exception in the current thread.
+
 Split PRs by task thread or issue-sized scope by default. Do not bundle unrelated thread outputs into one PR unless a human maintainer explicitly requests a combined PR.
 
 PR title and body must be written clearly in English or Korean to match the issue context. PR titles use Conventional Commit style:
@@ -177,9 +179,11 @@ Do not put closing references in the middle of the PR body. If the work is scope
 
 ## Merge Rules
 
+Before merging, inspect the latest Codex review on the PR head.
+
 Do not merge until required checks pass, the expected Codex review has completed, and every actionable Codex review comment is addressed or explicitly accepted by a human maintainer in the current thread.
 
-When Codex review is expected, wait for it before merging. Treat a Codex review with actionable inline comments as blocking. Fix the feedback in the PR branch, push the follow-up commit, and request or wait for a fresh Codex review before merging. Passing means the latest reviewed head has no unresolved actionable Codex feedback; a thumbs-up/no-suggestion Codex result is acceptable.
+When Codex review is expected, wait for it before merging. Treat a Codex review with actionable inline comments as blocking. Do not merge while actionable Codex review feedback remains unresolved or unaccepted by a human maintainer. Fix the feedback in the PR branch, push the follow-up commit, and request or wait for a fresh Codex review before merging. Passing means the latest reviewed head has no unresolved actionable Codex feedback; a thumbs-up/no-suggestion Codex result is acceptable.
 
 Use `gh pr merge --squash --delete-branch --auto` only when repository branch rules, required checks, or a merge queue define the requirements that GitHub should wait for. Pair merges with `--match-head-commit <sha>` using the reviewed PR head SHA when possible so a stale or newly-pushed head cannot be merged by accident.
 
@@ -215,6 +219,7 @@ After resolving, stage only the resolved files and run the verification relevant
 ## Quick Checklist
 
 - Issue exists or the direct user request defines an explicit issue-sized sub-scope.
+- Matching issue exists before PR creation, unless a maintainer explicitly scoped an issue-free exception.
 - Branch is not `main`, uses the requested prefix, and lives in the correct worktree.
 - Branch scope matches the issue or sub-scope.
 - Local `.omo/**` evidence remains uncommitted unless explicitly requested.
