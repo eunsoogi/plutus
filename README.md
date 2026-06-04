@@ -42,98 +42,12 @@ Plutus is designed in the opposite direction.
 | Local MCP adapter     | A stdio MCP surface that lets Codex agents safely call Plutus market data, portfolio, backtest, risk, report, memory, and wiki tools. |
 | Memory and wiki       | A Plutus-owned memory adapter and local Markdown wiki keep long-running research context auditable.                                   |
 
-## Architecture At A Glance
+## Project Docs
 
-```mermaid
-flowchart LR
-  User["User"] --> App["Tauri macOS host"]
-  App --> UI["packages/ui"]
-  App --> DB["SQLite + local artifacts"]
-  App --> Host["CodexRunHost"]
-  Host --> Agents["Codex specialist agents"]
-  Agents --> MCP["local stdio MCP adapter"]
-  MCP --> Tools["Plutus local tools"]
-  Tools --> Market["market data"]
-  Tools --> Portfolio["portfolio"]
-  Tools --> Backtest["backtest"]
-  Tools --> Risk["risk"]
-  Tools --> Reports["reports"]
-  Tools --> Memory["memory/wiki"]
-  Mobile["mobile remote control"] --> App
-```
-
-## Monorepo Layout
-
-| Path                         | Responsibility                                                                      |
-| ---------------------------- | ----------------------------------------------------------------------------------- |
-| `apps/tauri`                 | Tauri surface for the macOS host app and mobile remote-control shell.               |
-| `apps/web-preview`           | Browser app for validating the same route and UI surfaces during development.       |
-| `packages/domain`            | Zod schemas, TypeScript types, IDs, enums, and domain invariants.                   |
-| `packages/data`              | Provider adapters, symbol resolution, candle normalization, and freshness warnings. |
-| `packages/agents`            | Codex run host, agent workflows, structured outputs, and guardrails.                |
-| `packages/backtest`          | Strategy spec validation, long-only simulation, metrics, and report models.         |
-| `packages/local-tools`       | First-party Plutus local tool namespaces and audit hooks.                           |
-| `packages/local-mcp-adapter` | Stdio MCP adapter exposing approved local tools to Codex.                           |
-| `packages/command-client`    | Typed command client shared by Tauri and web preview.                               |
-| `packages/remote-control`    | Pairing, encrypted session messages, and remote command schemas.                    |
-| `packages/memory`            | Mem0-backed memory adapter, recall, retention, and sensitivity filtering.           |
-| `packages/wiki`              | Local Markdown wiki workflows, revisions, diffs, and revert support.                |
-| `packages/test-fixtures`     | Deterministic fixtures for unit, integration, E2E, and agent harness tests.         |
-
-## Getting Started
-
-Requirements:
-
-- Node.js `>=22.13`
-- pnpm `11.0.0`
-- Rust and the Tauri development toolchain
-
-```bash
-pnpm install
-pnpm dev:web
-```
-
-Run the macOS app:
-
-```bash
-pnpm dev:tauri
-```
-
-## Verification
-
-Common root commands:
-
-```bash
-pnpm typecheck
-pnpm test:unit
-pnpm test:e2e:ui
-pnpm --filter @plutus/tauri tauri build
-```
-
-The broader acceptance flow is:
-
-```bash
-pnpm test:acceptance
-```
-
-## Documentation Path
-
-If you are new to the project, start here:
-
-1. [`prd/README.md`](./prd/README.md): product intent, MVP boundaries, and core decisions
-2. [`spec/README.md`](./spec/README.md): implementation specs, package ownership, and local tool surfaces
-3. [`spec/00-system-architecture.md`](./spec/00-system-architecture.md): architecture and non-negotiable boundaries
-4. [`spec/08-codex-development-automation.md`](./spec/08-codex-development-automation.md): Codex worker and verification contracts
-5. [`AGENTS.md`](./AGENTS.md): how agents should start work in this repository
-
-## Working Principles
-
-- `main` is the protected integration branch.
-- Work happens in issue-sized topic branches and isolated worktrees.
-- PRs should include verification results, changed areas, linked issues, and known follow-ups.
-- Completed PRs use squash merge by default.
-- Provider credentials must never leave raw keys or secrets in UI state or config; store only secure references.
+- [Development](./docs/development.md)
+- [Architecture](./docs/architecture.md)
+- [Agent workflow](./AGENTS.md)
 
 ## Current Status
 
-Plutus is an MVP-stage repository. The first priority is research, simulation, and decision support. Live trade execution remains out of scope until a separate PRD opens that boundary.
+Plutus is an MVP-stage repository. The first priority is research, simulation, and decision support. Live trade execution remains out of scope until that boundary is explicitly opened.
