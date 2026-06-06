@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 declare global {
   interface Window {
@@ -6,49 +6,18 @@ declare global {
       command: string;
       args: unknown[];
     }) => Promise<unknown>;
-    __plutusCommandCalls: Array<{ command: string; args: unknown[] }>;
   }
 }
 
-test("MVP acceptance scenario queues host run and exposes mobile preview", async ({
-  page,
-}) => {
-  await page.goto("/portfolios?runtime=local");
-  await page.evaluate(() => localStorage.removeItem("plutus.localRuntime.v1"));
-  await page.reload();
-  await page.getByRole("button", { name: "Create Portfolio" }).click();
-  await expect(page.getByTestId("portfolio-command-status")).toContainText(
-    "Created Core Portfolio",
-  );
-
-  await page.goto("/runs?runtime=local");
-  await expect(
-    page.getByRole("heading", { name: "Research Runs", level: 1 }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Start Research Run" }),
-  ).toBeEnabled();
-  await page.getByRole("button", { name: "Start Research Run" }).click();
-  await expect(page.getByTestId("run-progress")).toContainText("queued");
-  await page.goto("/remote/dashboard?runtime=local");
-  await expect(page.getByText("Mobile Remote Controller")).toBeVisible();
-  await expect(page.getByTestId("remote-command")).toContainText(
-    "Start Mac-hosted run",
-  );
-  await page.goto("/remote/dashboard?state=revoked");
-  await expect(page.getByTestId("remote-command")).toBeDisabled();
-});
-
-test("MVP command bridge backs host start, artifact fetch, and remote start", async ({
-  page,
-}) => {
-  const callsKey = `plutusCommandCalls-${Date.now()}`;
-  await page.addInitScript((key) => {
+async function installCommandBridge(page: Page, key: string) {
+  await page.addInitScript((storageKey) => {
     window.__PLUTUS_COMMAND_BRIDGE__ = async (envelope) => {
-      const calls = JSON.parse(localStorage.getItem(key) ?? "[]");
+      const calls = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
       calls.push(envelope);
-      localStorage.setItem(key, JSON.stringify(calls));
-      const runStarted = localStorage.getItem(`${key}:runStarted`) === "1";
+      localStorage.setItem(storageKey, JSON.stringify(calls));
+      const runStarted =
+        localStorage.getItem(`${storageKey}:runStarted`) === "1";
+
       if (envelope.command === "app.getSnapshot") {
         return {
           profileId: "profile-real",
@@ -129,21 +98,19 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
                 },
               ]
             : [],
-          remoteDevices: [
-            {
-              name: "Real iPhone",
-            },
-          ],
+          remoteDevices: [{ name: "Real iPhone" }],
         };
       }
+
       if (envelope.command === "researchRuns.start") {
-        localStorage.setItem(`${key}:runStarted`, "1");
+        localStorage.setItem(`${storageKey}:runStarted`, "1");
         return {
           id: "run-real",
           status: "queued",
           portfolioId: "portfolio-real",
         };
       }
+
       if (envelope.command === "artifacts.get") {
         return {
           id: "artifact-real",
@@ -151,6 +118,7 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
           type: "report",
         };
       }
+
       if (envelope.command === "remote.prepareUnlock") {
         return {
           sessionId: "session-real",
@@ -162,6 +130,7 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
           },
         };
       }
+
       if (envelope.command === "remote.executeCommand") {
         return {
           authorization: {
@@ -172,9 +141,55 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
           data: { ok: true },
         };
       }
+
       throw new Error(`Unexpected command ${envelope.command}`);
     };
-  }, callsKey);
+  }, key);
+}
+
+async function commandNames(page: Page, key: string) {
+  return page.evaluate(
+    (storageKey) =>
+      JSON.parse(localStorage.getItem(storageKey) ?? "[]").map(
+        (call: { command: string }) => call.command,
+      ),
+    key,
+  );
+}
+
+test("MVP acceptance scenario queues host run and exposes mobile preview", async ({
+  page,
+}) => {
+  await page.goto("/portfolios?runtime=local");
+  await page.evaluate(() => localStorage.removeItem("plutus.localRuntime.v1"));
+  await page.reload();
+  await page.getByRole("button", { name: "Create Portfolio" }).click();
+  await expect(page.getByTestId("portfolio-command-status")).toContainText(
+    "Created Core Portfolio",
+  );
+
+  await page.goto("/runs?runtime=local");
+  await expect(
+    page.getByRole("heading", { name: "Research Runs", level: 1 }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Start Research Run" }).click();
+  await expect(page.getByTestId("run-progress")).toContainText("queued");
+
+  await page.goto("/remote/dashboard?runtime=local");
+  await expect(page.getByText("Mobile Remote Controller")).toBeVisible();
+  await expect(page.getByTestId("remote-command")).toContainText(
+    "Start Mac-hosted run",
+  );
+
+  await page.goto("/remote/dashboard?state=revoked");
+  await expect(page.getByTestId("remote-command")).toBeDisabled();
+});
+
+test("MVP command bridge backs host start, artifact fetch, and remote start", async ({
+  page,
+}) => {
+  const callsKey = `plutusCommandCalls-${Date.now()}`;
+  await installCommandBridge(page, callsKey);
 
   await page.goto("/runs?runtime=local");
   await page.getByRole("button", { name: "Start Research Run" }).click();
@@ -187,19 +202,21 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
   ).toBeVisible();
 
   await page.goto("/runs/run-real?runtime=local");
-  await expect(page.getByTestId("orchestrator-office")).toBeVisible();
-  await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
-  await expect(page.getByTestId("orchestrator-office-floor")).toBeVisible();
-  await expect(page.locator(".office-desk-top")).toHaveCount(5);
-  await expect(page.locator(".office-link")).toHaveCount(4);
-  await expect(
-    page.getByRole("heading", { name: "Orchestrator Office", level: 2 }),
-  ).toBeVisible();
-  await expect(page.getByTestId("orchestrator-node")).toContainText(
-    "Research Orchestrator",
-  );
   await expect(page.getByTestId("orchestrator-office")).toContainText(
     "quant_strategy_desk",
+  );
+  await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
+  await expect(page.getByTestId("orchestrator-office-floor")).toBeVisible();
+  await expect(page.getByTestId("pixel-agent-office")).toBeVisible();
+  await expect(page.getByTestId("pixel-office-room-shell")).toBeVisible();
+  await expect(page.getByTestId("pixel-office-side-room")).toHaveCount(2);
+  await expect(page.getByTestId("pixel-office-command-table")).toBeVisible();
+  await expect(page.getByTestId("pixel-office-whiteboard")).toBeVisible();
+  await expect(page.getByTestId("pixel-office-desk")).toHaveCount(4);
+  await expect(page.getByTestId("pixel-person-agent")).toHaveCount(5);
+  await expect(page.getByTestId("pixel-agent-motion-path")).toHaveCount(4);
+  await expect(page.getByTestId("orchestrator-node")).toContainText(
+    "Research Orchestrator",
   );
   await expect(
     page.getByTestId("orchestrator-agent-market_data_researcher"),
@@ -222,10 +239,32 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
   await expect(page.getByTestId("orchestrator-office")).not.toContainText(
     "Portfolio Manager",
   );
-  await expect(page.locator("body")).not.toContainText(/BTC|NVDA/);
   await expect(page.getByTestId("final-run-card")).toContainText(
     "Real command bridge summary",
   );
+  await expect(page.locator(".office-link")).toHaveCount(0);
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(page.locator(".pixel-person-agent").first()).toHaveCSS(
+    "animation-name",
+    "none",
+  );
+  await expect(page.getByTestId("pixel-agent-motion-path").first()).toHaveCSS(
+    "animation-name",
+    "none",
+  );
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileScene = page.getByTestId("orchestrator-office-scene");
+  await expect(mobileScene).toBeVisible();
+  await expect
+    .poll(async () => (await mobileScene.boundingBox())?.height ?? 0)
+    .toBeGreaterThan(320);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBeTruthy();
 
   await page.getByRole("link", { name: /Open Real artifact/ }).click();
   await expect(page).toHaveURL(
@@ -242,15 +281,7 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
   );
 
   await expect
-    .poll(async () =>
-      page.evaluate(
-        (key) =>
-          JSON.parse(localStorage.getItem(key) ?? "[]").map(
-            (call: { command: string }) => call.command,
-          ),
-        callsKey,
-      ),
-    )
+    .poll(async () => commandNames(page, callsKey))
     .toEqual([
       "app.getSnapshot",
       "researchRuns.start",
@@ -263,8 +294,10 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
       "remote.executeCommand",
     ]);
 
-  const prepareUnlockCall = await page.evaluate((key) => {
-    const calls = JSON.parse(localStorage.getItem(key) ?? "[]") as Array<{
+  const prepareUnlockCall = await page.evaluate((storageKey) => {
+    const calls = JSON.parse(
+      localStorage.getItem(storageKey) ?? "[]",
+    ) as Array<{
       command: string;
       args: Array<{ commandType?: string; payload?: Record<string, unknown> }>;
     }>;

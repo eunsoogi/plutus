@@ -7,6 +7,8 @@ import {
   riskToneForCategory,
   translate,
 } from "./index";
+import { slotFor } from "./orchestrator-office-scene-data";
+import { teamSpecialists } from "./orchestrator-office-teams";
 
 describe("ui helpers", () => {
   it("formats compact financial values and risk states used by the preview", () => {
@@ -43,5 +45,14 @@ describe("ui helpers", () => {
     expect(translate("ko", "remote.readOnlyMobile")).toBe(
       "이 미리보기에서는 모바일 조회만 가능합니다.",
     );
+  });
+
+  it("assigns each selected specialist a unique office slot", () => {
+    for (const specialists of Object.values(teamSpecialists)) {
+      const slotClasses = specialists.map(
+        (_, index) => slotFor(index).slotClass,
+      );
+      expect(new Set(slotClasses).size).toBe(slotClasses.length);
+    }
   });
 });

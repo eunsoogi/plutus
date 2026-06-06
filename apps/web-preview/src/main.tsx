@@ -12,6 +12,7 @@ import "./provider-settings-workbench.css";
 import "./provider-settings-responsive.css";
 import { routeContextFromLocation } from "./route-context";
 import "./styles.css";
+import "./orchestrator-office.css";
 
 declare global {
   interface Window {
@@ -35,10 +36,19 @@ async function createRuntimeClient(location: Location) {
   return createCommandClient(createLocalWebCommandBridge());
 }
 
+function ensureViewportMeta() {
+  if (document.querySelector('meta[name="viewport"]')) return;
+  const meta = document.createElement("meta");
+  meta.name = "viewport";
+  meta.content = "width=device-width, initial-scale=1, viewport-fit=cover";
+  document.head.append(meta);
+}
+
 const rootElement = document.getElementById("root");
 if (!rootElement) {
   throw new Error("Plutus root element was not found.");
 }
+ensureViewportMeta();
 const root = createRoot(rootElement);
 
 void (async () => {
