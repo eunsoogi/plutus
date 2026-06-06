@@ -186,6 +186,39 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
   ).toBeVisible();
 
   await page.goto("/runs/run-real?runtime=local");
+  await expect(page.getByTestId("orchestrator-office")).toBeVisible();
+  await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
+  await expect(page.getByTestId("orchestrator-office-floor")).toBeVisible();
+  await expect(page.locator(".office-desk-top")).toHaveCount(5);
+  await expect(page.locator(".office-link")).toHaveCount(4);
+  await expect(
+    page.getByRole("heading", { name: "Orchestrator Office", level: 2 }),
+  ).toBeVisible();
+  await expect(page.getByTestId("orchestrator-node")).toContainText(
+    "Research Orchestrator",
+  );
+  await expect(page.getByTestId("orchestrator-office")).toContainText(
+    "portfolio_review_committee",
+  );
+  await expect(
+    page.getByTestId("orchestrator-agent-market_data_researcher"),
+  ).toContainText("Market Data Researcher");
+  await expect(
+    page.getByTestId("orchestrator-agent-portfolio_manager"),
+  ).toContainText("Portfolio Manager");
+  await expect(
+    page.getByTestId("orchestrator-agent-risk_manager"),
+  ).toContainText("Risk Manager");
+  await expect(
+    page.getByTestId("orchestrator-agent-report_writer"),
+  ).toContainText("Report Writer");
+  await expect(page.getByTestId("orchestrator-office")).toContainText(
+    "No live trading",
+  );
+  await expect(page.getByTestId("orchestrator-office")).toContainText(
+    "Real portfolio",
+  );
+  await expect(page.locator("body")).not.toContainText(/BTC|NVDA/);
   await expect(page.getByTestId("final-run-card")).toContainText(
     "Real command bridge summary",
   );
