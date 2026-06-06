@@ -177,6 +177,36 @@ Fixes #<issue-number>
 
 Do not put closing references in the middle of the PR body. If the work is scoped only by a direct user request and no matching issue exists, omit the closing reference instead of inventing an issue number.
 
+## Codex Review Gate
+
+Treat Codex review as a real merge gate when it is expected for the repository or the user explicitly asks for it. Opening a PR is not completion, and merging is not completion if actionable Codex feedback has not been checked and handled.
+
+After opening or updating a PR, inspect Codex review state on the latest head. Do not rely only on GitHub review objects; `chatgpt-codex-connector` can also deliver review output as a top-level PR issue comment.
+
+```sh
+gh pr view <pr> --json headRefOid,reviews,latestReviews,comments,reviewDecision,statusCheckRollup
+gh api repos/<owner>/<repo>/pulls/<pr>/comments --paginate
+gh api repos/<owner>/<repo>/issues/<pr>/comments --paginate
+```
+
+If the expected automatic Codex review does not appear after a reasonable wait, request it explicitly with a PR comment:
+
+```sh
+gh pr comment <pr> --body "@codex review"
+```
+
+An `eyes` reaction on the `@codex review` comment means Codex has noticed the request and is processing it. It is not approval and does not mean review is complete.
+
+Codex review completion signals include:
+
+- Inline review comments or review suggestions from `chatgpt-codex-connector`; these are complete review output, but actionable comments block merge until fixed or explicitly accepted by the human maintainer.
+- A top-level PR comment from `chatgpt-codex-connector`; this is also Codex review output, even when no GitHub review object appears.
+- A Codex comment such as "Didn't find any major issues" or equivalent no-suggestion wording; this means the reviewed head has no major actionable suggestions.
+- A Codex setup or environment comment such as "create an environment for this repo"; this means Codex responded but could not run the normal review path. Treat it as a Codex review response with an infrastructure blocker, not as "no review happened"; document the blocker before merging or ask the human maintainer whether to proceed without a full Codex review.
+- A Codex thumbs-up/no-suggestion result (`+1` / `thumbs-up` reaction), when no inline suggestions are produced; this is acceptable only after confirming it applies to the latest PR head.
+
+If any new commits are pushed after Codex review, the old review no longer proves the current head. Wait for or request a fresh Codex review before merging.
+
 ## Merge Rules
 
 Before merging, inspect the latest Codex review on the PR head.
