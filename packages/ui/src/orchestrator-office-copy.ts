@@ -20,10 +20,15 @@ export const officeCopy = {
       completed: "Completed",
     },
     specialist: {
+      crypto_analyst: "Crypto Analyst",
+      equity_analyst: "Equity Analyst",
+      llm_wiki_curator: "Wiki Curator",
       market_data_researcher: "Market Data Researcher",
       portfolio_manager: "Portfolio Manager",
+      quant_strategy_researcher: "Quant Strategy Researcher",
       risk_manager: "Risk Manager",
       report_writer: "Report Writer",
+      technical_analyst: "Technical Analyst",
     },
   },
   ko: {
@@ -45,10 +50,15 @@ export const officeCopy = {
       completed: "완료",
     },
     specialist: {
+      crypto_analyst: "크립토 애널리스트",
+      equity_analyst: "주식 애널리스트",
+      llm_wiki_curator: "위키 큐레이터",
       market_data_researcher: "시장 데이터 리서처",
       portfolio_manager: "포트폴리오 매니저",
+      quant_strategy_researcher: "퀀트 전략 리서처",
       risk_manager: "리스크 매니저",
       report_writer: "보고서 작성자",
+      technical_analyst: "기술적 분석가",
     },
   },
 } satisfies Record<AppLocale, Record<string, unknown>>;

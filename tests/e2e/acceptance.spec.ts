@@ -74,6 +74,7 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
             {
               id: "run-real",
               portfolioId: "portfolio-real",
+              selectedTeam: "quant_strategy_desk",
               status: runStarted ? "completed" : "ready",
               title: "Real portfolio review",
               category: runStarted ? "risk_warning" : "",
@@ -198,14 +199,14 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
     "Research Orchestrator",
   );
   await expect(page.getByTestId("orchestrator-office")).toContainText(
-    "portfolio_review_committee",
+    "quant_strategy_desk",
   );
   await expect(
     page.getByTestId("orchestrator-agent-market_data_researcher"),
   ).toContainText("Market Data Researcher");
   await expect(
-    page.getByTestId("orchestrator-agent-portfolio_manager"),
-  ).toContainText("Portfolio Manager");
+    page.getByTestId("orchestrator-agent-quant_strategy_researcher"),
+  ).toContainText("Quant Strategy Researcher");
   await expect(
     page.getByTestId("orchestrator-agent-risk_manager"),
   ).toContainText("Risk Manager");
@@ -217,6 +218,9 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
   );
   await expect(page.getByTestId("orchestrator-office")).toContainText(
     "Real portfolio",
+  );
+  await expect(page.getByTestId("orchestrator-office")).not.toContainText(
+    "Portfolio Manager",
   );
   await expect(page.locator("body")).not.toContainText(/BTC|NVDA/);
   await expect(page.getByTestId("final-run-card")).toContainText(
