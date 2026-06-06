@@ -187,6 +187,10 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
 
   await page.goto("/runs/run-real?runtime=local");
   await expect(page.getByTestId("orchestrator-office")).toBeVisible();
+  await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
+  await expect(page.getByTestId("orchestrator-office-floor")).toBeVisible();
+  await expect(page.locator(".office-desk-top")).toHaveCount(5);
+  await expect(page.locator(".office-link")).toHaveCount(4);
   await expect(
     page.getByRole("heading", { name: "Orchestrator Office", level: 2 }),
   ).toBeVisible();
