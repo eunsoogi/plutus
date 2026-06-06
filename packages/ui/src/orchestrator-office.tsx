@@ -1,6 +1,11 @@
 import type { AppLocale } from "./core";
 import { useI18n } from "./i18n";
 import { officeCopy } from "./orchestrator-office-copy";
+import {
+  defaultTeam,
+  teamSpecialists,
+  type SpecialistId,
+} from "./orchestrator-office-teams";
 
 type EvidenceItem = {
   readonly label?: string;
@@ -25,32 +30,16 @@ export type OrchestratorOfficeRun = {
   };
 };
 
-type SpecialistId =
-  | "market_data_researcher"
-  | "portfolio_manager"
-  | "risk_manager"
-  | "report_writer";
-
-const defaultTeam = "portfolio_review_committee";
-
-const teamSpecialists = {
-  portfolio_review_committee: [
-    "market_data_researcher",
-    "portfolio_manager",
-    "risk_manager",
-    "report_writer",
-  ],
-} satisfies Record<string, readonly SpecialistId[]>;
-
 const officeSpots = [
-  ["market_data_researcher", 172, 128, "#62d3e7"],
-  ["portfolio_manager", 578, 128, "#80e0a7"],
-  ["risk_manager", 172, 312, "#f5b84b"],
-  ["report_writer", 578, 312, "#a7b7ff"],
-] satisfies readonly [SpecialistId, number, number, string][];
+  [172, 128, "#62d3e7"],
+  [578, 128, "#80e0a7"],
+  [142, 312, "#f5b84b"],
+  [608, 312, "#a7b7ff"],
+  [400, 384, "#d8b4fe"],
+] satisfies readonly [number, number, string][];
 
 function selectedTeamFor(run: OrchestratorOfficeRun) {
-  return run.finalCard?.selectedTeam ?? run.selectedTeam ?? defaultTeam;
+  return run.selectedTeam ?? run.finalCard?.selectedTeam ?? defaultTeam;
 }
 
 function specialistsFor(team: string): readonly SpecialistId[] {
@@ -130,7 +119,7 @@ export function OrchestratorOffice({ run }: { run: OrchestratorOfficeRun }) {
 
   const text = officeCopy[locale];
   const team = selectedTeamFor(run);
-  const specialists = new Set(specialistsFor(team));
+  const specialists = specialistsFor(team);
   const stage = stageFor(run, locale);
   return (
     <section
@@ -164,16 +153,19 @@ export function OrchestratorOffice({ run }: { run: OrchestratorOfficeRun }) {
           className="office-grid"
           d="M190 140 550 370M310 92 670 260M70 220 430 450M580 110 220 360M700 190 340 430M460 60 100 270"
         />
-        {officeSpots.map(([, x, y]) => (
-          <line
-            className="office-link"
-            key={`${x}-${y}`}
-            x1="400"
-            x2={x}
-            y1="224"
-            y2={y}
-          />
-        ))}
+        {specialists.map((specialist, index) => {
+          const [x, y] = officeSpots[index] ?? officeSpots[0];
+          return (
+            <line
+              className="office-link"
+              key={`${specialist}-link`}
+              x1="400"
+              x2={x}
+              y1="224"
+              y2={y}
+            />
+          );
+        })}
         <g className="office-orchestrator" data-testid="orchestrator-node">
           <polygon
             className="office-command-rug"
@@ -212,8 +204,9 @@ export function OrchestratorOffice({ run }: { run: OrchestratorOfficeRun }) {
             {stage} · {run.status}
           </text>
         </g>
-        {officeSpots.map(([specialist, x, y, color]) =>
-          specialists.has(specialist) ? (
+        {specialists.map((specialist, index) => {
+          const [x, y, color] = officeSpots[index] ?? officeSpots[0];
+          return (
             <AgentDesk
               color={color}
               key={specialist}
@@ -223,8 +216,8 @@ export function OrchestratorOffice({ run }: { run: OrchestratorOfficeRun }) {
               x={x}
               y={y}
             />
-          ) : null,
-        )}
+          );
+        })}
       </svg>
       <div className="orchestrator-office__signals">
         <div>
