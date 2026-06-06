@@ -144,9 +144,7 @@ test("Korean locale covers host and remote UI chrome without English leftovers",
     "코인베이스",
   );
   await page.getByTestId("provider-search").fill("바이낸스");
-  await expect(page.getByTestId("provider-binance")).toContainText(
-    "바이낸스",
-  );
+  await expect(page.getByTestId("provider-binance")).toContainText("바이낸스");
   await page.getByTestId("provider-search").fill("");
   await expect(page.getByTestId("provider-health-summary")).toContainText(
     "설정 안 됨112",
@@ -217,7 +215,9 @@ test("provider settings previews dry-run and blocks live trading candidates", as
     page.getByRole("heading", { name: "Provider Settings" }).first(),
   ).toBeVisible();
   await page.getByTestId("provider-select").selectOption("upbit");
-  await expect(page.getByTestId("selected-provider-name")).toContainText("Upbit");
+  await expect(page.getByTestId("selected-provider-name")).toContainText(
+    "Upbit",
+  );
   await page.getByTestId("provider-search").fill("binance");
   await page.getByTestId("provider-binance").click();
   await expect(page.getByText("ccxt://binance/createOrder")).toBeVisible();
@@ -653,6 +653,8 @@ test("browser local runtime queues a research run only after real portfolio stat
     page.getByRole("button", { name: "Start Research Run" }),
   ).toBeDisabled();
   await expect(page.getByTestId("final-run-card")).toContainText("none");
+  await expect(page.getByTestId("orchestrator-office")).toHaveCount(0);
+  await expect(page.getByText(/BTC|NVDA/)).toHaveCount(0);
 
   await page.goto("/portfolios?runtime=local");
   await page.getByRole("button", { name: "Create Portfolio" }).click();

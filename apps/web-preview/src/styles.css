@@ -404,6 +404,68 @@ p {
   color: #f8fafc;
 }
 
+.orchestrator-office {
+  display: grid;
+  gap: 14px;
+}
+
+.orchestrator-office__header,
+.orchestrator-office__signals {
+  align-items: start;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.orchestrator-office__header p,
+.orchestrator-office__header h2 {
+  margin-bottom: 6px;
+}
+
+.orchestrator-office__map {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.8fr);
+}
+
+.orchestrator-office__orchestrator,
+.orchestrator-office__agent,
+.orchestrator-office__signals div {
+  background: #0d141c;
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.orchestrator-office__orchestrator {
+  border-color: rgb(86 182 199 / 45%);
+  box-shadow: 0 0 0 1px rgb(86 182 199 / 8%) inset;
+}
+
+.orchestrator-office__orchestrator span,
+.orchestrator-office__agent span,
+.orchestrator-office__signals span,
+.orchestrator-office__orchestrator small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.orchestrator-office__orchestrator strong,
+.orchestrator-office__agent strong,
+.orchestrator-office__signals strong {
+  color: #f8fafc;
+  overflow-wrap: anywhere;
+}
+
+.orchestrator-office__agents {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .artifact-list a {
   background: #0d141c;
   border: 1px solid var(--border-soft);
@@ -702,7 +764,11 @@ p {
 
   .grid.two,
   .dashboard-grid,
-  .dashboard-grid > .dashboard-stack:last-child {
+  .dashboard-grid > .dashboard-stack:last-child,
+  .orchestrator-office__map,
+  .orchestrator-office__agents,
+  .orchestrator-office__header,
+  .orchestrator-office__signals {
     grid-template-columns: 1fr;
   }
 

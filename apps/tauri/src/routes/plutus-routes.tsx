@@ -204,6 +204,11 @@ export function scenarioFromSnapshot(
     (total, position) => total + position.value,
     0,
   );
+  const runRecord = run as Record<string, unknown> | undefined;
+  const finalCard =
+    run?.finalCard && typeof run.finalCard === "object"
+      ? (run.finalCard as PlutusScenario["run"]["finalCard"])
+      : undefined;
 
   return {
     profileId: snapshot.profileId,
@@ -249,10 +254,11 @@ export function scenarioFromSnapshot(
       status: run?.status ?? emptyAppScenario.run.status,
       category: run?.category ?? "",
       confidence: run?.confidence,
-      finalCard:
-        run?.finalCard && typeof run.finalCard === "object"
-          ? (run.finalCard as PlutusScenario["run"]["finalCard"])
-          : undefined,
+      selectedTeam:
+        typeof runRecord?.selectedTeam === "string"
+          ? runRecord.selectedTeam
+          : finalCard?.selectedTeam,
+      finalCard,
       artifacts: artifacts.map((artifact) => ({
         id: artifact.id,
         name: artifact.title,
@@ -553,7 +559,13 @@ function renderPlutusRouteContent({
     return <RemoteRunsPage scenario={resolvedScenario} remote={remote} />;
   }
   if (remoteOneSegmentRoute(path, "runs")) {
-    return <RemoteRunDetailPage scenario={resolvedScenario} remote={remote} commandClient={resolvedCommandClient} />;
+    return (
+      <RemoteRunDetailPage
+        scenario={resolvedScenario}
+        remote={remote}
+        commandClient={resolvedCommandClient}
+      />
+    );
   }
   if (remoteOneSegmentRoute(path, "artifacts")) {
     return <RemoteArtifactPage remote={remote} />;

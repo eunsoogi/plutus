@@ -6,6 +6,7 @@ import {
   type RemoteVisualState,
 } from "./core";
 import { useI18n } from "./i18n";
+import { OrchestratorOffice } from "./orchestrator-office";
 import type {
   DryRunOrderResult,
   TradingDecision,
@@ -51,7 +52,9 @@ export type PlutusScenario = {
     status: string;
     category: string;
     confidence?: string;
+    selectedTeam?: string;
     finalCard?: {
+      selectedTeam?: string;
       summary?: string;
       supportingEvidence?: Array<{ label?: string; sourceRef?: string }>;
       riskChecklist?: Array<{ check?: string; status?: string }>;
@@ -1104,11 +1107,19 @@ export function RunStageList() {
 
 export function RunDetailPage({ scenario }: { scenario: PlutusScenario }) {
   const { t } = useI18n();
+  const showStaticRiskVisual = Boolean(
+    scenario.run.category && !scenario.run.finalCard,
+  );
   return (
     <HostShell>
       <h1>{localizedScenarioText(scenario.run.title, t)}</h1>
-      <RiskChart />
-      <RiskWarning />
+      {showStaticRiskVisual ? (
+        <>
+          <RiskChart />
+          <RiskWarning />
+        </>
+      ) : null}
+      <OrchestratorOffice run={scenario.run} />
       {scenario.run.finalCard ? (
         <FinalRunCard
           run={scenario.run}
