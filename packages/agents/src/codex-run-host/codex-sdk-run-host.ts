@@ -1,10 +1,3 @@
-import { createHash, createHmac, randomBytes } from "node:crypto";
-import { Codex, type Thread, type ThreadEvent } from "@openai/codex-sdk";
-import { z } from "zod";
-import {
-  AGENT_ALLOWLISTS,
-  type LocalToolRunContext,
-} from "@plutus/local-tools";
 import type {
   CodexRunHost,
   CodexRunRequest,
@@ -15,185 +8,23 @@ import type {
   StartResearchRunInput,
   StructuredTurnRequest,
 } from "./codex-run-host";
-import { codexRunEventSchema, finalRunCardSchema } from "./schemas";
+import { finalRunResultFor } from "./final-run-card-result";
+import {
+  type CodexSdkClient,
+  type CodexSdkRunHostOptions,
+  OpenAiCodexSdkProductClient,
+} from "./openai-codex-product-client";
+import { buildProductMcpServers, makeConfigHash } from "./product-run-config";
+import { buildInitialResearchRunPrompt } from "./research-run-prompt";
+import { codexRunEventSchema } from "./schemas";
+import {
+  resolveSelectedTeam,
+  rootSandboxModeForTeam,
+  teamAgentsFor,
+} from "./team-presets";
 
-export interface CodexSdkClient {
-  runStreamed(request: CodexRunRequest): AsyncIterable<unknown>;
-  startResearchRun?(request: ProductStartResearchRunRequest): Promise<{
-    runId: string;
-    threadId: string;
-  }>;
-  streamResearchRun?(handle: ResearchRunHandle): AsyncIterable<unknown>;
-  resumeResearchRun?(request: {
-    threadId: string;
-    configHash: string;
-    profileId?: string;
-    runId?: string;
-  }): Promise<{ runId: string; threadId: string }>;
-  requestStructuredTurn?<T>(request: {
-    threadId: string;
-    prompt: string;
-    schema: z.ZodType<T>;
-  }): Promise<unknown>;
-  cancelResearchRun?(request: { threadId: string }): Promise<void>;
-  archiveResearchRun?(request: { threadId: string }): Promise<void>;
-}
-
-export interface CodexSdkRunHostOptions {
-  client?: CodexSdkClient;
-  env?: Record<string, string | undefined>;
-  workingDirectory?: string;
-}
-
-export interface ProductStartResearchRunRequest extends StartResearchRunInput {
-  configHash: string;
-  mcpServers: Record<
-    string,
-    { command: string; args: string[]; env: Record<string, string> }
-  >;
-  teamAgents: string[];
-  rootSandboxMode: "read-only" | "workspace-write";
-}
-
-const teamAgents: Record<string, string[]> = {
-  portfolio_review_committee: [
-    "market_data_researcher",
-    "portfolio_manager",
-    "risk_manager",
-    "report_writer",
-  ],
-  investment_committee: [
-    "equity_analyst",
-    "technical_analyst",
-    "portfolio_manager",
-    "risk_manager",
-    "report_writer",
-  ],
-  crypto_research_desk: [
-    "crypto_analyst",
-    "technical_analyst",
-    "quant_strategy_researcher",
-    "risk_manager",
-    "report_writer",
-  ],
-  quant_strategy_desk: [
-    "market_data_researcher",
-    "quant_strategy_researcher",
-    "risk_manager",
-    "report_writer",
-  ],
-  technical_analysis_panel: [
-    "market_data_researcher",
-    "technical_analyst",
-    "risk_manager",
-    "report_writer",
-  ],
-  strategy_exploration_panel: [
-    "quant_strategy_researcher",
-    "portfolio_manager",
-    "risk_manager",
-    "report_writer",
-  ],
-  knowledge_curation_desk: ["llm_wiki_curator", "report_writer"],
-};
-
-const teamNamespaces: Record<string, string[]> = {
-  portfolio_review_committee: [
-    "plutus_portfolio",
-    "plutus_market_data",
-    "plutus_risk",
-    "plutus_memory",
-    "plutus_reports",
-    "plutus_audit",
-  ],
-  investment_committee: [
-    "plutus_market_data",
-    "plutus_research",
-    "plutus_portfolio",
-    "plutus_risk",
-    "plutus_memory",
-    "plutus_reports",
-    "plutus_audit",
-  ],
-  crypto_research_desk: [
-    "plutus_market_data",
-    "plutus_research",
-    "plutus_backtest",
-    "plutus_risk",
-    "plutus_reports",
-    "plutus_audit",
-  ],
-  quant_strategy_desk: [
-    "plutus_market_data",
-    "plutus_backtest",
-    "plutus_risk",
-    "plutus_reports",
-    "plutus_audit",
-    "plutus_memory",
-  ],
-  technical_analysis_panel: [
-    "plutus_market_data",
-    "plutus_risk",
-    "plutus_reports",
-    "plutus_audit",
-  ],
-  strategy_exploration_panel: [
-    "plutus_portfolio",
-    "plutus_market_data",
-    "plutus_backtest",
-    "plutus_risk",
-    "plutus_reports",
-    "plutus_research",
-    "plutus_audit",
-  ],
-  knowledge_curation_desk: [
-    "plutus_memory",
-    "plutus_wiki",
-    "plutus_reports",
-    "plutus_research",
-    "plutus_audit",
-  ],
-};
-
-const teamWritableNamespaces: Record<string, string[]> = {
-  portfolio_review_committee: [
-    "plutus_risk",
-    "plutus_reports",
-    "plutus_memory",
-    "plutus_audit",
-  ],
-  investment_committee: [
-    "plutus_risk",
-    "plutus_reports",
-    "plutus_memory",
-    "plutus_audit",
-  ],
-  crypto_research_desk: [
-    "plutus_backtest",
-    "plutus_risk",
-    "plutus_reports",
-    "plutus_audit",
-  ],
-  quant_strategy_desk: [
-    "plutus_backtest",
-    "plutus_risk",
-    "plutus_reports",
-    "plutus_audit",
-  ],
-  technical_analysis_panel: ["plutus_risk", "plutus_reports", "plutus_audit"],
-  strategy_exploration_panel: [
-    "plutus_backtest",
-    "plutus_risk",
-    "plutus_reports",
-    "plutus_audit",
-  ],
-  knowledge_curation_desk: [
-    "plutus_memory",
-    "plutus_wiki",
-    "plutus_reports",
-    "plutus_audit",
-  ],
-};
+export type { CodexSdkClient, CodexSdkRunHostOptions };
+export type { ProductStartResearchRunRequest } from "./openai-codex-product-client";
 
 export class CodexSdkRunHost implements CodexRunHost, ProductCodexRunHost {
   private readonly client?: CodexSdkClient;
@@ -206,18 +37,7 @@ export class CodexSdkRunHost implements CodexRunHost, ProductCodexRunHost {
   }
 
   async run(request: CodexRunRequest): Promise<CodexRunResult> {
-    const env =
-      this.env ??
-      (
-        globalThis as unknown as {
-          process?: { env?: Record<string, string | undefined> };
-        }
-      ).process?.env;
-    if (env?.PLUTUS_RUN_REAL_CODEX_SMOKE !== "1") {
-      throw new Error(
-        "Real Codex SDK smoke tests are gated behind PLUTUS_RUN_REAL_CODEX_SMOKE=1.",
-      );
-    }
+    this.requireSmokeGate();
     if (!this.client) {
       throw new Error("CodexSdkRunHost requires an injected Codex SDK client.");
     }
@@ -234,79 +54,30 @@ export class CodexSdkRunHost implements CodexRunHost, ProductCodexRunHost {
         finalRunCard = (item as { finalRunCard: unknown }).finalRunCard;
       }
     }
-
-    const parsed = finalRunCardSchema.safeParse(
-      finalRunCard && typeof finalRunCard === "object"
-        ? {
-            ...(finalRunCard as Record<string, unknown>),
-            runId: request.runId,
-            profileId: request.profileId,
-          }
-        : finalRunCard,
-    );
-    if (!parsed.success) {
-      return {
-        status: "failed",
-        events,
-        validationFailures: parsed.error.issues.map((issue) => ({
-          path: issue.path.join("."),
-          message: issue.message,
-        })),
-      };
-    }
-    if (
-      !request.allowedRecommendationCategories.includes(parsed.data.category)
-    ) {
-      return {
-        status: "failed",
-        events,
-        validationFailures: [
-          {
-            path: "category",
-            message: `Category ${parsed.data.category} is outside the requested safety envelope.`,
-          },
-        ],
-      };
-    }
-    if (
-      parsed.data.riskValidation === "vetoed" &&
-      !["risk_warning", "no_action"].includes(parsed.data.category)
-    ) {
-      return {
-        status: "failed",
-        events,
-        validationFailures: [
-          {
-            path: "riskValidation",
-            message:
-              "Risk-vetoed runs must resolve to risk_warning or no_action.",
-          },
-        ],
-      };
-    }
-    return {
-      status: "completed",
-      events,
-      finalRunCard: {
-        ...parsed.data,
-      },
-      validationFailures: [],
-    };
+    return finalRunResultFor(request, events, finalRunCard);
   }
 
   async startResearchRun(
     input: StartResearchRunInput,
   ): Promise<ResearchRunHandle> {
     const startResearchRun = this.requireProductClient("startResearchRun");
+    const selectedTeam = resolveSelectedTeam(input);
     const configHash = makeConfigHash(input);
     const mcpServers = buildProductMcpServers(input);
+    const agents = teamAgentsFor(selectedTeam);
     const started = await startResearchRun({
       ...input,
       configHash,
-      selectedTeam: resolveSelectedTeam(input),
+      selectedTeam,
+      initialPrompt: buildInitialResearchRunPrompt({
+        ...input,
+        selectedTeam,
+        configHash,
+        teamAgents: agents,
+      }),
       mcpServers,
-      teamAgents: teamAgents[resolveSelectedTeam(input)],
-      rootSandboxMode: rootSandboxModeForTeam(resolveSelectedTeam(input)),
+      teamAgents: agents,
+      rootSandboxMode: rootSandboxModeForTeam(selectedTeam),
     });
     const handle = { ...started, configHash };
     this.handlesByThreadId.set(handle.threadId, handle);
@@ -328,12 +99,9 @@ export class CodexSdkRunHost implements CodexRunHost, ProductCodexRunHost {
     options: ResumeResearchRunOptions = {},
   ): Promise<ResearchRunHandle> {
     const existing = this.handlesByThreadId.get(threadId);
-    if (!existing && !options.expectedConfigHash) {
-      throw new Error(
-        "Cannot resume Codex thread without a known Plutus run config hash.",
-      );
-    }
-    const configHash = existing?.configHash ?? options.expectedConfigHash!;
+    const configHash =
+      existing?.configHash ??
+      requireExpectedConfigHash(options.expectedConfigHash);
     if (
       options.expectedConfigHash &&
       existing &&
@@ -386,14 +154,8 @@ export class CodexSdkRunHost implements CodexRunHost, ProductCodexRunHost {
   }
 
   private requireSmokeGate() {
-    const env =
-      this.env ??
-      (
-        globalThis as unknown as {
-          process?: { env?: Record<string, string | undefined> };
-        }
-      ).process?.env;
-    if (env?.PLUTUS_RUN_REAL_CODEX_SMOKE !== "1") {
+    const env = this.env ?? process.env;
+    if (env.PLUTUS_RUN_REAL_CODEX_SMOKE !== "1") {
       throw new Error(
         "Real Codex SDK smoke tests are gated behind PLUTUS_RUN_REAL_CODEX_SMOKE=1.",
       );
@@ -419,123 +181,6 @@ export class CodexSdkRunHost implements CodexRunHost, ProductCodexRunHost {
   }
 }
 
-function makeConfigHash(input: StartResearchRunInput) {
-  const selectedTeam = resolveSelectedTeam(input);
-  return createHash("sha256")
-    .update(
-      JSON.stringify({
-        profileId: input.profileId,
-        portfolioId: input.portfolioId ?? null,
-        selectedTeam,
-        userRequest: input.userRequest,
-        appDataPath: input.appDataPath ?? null,
-        agents: teamAgents[selectedTeam],
-        namespaces: teamNamespaces[selectedTeam],
-        writableNamespaces: teamWritableNamespaces[selectedTeam],
-      }),
-    )
-    .digest("hex");
-}
-
-function buildProductMcpServers(input: StartResearchRunInput) {
-  const selectedTeam = resolveSelectedTeam(input);
-  const namespaces = teamNamespaces[selectedTeam];
-  const writableNamespaces = new Set(teamWritableNamespaces[selectedTeam]);
-  const runContextSecret = randomBytes(32).toString("hex");
-  const repoRoot = process.env.PLUTUS_REPO_ROOT ?? process.cwd();
-  const adapterCommand = runtimeCommand(
-    process.env.PLUTUS_LOCAL_MCP_ADAPTER_COMMAND,
-    [
-      "pnpm",
-      "--dir",
-      repoRoot,
-      "--filter",
-      "@plutus/local-mcp-adapter",
-      "start",
-    ],
-  );
-
-  const entries = [];
-  for (const agentName of teamAgents[selectedTeam]) {
-    const allowlist = AGENT_ALLOWLISTS[agentName];
-    for (const namespace of [...namespaces].sort()) {
-      if (!allowlist.allowedNamespaces.includes(namespace)) continue;
-      const serverName = `${agentName}__${namespace}`;
-      const context: LocalToolRunContext = {
-        runId:
-          input.runId ??
-          makeRunId({
-            configHash: createHash("sha256")
-              .update(`${selectedTeam}:${input.profileId}:${input.userRequest}`)
-              .digest("hex"),
-          }),
-        profileId: input.profileId,
-        agentName,
-        selectedTeam,
-        allowedNamespaces: allowlist.allowedNamespaces.filter((allowed) =>
-          namespaces.includes(allowed),
-        ),
-        allowedTools: allowlist.allowedTools,
-        writeScopes: writableNamespaces.has(namespace)
-          ? allowlist.writeTools
-          : [],
-        appDataPath: input.appDataPath,
-      };
-      entries.push([
-        serverName,
-        {
-          command: adapterCommand.command,
-          args: [
-            ...adapterCommand.args,
-            namespace,
-            ...(!writableNamespaces.has(namespace) ? ["--read-only"] : []),
-            "--stdio",
-          ],
-          env: {
-            PLUTUS_REPO_ROOT: repoRoot,
-            PLUTUS_RUN_CONTEXT_SECRET: runContextSecret,
-            PLUTUS_SIGNED_RUN_CONTEXT: signRunContext(context, {
-              namespace,
-              secret: runContextSecret,
-              expiresAt: new Date(Date.now() + 60 * 60 * 1000),
-            }),
-          },
-        },
-      ]);
-    }
-  }
-  return Object.fromEntries(entries);
-}
-
-function runtimeCommand(
-  configured: string | undefined,
-  fallback: string[],
-): { command: string; args: string[] } {
-  const parts =
-    configured
-      ?.split(/\s+/)
-      .map((part) => part.trim())
-      .filter(Boolean) ?? fallback;
-  if (parts.length === 0) {
-    throw new Error("Runtime command is empty.");
-  }
-  return { command: parts[0]!, args: parts.slice(1) };
-}
-
-function resolveSelectedTeam(input: StartResearchRunInput) {
-  const selectedTeam = input.selectedTeam ?? "portfolio_review_committee";
-  if (!teamAgents[selectedTeam]) {
-    throw new Error(`Unknown Plutus team preset: ${selectedTeam}.`);
-  }
-  return selectedTeam;
-}
-
-function rootSandboxModeForTeam(selectedTeam: string) {
-  return teamWritableNamespaces[selectedTeam].length > 0
-    ? ("workspace-write" as const)
-    : ("read-only" as const);
-}
-
 function normalizeEvent(item: unknown, runId: string) {
   if (!item || typeof item !== "object") {
     return item;
@@ -547,272 +192,13 @@ function normalizeEvent(item: unknown, runId: string) {
   };
 }
 
-class OpenAiCodexSdkProductClient implements CodexSdkClient {
-  private readonly env?: Record<string, string>;
-  private readonly workingDirectory?: string;
-  private readonly threadsById = new Map<string, Thread>();
-  private readonly streamsByThreadId = new Map<
-    string,
-    AsyncIterable<unknown>
-  >();
-
-  constructor(options: CodexSdkRunHostOptions) {
-    this.env = normalizeEnv(options.env);
-    this.workingDirectory = options.workingDirectory;
-  }
-
-  runStreamed(_request: CodexRunRequest): AsyncIterable<unknown> {
+function requireExpectedConfigHash(
+  expectedConfigHash: string | undefined,
+): string {
+  if (!expectedConfigHash) {
     throw new Error(
-      "Legacy runStreamed requires an injected Codex SDK client.",
+      "Cannot resume Codex thread without a known Plutus run config hash.",
     );
   }
-
-  async startResearchRun(
-    request: ProductStartResearchRunRequest,
-  ): Promise<{ runId: string; threadId: string }> {
-    const codex = new Codex({
-      env: this.env,
-      config: { mcp_servers: request.mcpServers },
-    });
-    const thread = codex.startThread({
-      workingDirectory: this.workingDirectory,
-      sandboxMode: request.rootSandboxMode,
-      approvalPolicy: "never",
-      networkAccessEnabled: false,
-    });
-    const streamed = await thread.runStreamed(buildInitialPrompt(request));
-    const threadId = await captureThreadId(streamed.events);
-    this.threadsById.set(threadId, thread);
-    this.streamsByThreadId.set(
-      threadId,
-      mapThreadEvents(streamed.events, request.profileId),
-    );
-    return { runId: request.runId ?? makeRunId(request), threadId };
-  }
-
-  streamResearchRun(handle: ResearchRunHandle): AsyncIterable<unknown> {
-    const stream = this.streamsByThreadId.get(handle.threadId);
-    if (!stream) {
-      throw new Error("No active Codex stream is registered for this thread.");
-    }
-    return stream;
-  }
-
-  async resumeResearchRun(request: {
-    threadId: string;
-    configHash: string;
-    profileId?: string;
-    runId?: string;
-  }): Promise<{ runId: string; threadId: string }> {
-    const codex = new Codex({ env: this.env });
-    const thread = codex.resumeThread(request.threadId, {
-      workingDirectory: this.workingDirectory,
-      sandboxMode: "workspace-write",
-      approvalPolicy: "never",
-      networkAccessEnabled: false,
-    });
-    const streamed = await thread.runStreamed(
-      "Resume this Plutus research run from the persisted Codex thread. Continue streaming only the remaining plan-ground-execute-validate-deliver events.",
-    );
-    this.threadsById.set(request.threadId, thread);
-    this.streamsByThreadId.set(
-      request.threadId,
-      mapThreadEvents(streamed.events, request.profileId ?? request.threadId),
-    );
-    return {
-      runId: request.runId ?? makeRunId(request),
-      threadId: request.threadId,
-    };
-  }
-
-  async requestStructuredTurn<T>(request: {
-    threadId: string;
-    prompt: string;
-    schema: z.ZodType<T>;
-  }): Promise<unknown> {
-    const thread = this.requireThread(request.threadId);
-    const result = await thread.run(request.prompt, {
-      outputSchema: zodToJsonSchemaShape(request.schema),
-    });
-    return JSON.parse(result.finalResponse);
-  }
-
-  async cancelResearchRun(_request: { threadId: string }): Promise<void> {}
-
-  async archiveResearchRun(request: { threadId: string }): Promise<void> {
-    this.threadsById.delete(request.threadId);
-    this.streamsByThreadId.delete(request.threadId);
-  }
-
-  private requireThread(threadId: string) {
-    const thread = this.threadsById.get(threadId);
-    if (!thread) {
-      throw new Error(
-        "Cannot request a structured turn for an unknown thread.",
-      );
-    }
-    return thread;
-  }
-}
-
-async function captureThreadId(events: AsyncGenerator<ThreadEvent>) {
-  const first = await events.next();
-  if (first.done || !first.value || first.value.type !== "thread.started") {
-    throw new Error("Codex SDK did not emit thread.started for the run.");
-  }
-  return first.value.thread_id;
-}
-
-async function* mapThreadEvents(
-  events: AsyncGenerator<ThreadEvent>,
-  profileId: string,
-) {
-  for await (const event of events) {
-    if (event.type === "turn.started") {
-      yield {
-        stage: "planning",
-        type: "run.stage_started",
-        message: "Codex turn started.",
-      };
-    }
-    if (event.type === "item.started" || event.type === "item.completed") {
-      const item = event.item;
-      if (item.type === "mcp_tool_call") {
-        yield {
-          stage: "executing",
-          type:
-            event.type === "item.started"
-              ? "tool.call_started"
-              : "tool.call_completed",
-          message: `${item.server}.${item.tool}`,
-          payload: item,
-        };
-      }
-      if (item.type === "agent_message") {
-        yield {
-          stage: "reporting",
-          type: "agent.message",
-          message: item.text,
-          payload: { profileId },
-        };
-      }
-    }
-    if (event.type === "turn.completed") {
-      yield {
-        stage: "completed",
-        type: "run.completed",
-        message: "Codex turn completed.",
-        payload: event.usage,
-      };
-    }
-    if (event.type === "turn.failed" || event.type === "error") {
-      yield {
-        stage: "failed",
-        type: "run.failed",
-        message:
-          event.type === "turn.failed" ? event.error.message : event.message,
-      };
-    }
-  }
-}
-
-function buildInitialPrompt(request: ProductStartResearchRunRequest) {
-  return [
-    "Start a Plutus research run.",
-    `Profile: ${request.profileId}`,
-    request.portfolioId ? `Portfolio: ${request.portfolioId}` : undefined,
-    `Team: ${resolveSelectedTeam(request)}`,
-    `Config hash: ${request.configHash}`,
-    `User request: ${request.userRequest}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
-}
-
-function makeRunId(input: { configHash: string }) {
-  return `run_${input.configHash.slice(0, 16)}`;
-}
-
-function normalizeEnv(env?: Record<string, string | undefined>) {
-  if (!env) {
-    return undefined;
-  }
-  return Object.fromEntries(
-    Object.entries(env).filter((entry): entry is [string, string] =>
-      Boolean(entry[1]),
-    ),
-  );
-}
-
-function signRunContext(
-  context: LocalToolRunContext,
-  options: { namespace: string; secret: string; expiresAt: Date },
-) {
-  const payload = Buffer.from(
-    JSON.stringify({
-      context,
-      exp: Math.floor(options.expiresAt.getTime() / 1000),
-      namespace: options.namespace,
-    }),
-    "utf8",
-  ).toString("base64url");
-  const signature = createHmac("sha256", options.secret)
-    .update(payload)
-    .digest("base64url");
-  return `${payload}.${signature}`;
-}
-
-function zodToJsonSchemaShape(
-  schema: z.ZodType<unknown>,
-): Record<string, unknown> {
-  if (schema instanceof z.ZodDefault) {
-    return zodToJsonSchemaShape(schema.removeDefault());
-  }
-  if (schema instanceof z.ZodObject) {
-    const shape = schema.shape;
-    const required = Object.entries(shape)
-      .filter(
-        ([, value]) =>
-          !(value instanceof z.ZodOptional || value instanceof z.ZodDefault),
-      )
-      .map(([key]) => key);
-    return {
-      type: "object",
-      additionalProperties: false,
-      ...(required.length > 0 ? { required } : {}),
-      properties: Object.fromEntries(
-        Object.entries(shape).map(([key, value]) => [
-          key,
-          zodToJsonSchemaShape(value as z.ZodType<unknown>),
-        ]),
-      ),
-    };
-  }
-  if (schema instanceof z.ZodLiteral) {
-    const value = schema.value;
-    return { const: value, type: typeof value };
-  }
-  if (schema instanceof z.ZodEnum) {
-    return { type: "string", enum: schema.options };
-  }
-  if (schema instanceof z.ZodString) {
-    return { type: "string" };
-  }
-  if (schema instanceof z.ZodNumber) {
-    return { type: "number" };
-  }
-  if (schema instanceof z.ZodBoolean) {
-    return { type: "boolean" };
-  }
-  if (schema instanceof z.ZodArray) {
-    return { type: "array", items: zodToJsonSchemaShape(schema.element) };
-  }
-  if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
-    return zodToJsonSchemaShape(schema.unwrap());
-  }
-  return {
-    type: "object",
-    description:
-      "Structured Plutus response validated again by the product adapter.",
-  };
+  return expectedConfigHash;
 }
