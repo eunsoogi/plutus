@@ -1,6 +1,7 @@
 import type { AppLocale } from "./core";
 import { useI18n } from "./i18n";
 import { officeCopy } from "./orchestrator-office-copy";
+import { OrchestratorOfficeScene } from "./orchestrator-office-scene";
 import {
   defaultTeam,
   teamSpecialists,
@@ -30,21 +31,17 @@ export type OrchestratorOfficeRun = {
   };
 };
 
-const officeSpots = [
-  [172, 128, "#62d3e7"],
-  [578, 128, "#80e0a7"],
-  [142, 312, "#f5b84b"],
-  [608, 312, "#a7b7ff"],
-  [400, 384, "#d8b4fe"],
-] satisfies readonly [number, number, string][];
-
 function selectedTeamFor(run: OrchestratorOfficeRun) {
   return run.selectedTeam ?? run.finalCard?.selectedTeam ?? defaultTeam;
 }
 
+function isKnownTeam(team: string): team is keyof typeof teamSpecialists {
+  return Object.hasOwn(teamSpecialists, team);
+}
+
 function specialistsFor(team: string): readonly SpecialistId[] {
-  return team in teamSpecialists
-    ? teamSpecialists[team as keyof typeof teamSpecialists]
+  return isKnownTeam(team)
+    ? teamSpecialists[team]
     : teamSpecialists[defaultTeam];
 }
 
@@ -70,47 +67,9 @@ function riskSummary(run: OrchestratorOfficeRun, locale: AppLocale) {
   }`;
 }
 
-function AgentDesk({
-  color,
-  label,
-  specialist,
-  stage,
-  x,
-  y,
-}: {
-  readonly color: string;
-  readonly label: string;
-  readonly specialist: SpecialistId;
-  readonly stage: string;
-  readonly x: number;
-  readonly y: number;
-}) {
-  return (
-    <g
-      className="office-agent"
-      data-testid={`orchestrator-agent-${specialist}`}
-      transform={`translate(${x} ${y})`}
-    >
-      <polygon
-        className="office-desk-top"
-        points="-70,-24 20,-48 86,-16 -4,16"
-      />
-      <polygon className="office-desk-side" points="-4,16 86,-16 86,18 -4,50" />
-      <polygon
-        className="office-desk-front"
-        points="-70,-24 -4,16 -4,50 -70,12"
-      />
-      <circle className="office-avatar-shadow" cx="-8" cy="-22" r="22" />
-      <circle className="office-avatar" cx="-8" cy="-30" r="18" fill={color} />
-      <rect className="office-laptop" x="28" y="-30" width="28" height="18" />
-      <text className="office-label" x="-72" y="78">
-        {label}
-      </text>
-      <text className="office-stage" x="-72" y="98">
-        {stage}
-      </text>
-    </g>
-  );
+export function sceneStageLabel(stage: string, status: string) {
+  void status;
+  return stage;
 }
 
 export function OrchestratorOffice({ run }: { run: OrchestratorOfficeRun }) {
@@ -135,90 +94,13 @@ export function OrchestratorOffice({ run }: { run: OrchestratorOfficeRun }) {
         </div>
         <span className="pill">{text.safety}</span>
       </div>
-      <svg
-        className="orchestrator-office__scene"
-        data-testid="orchestrator-office-scene"
-        role="img"
-        viewBox="0 0 800 500"
-      >
-        <title>
-          {text.title}: {text.orchestrator}
-        </title>
-        <polygon
-          className="office-floor"
-          data-testid="orchestrator-office-floor"
-          points="400,42 760,210 400,452 40,210"
-        />
-        <path
-          className="office-grid"
-          d="M190 140 550 370M310 92 670 260M70 220 430 450M580 110 220 360M700 190 340 430M460 60 100 270"
-        />
-        {specialists.map((specialist, index) => {
-          const [x, y] = officeSpots[index] ?? officeSpots[0];
-          return (
-            <line
-              className="office-link"
-              key={`${specialist}-link`}
-              x1="400"
-              x2={x}
-              y1="224"
-              y2={y}
-            />
-          );
-        })}
-        <g className="office-orchestrator" data-testid="orchestrator-node">
-          <polygon
-            className="office-command-rug"
-            points="400,158 516,212 400,286 284,212"
-          />
-          <polygon
-            className="office-desk-top"
-            points="330,186 420,158 488,196 396,230"
-          />
-          <polygon
-            className="office-desk-side"
-            points="396,230 488,196 488,236 396,272"
-          />
-          <polygon
-            className="office-desk-front"
-            points="330,186 396,230 396,272 330,228"
-          />
-          <circle className="office-avatar-shadow" cx="406" cy="166" r="28" />
-          <circle
-            className="office-avatar office-avatar--lead"
-            cx="406"
-            cy="154"
-            r="23"
-          />
-          <rect
-            className="office-laptop"
-            x="438"
-            y="188"
-            width="34"
-            height="22"
-          />
-          <text className="office-label office-label--lead" x="320" y="318">
-            {text.orchestrator}
-          </text>
-          <text className="office-stage office-stage--lead" x="320" y="340">
-            {stage} · {run.status}
-          </text>
-        </g>
-        {specialists.map((specialist, index) => {
-          const [x, y, color] = officeSpots[index] ?? officeSpots[0];
-          return (
-            <AgentDesk
-              color={color}
-              key={specialist}
-              label={text.specialist[specialist]}
-              specialist={specialist}
-              stage={stage}
-              x={x}
-              y={y}
-            />
-          );
-        })}
-      </svg>
+      <OrchestratorOfficeScene
+        orchestratorLabel={text.orchestrator}
+        stationLabels={text.station}
+        specialistLabels={text.specialist}
+        specialists={specialists}
+        stage={sceneStageLabel(stage, run.status)}
+      />
       <div className="orchestrator-office__signals">
         <div>
           <span>{text.evidence}</span>
