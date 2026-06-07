@@ -77,6 +77,10 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
     "data-office-rotation",
     "south-east",
   );
+  await expect(page.getByTestId("orchestrator-office-canvas")).toHaveCSS(
+    "touch-action",
+    "pan-y",
+  );
   if (isMobileProject) {
     await expect(
       page.getByTestId("orchestrator-office-top-controls"),
