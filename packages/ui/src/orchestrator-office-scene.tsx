@@ -1,5 +1,8 @@
 import { useMemo } from "react";
-import type { OfficeStationLabels } from "./orchestrator-office-copy";
+import type {
+  OfficeCanvasChromeLabels,
+  OfficeStationLabels,
+} from "./orchestrator-office-copy";
 import { OrchestratorOfficeCanvas } from "./orchestrator-office-canvas";
 import type { OfficeRotation } from "./orchestrator-office-canvas-types";
 import {
@@ -10,6 +13,7 @@ import {
 import type { SpecialistId } from "./orchestrator-office-teams";
 
 export function OrchestratorOfficeScene({
+  canvasChromeLabels,
   orchestratorLabel,
   stationLabels,
   specialistLabels,
@@ -18,6 +22,7 @@ export function OrchestratorOfficeScene({
   teamLabel,
   rotation,
 }: {
+  readonly canvasChromeLabels: OfficeCanvasChromeLabels;
   readonly orchestratorLabel: string;
   readonly rotation: OfficeRotation;
   readonly stationLabels: OfficeStationLabels;
@@ -80,18 +85,18 @@ export function OrchestratorOfficeScene({
         aria-hidden="true"
         data-testid="orchestrator-office-top-controls"
       >
-        <span>{agents.length} agents</span>
-        <span>HQ connected</span>
-        <span>Canvas</span>
+        <span>{canvasChromeLabels.agentCount(agents.length)}</span>
+        <span>{canvasChromeLabels.hqConnected}</span>
+        <span>{canvasChromeLabels.canvas}</span>
       </div>
       <div
         className="pixel-office__side-tabs"
         aria-hidden="true"
         data-testid="orchestrator-office-side-tabs"
       >
-        <span>Open HQ</span>
-        <span>Market</span>
-        <span>Analytics</span>
+        <span>{canvasChromeLabels.openHq}</span>
+        <span>{canvasChromeLabels.market}</span>
+        <span>{canvasChromeLabels.analytics}</span>
       </div>
       <OrchestratorOfficeCanvas scene={canvasScene} />
       <ul
@@ -114,9 +119,9 @@ export function OrchestratorOfficeScene({
         className="orchestrator-office__scene-console"
         data-testid="orchestrator-office-event-console"
       >
-        <span>PLUTUS EVENT CONSOLE</span>
-        <span>{agents.length} agents</span>
-        <span>No live trading</span>
+        <span>{canvasChromeLabels.eventConsole}</span>
+        <span>{canvasChromeLabels.agentCount(agents.length)}</span>
+        <span>{canvasChromeLabels.noLiveTrading}</span>
       </div>
     </div>
   );

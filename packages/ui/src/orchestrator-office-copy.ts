@@ -12,6 +12,17 @@ export type OfficeStationLabels = {
 
 export type OfficeRotationLabels = Readonly<Record<OfficeRotation, string>>;
 
+export type OfficeCanvasChromeLabels = {
+  readonly agentCount: (agentCount: number) => string;
+  readonly hqConnected: string;
+  readonly canvas: string;
+  readonly openHq: string;
+  readonly market: string;
+  readonly analytics: string;
+  readonly eventConsole: string;
+  readonly noLiveTrading: string;
+};
+
 export const officeCopy = {
   en: {
     title: "Orchestrator Office",
@@ -24,6 +35,16 @@ export const officeCopy = {
     rotateRight: "Rotate right",
     rotateLeftControl: "Left",
     rotateRightControl: "Right",
+    canvasChrome: {
+      agentCount: (agentCount: number) => `${agentCount} agents`,
+      hqConnected: "HQ connected",
+      canvas: "Canvas",
+      openHq: "Open HQ",
+      market: "Market",
+      analytics: "Analytics",
+      eventConsole: "PLUTUS EVENT CONSOLE",
+      noLiveTrading: "No live trading",
+    } satisfies OfficeCanvasChromeLabels,
     rotation: {
       "south-east": "South East",
       "south-west": "South West",
@@ -75,6 +96,16 @@ export const officeCopy = {
     rotateRight: "오른쪽 회전",
     rotateLeftControl: "왼쪽",
     rotateRightControl: "오른쪽",
+    canvasChrome: {
+      agentCount: (agentCount: number) => `에이전트 ${agentCount}명`,
+      hqConnected: "HQ 연결됨",
+      canvas: "캔버스",
+      openHq: "본부 열기",
+      market: "시장",
+      analytics: "분석",
+      eventConsole: "PLUTUS 이벤트 콘솔",
+      noLiveTrading: "실거래 없음",
+    } satisfies OfficeCanvasChromeLabels,
     rotation: {
       "south-east": "남동쪽",
       "south-west": "남서쪽",

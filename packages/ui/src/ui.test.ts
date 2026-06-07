@@ -83,6 +83,7 @@ describe("ui helpers", () => {
     const koreanOffice = officeCopy.ko;
     const markup = renderToStaticMarkup(
       createElement(OrchestratorOfficeScene, {
+        canvasChromeLabels: koreanOffice.canvasChrome,
         orchestratorLabel: koreanOffice.orchestrator,
         rotation: "south-east",
         specialistLabels: koreanOffice.specialist,
@@ -107,6 +108,7 @@ describe("ui helpers", () => {
     const englishOffice = officeCopy.en;
     const markup = renderToStaticMarkup(
       createElement(OrchestratorOfficeScene, {
+        canvasChromeLabels: englishOffice.canvasChrome,
         orchestratorLabel: englishOffice.orchestrator,
         rotation: "south-east",
         specialistLabels: englishOffice.specialist,
@@ -183,6 +185,41 @@ describe("ui helpers", () => {
     expect(markup).toContain(">오른쪽</button>");
     expect(markup).toContain("크립토 리서치 데스크");
     expect(markup).not.toMatch(/South East|>Left<\/button>|>Right<\/button>|Quant Strategy Desk<\/strong>/);
+  });
+
+  it("localizes the visible Korean office canvas chrome", () => {
+    const run = {
+      category: "portfolio_review",
+      finalCard: { selectedTeam: "portfolio_review_committee" },
+      id: "run-korean-chrome",
+      selectedTeam: "portfolio_review_committee",
+      status: "completed",
+      title: "Portfolio review",
+    } satisfies OrchestratorOfficeRun;
+
+    vi.stubGlobal("window", {
+      localStorage: { getItem: () => null },
+      location: { href: "https://plutus.local/?locale=ko" },
+    });
+    vi.stubGlobal("navigator", { languages: ["ko-KR"] });
+    const markup = renderToStaticMarkup(
+      createElement(I18nProvider, {
+        children: createElement(OrchestratorOffice, { run }),
+      }),
+    );
+    vi.unstubAllGlobals();
+
+    expect(markup).toContain("에이전트 5명");
+    expect(markup).toContain("HQ 연결됨");
+    expect(markup).toContain("캔버스");
+    expect(markup).toContain("본부 열기");
+    expect(markup).toContain("시장");
+    expect(markup).toContain("분석");
+    expect(markup).toContain("PLUTUS 이벤트 콘솔");
+    expect(markup).toContain("실거래 없음");
+    expect(markup).not.toMatch(
+      />\d+ agents<|HQ connected|>Canvas<|>Open HQ<|>Market<|>Analytics<|PLUTUS EVENT CONSOLE|No live trading/,
+    );
   });
 
   it("displays an unknown selected office team with the default roster fallback", () => {

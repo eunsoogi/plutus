@@ -187,6 +187,7 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
             </div>
           </div>
           <OrchestratorOfficeScene
+            canvasChromeLabels={text.canvasChrome}
             orchestratorLabel={text.orchestrator}
             rotation={rotation}
             stage={sceneStageLabel(stage, run.status)}
