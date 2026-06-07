@@ -1,4 +1,5 @@
 import type { AppLocale } from "./core";
+import type { OfficeRotation } from "./orchestrator-office-canvas-types";
 
 export type OfficeStationLabels = {
   readonly market_desk: string;
@@ -8,6 +9,8 @@ export type OfficeStationLabels = {
   readonly signal_booth: string;
   readonly command_table: string;
 };
+
+export type OfficeRotationLabels = Readonly<Record<OfficeRotation, string>>;
 
 export const officeCopy = {
   en: {
@@ -19,6 +22,14 @@ export const officeCopy = {
     orientation: "Orientation",
     rotateLeft: "Rotate left",
     rotateRight: "Rotate right",
+    rotateLeftControl: "Left",
+    rotateRightControl: "Right",
+    rotation: {
+      "south-east": "South East",
+      "south-west": "South West",
+      "north-west": "North West",
+      "north-east": "North East",
+    } satisfies OfficeRotationLabels,
     safety: "No live trading",
     evidence: "Evidence",
     risk: "Risk checks",
@@ -62,6 +73,14 @@ export const officeCopy = {
     orientation: "방향",
     rotateLeft: "왼쪽 회전",
     rotateRight: "오른쪽 회전",
+    rotateLeftControl: "왼쪽",
+    rotateRightControl: "오른쪽",
+    rotation: {
+      "south-east": "남동쪽",
+      "south-west": "남서쪽",
+      "north-west": "북서쪽",
+      "north-east": "북동쪽",
+    } satisfies OfficeRotationLabels,
     safety: "실거래 없음",
     evidence: "근거",
     risk: "리스크 점검",

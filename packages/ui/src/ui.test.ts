@@ -1,6 +1,6 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   formatCurrency,
   normalizeLocale,
@@ -15,6 +15,7 @@ import {
   sceneStageLabel,
   type OrchestratorOfficeRun,
 } from "./orchestrator-office";
+import { I18nProvider } from "./i18n";
 import {
   nextOfficeRotation,
   officeRotationLabel,
@@ -155,32 +156,33 @@ describe("ui helpers", () => {
     ).toBe(specialists.length);
   });
 
-  it("renders office rotation controls without mutating the selected run team", () => {
+  it("renders Korean office rotation controls without mutating the selected run team", () => {
     const run = {
       category: "risk_warning",
-      finalCard: {
-        riskChecklist: [{ check: "Concentration", status: "warning" }],
-        selectedTeam: "quant_strategy_desk",
-        supportingEvidence: [{ label: "Real portfolio" }],
-      },
+      finalCard: { selectedTeam: "quant_strategy_desk" },
       id: "run-real",
       selectedTeam: "crypto_research_desk",
       status: "completed",
       title: "BTC and NVDA risk review",
     } satisfies OrchestratorOfficeRun;
 
+    vi.stubGlobal("window", {
+      localStorage: { getItem: () => null },
+      location: { href: "https://plutus.local/?locale=ko" },
+    });
+    vi.stubGlobal("navigator", { languages: ["ko-KR"] });
     const markup = renderToStaticMarkup(
-      createElement(OrchestratorOffice, { run }),
+      createElement(I18nProvider, {
+        children: createElement(OrchestratorOffice, { run }),
+      }),
     );
+    vi.unstubAllGlobals();
 
-    expect(markup).toContain('data-testid="orchestrator-office-rotate-left"');
-    expect(markup).toContain('data-testid="orchestrator-office-rotate-right"');
-    expect(markup).toContain(
-      'data-testid="orchestrator-office-rotation-label"',
-    );
-    expect(markup).toContain("South East");
-    expect(markup).toContain("Crypto Research Desk");
-    expect(markup).not.toContain("Quant Strategy Desk</strong>");
+    expect(markup).toContain(">왼쪽</button>");
+    expect(markup).toContain(">남동쪽</strong>");
+    expect(markup).toContain(">오른쪽</button>");
+    expect(markup).toContain("크립토 리서치 데스크");
+    expect(markup).not.toMatch(/South East|>Left<\/button>|>Right<\/button>|Quant Strategy Desk<\/strong>/);
   });
 
   it("displays an unknown selected office team with the default roster fallback", () => {

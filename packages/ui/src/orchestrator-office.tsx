@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AppLocale } from "./core";
 import { useI18n } from "./i18n";
-import {
-  nextOfficeRotation,
-  officeRotationLabel,
-} from "./orchestrator-office-canvas-geometry";
+import { nextOfficeRotation } from "./orchestrator-office-canvas-geometry";
 import type {
   OfficeRotation,
   OfficeRotationDirection,
@@ -113,7 +110,7 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
   const teamOptions: readonly string[] = isKnownTeam(selectedTeam)
     ? orderedTeamIds
     : [selectedTeam, ...orderedTeamIds];
-  const rotationLabel = officeRotationLabel(rotation);
+  const rotationLabel = text.rotation[rotation];
   const specialists = specialistsFor(activeTeam);
   const stage = stageFor(run, locale);
   const teamRoster = specialists.map((specialist, index) => ({
@@ -173,7 +170,7 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
                   onClick={() => rotateOffice("left")}
                   type="button"
                 >
-                  Left
+                  {text.rotateLeftControl}
                 </button>
                 <strong data-testid="orchestrator-office-rotation-label">
                   {rotationLabel}
@@ -184,7 +181,7 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
                   onClick={() => rotateOffice("right")}
                   type="button"
                 >
-                  Right
+                  {text.rotateRightControl}
                 </button>
               </div>
             </div>
