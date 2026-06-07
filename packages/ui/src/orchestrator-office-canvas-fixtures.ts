@@ -133,7 +133,9 @@ export function pushDeskCommands(
   commands: OfficeDrawCommand[],
   slot: AgentSlot,
   rotation: OfficeRotation,
+  deskIndex: number,
 ): void {
+  const volumeId = `desk-${deskIndex}`;
   const top = officeFootprint(
     slot.deskTile.x,
     slot.deskTile.y,
@@ -152,10 +154,20 @@ export function pushDeskCommands(
 
   commands.push(
     {
+      fill: "rgb(25 19 15 / 0.34)",
+      kind: "polygon",
+      lineWidth: 0,
+      points: base,
+      volumeId,
+      surface: "shadow",
+    },
+    {
       fill: "#d09b63",
       kind: "polygon",
       lineWidth: 2,
       points: [top[3], top[2], base[2], base[3]],
+      surface: "front",
+      volumeId,
       stroke: "#875f3d",
     },
     {
@@ -163,6 +175,8 @@ export function pushDeskCommands(
       kind: "polygon",
       lineWidth: 2,
       points: [top[1], top[2], base[2], base[1]],
+      surface: "side",
+      volumeId,
       stroke: "#875f3d",
     },
     {
@@ -170,6 +184,8 @@ export function pushDeskCommands(
       kind: "polygon",
       lineWidth: 2,
       points: top,
+      surface: "top",
+      volumeId,
       stroke: "#8d6b47",
     },
     {

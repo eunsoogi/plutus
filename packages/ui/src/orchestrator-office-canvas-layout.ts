@@ -213,8 +213,8 @@ function pushDesks(
       officeDepth(left.deskTile, scene.rotation) -
       officeDepth(right.deskTile, scene.rotation),
   );
-  for (const desk of desks) {
-    pushDeskCommands(commands, desk, scene.rotation);
+  for (const [deskIndex, desk] of desks.entries()) {
+    pushDeskCommands(commands, desk, scene.rotation, deskIndex);
   }
 }
 
