@@ -221,6 +221,21 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
   await expect(
     page.getByTestId("orchestrator-agent-market_data_researcher"),
   ).toContainText("Market Data Researcher");
+  const marketResearcherLabel = page.locator(
+    '[data-testid="orchestrator-agent-market_data_researcher"] .pixel-person-agent__label',
+  );
+  const marketResearcherStation = page.locator(
+    '[data-testid="orchestrator-agent-market_data_researcher"] .pixel-person-agent__station',
+  );
+  await expect(marketResearcherLabel).toBeVisible();
+  await expect(marketResearcherLabel).not.toHaveCSS("opacity", "0");
+  await expect(marketResearcherLabel).not.toHaveCSS("font-size", "1px");
+  await expect
+    .poll(async () => (await marketResearcherLabel.boundingBox())?.width ?? 0)
+    .toBeGreaterThan(60);
+  await expect(marketResearcherStation).toBeVisible();
+  await expect(marketResearcherStation).not.toHaveCSS("opacity", "0");
+  await expect(marketResearcherStation).not.toHaveCSS("font-size", "1px");
   await expect(
     page.getByTestId("orchestrator-agent-quant_strategy_researcher"),
   ).toContainText("Quant Strategy Researcher");

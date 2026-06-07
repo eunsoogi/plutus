@@ -1,6 +1,8 @@
 import type { OfficeAgent } from "./orchestrator-office-scene-data";
 
 export function PixelPerson({ agent }: { readonly agent: OfficeAgent }) {
+  const labelTextLength = agent.isLead ? 150 : 124;
+  const stationTextLength = agent.isLead ? 132 : 92;
   const className = [
     "pixel-person-agent",
     agent.slotClass,
@@ -96,7 +98,9 @@ export function PixelPerson({ agent }: { readonly agent: OfficeAgent }) {
           </text>
           <text
             className="pixel-person-agent__label"
+            lengthAdjust="spacingAndGlyphs"
             textAnchor="middle"
+            textLength={labelTextLength}
             x="0"
             y="-90"
           >
@@ -104,7 +108,9 @@ export function PixelPerson({ agent }: { readonly agent: OfficeAgent }) {
           </text>
           <text
             className="pixel-person-agent__station"
+            lengthAdjust="spacingAndGlyphs"
             textAnchor="middle"
+            textLength={stationTextLength}
             x="0"
             y="-76"
           >

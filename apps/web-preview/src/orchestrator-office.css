@@ -386,12 +386,30 @@
   font-size: 14px;
   font-weight: 900;
 }
-.pixel-person-agent__label,
-.pixel-person-agent__station {
+
+.pixel-person-agent__label {
   fill: #163347;
-  font-size: 1px;
-  opacity: 0;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+  opacity: 1;
+  paint-order: stroke;
   pointer-events: none;
+  stroke: rgb(252 247 240 / 94%);
+  stroke-width: 6px;
+}
+
+.pixel-person-agent__station {
+  fill: #35556f;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0;
+  opacity: 0.96;
+  paint-order: stroke;
+  pointer-events: none;
+  stroke: rgb(252 247 240 / 94%);
+  stroke-width: 4px;
+  text-transform: uppercase;
 }
 
 .pixel-person-agent--lead .pixel-person-agent__body {
@@ -575,6 +593,16 @@
 
   .pixel-office__station-label {
     opacity: 0;
+  }
+
+  .pixel-person-agent__label {
+    font-size: 10px;
+    stroke-width: 5px;
+  }
+
+  .pixel-person-agent__station {
+    font-size: 8px;
+    stroke-width: 3px;
   }
 }
 
