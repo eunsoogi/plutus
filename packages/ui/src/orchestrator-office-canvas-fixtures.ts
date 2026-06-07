@@ -9,14 +9,14 @@ import { pushFurniture } from "./orchestrator-office-canvas-furniture";
 import type {
   OfficeCanvasPoint,
   OfficeDrawCommand,
-  OfficeRotation,
+  OfficeProjection,
 } from "./orchestrator-office-canvas-types";
 import type { AgentSlot } from "./orchestrator-office-scene-data";
 
 function wallPanel(
   start: OfficeCanvasPoint,
   end: OfficeCanvasPoint,
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
   height: number,
 ): readonly OfficeCanvasPoint[] {
   return [
@@ -29,7 +29,7 @@ function wallPanel(
 
 function pushFloor(
   commands: OfficeDrawCommand[],
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
 ): void {
   commands.push({
     fill: "#10100d",
@@ -80,7 +80,7 @@ function pushFloor(
 
 function pushRooms(
   commands: OfficeDrawCommand[],
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
 ): void {
   const partitions = [
     [
@@ -132,8 +132,10 @@ function pushRooms(
 export function pushDeskCommands(
   commands: OfficeDrawCommand[],
   slot: AgentSlot,
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
+  deskIndex: number,
 ): void {
+  const volumeId = `desk-${deskIndex}`;
   const top = officeFootprint(
     slot.deskTile.x,
     slot.deskTile.y,
@@ -152,10 +154,20 @@ export function pushDeskCommands(
 
   commands.push(
     {
+      fill: "rgb(25 19 15 / 0.34)",
+      kind: "polygon",
+      lineWidth: 0,
+      points: base,
+      volumeId,
+      surface: "shadow",
+    },
+    {
       fill: "#d09b63",
       kind: "polygon",
       lineWidth: 2,
       points: [top[3], top[2], base[2], base[3]],
+      surface: "front",
+      volumeId,
       stroke: "#875f3d",
     },
     {
@@ -163,6 +175,8 @@ export function pushDeskCommands(
       kind: "polygon",
       lineWidth: 2,
       points: [top[1], top[2], base[2], base[1]],
+      surface: "side",
+      volumeId,
       stroke: "#875f3d",
     },
     {
@@ -170,6 +184,8 @@ export function pushDeskCommands(
       kind: "polygon",
       lineWidth: 2,
       points: top,
+      surface: "top",
+      volumeId,
       stroke: "#8d6b47",
     },
     {
@@ -217,7 +233,7 @@ export function pushDeskCommands(
 
 export function pushOfficeFixtureCommands(
   commands: OfficeDrawCommand[],
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
 ): void {
   pushFloor(commands, rotation);
   pushRooms(commands, rotation);

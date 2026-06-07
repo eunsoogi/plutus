@@ -13,12 +13,13 @@ import { officeCuboids } from "./orchestrator-office-canvas-furnishings";
 import type {
   OfficeCanvasPoint,
   OfficeDrawCommand,
-  OfficeRotation,
+  OfficeProjection,
+  OfficeVolumeSurface,
 } from "./orchestrator-office-canvas-types";
 
 function wallPanel(
   wall: OfficeWall,
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
 ): readonly OfficeCanvasPoint[] {
   return [
     projectOfficePoint(wall.start, rotation, wall.height),
@@ -28,10 +29,18 @@ function wallPanel(
   ];
 }
 
+function volumeMeta(
+  volumeId: string | undefined,
+  surface: OfficeVolumeSurface,
+): Record<string, never> | { readonly surface: OfficeVolumeSurface; readonly volumeId: string } {
+  return volumeId === undefined ? {} : { surface, volumeId };
+}
+
 function pushCuboid(
   commands: OfficeDrawCommand[],
   block: OfficeCuboid,
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
+  volumeId?: string,
 ): void {
   const top = officeFootprint(
     block.x,
@@ -51,6 +60,14 @@ function pushCuboid(
 
   commands.push(
     {
+      ...volumeMeta(volumeId, "shadow"),
+      alpha: 0.16,
+      fill: "#0f172a",
+      kind: "polygon",
+      points: base,
+    },
+    {
+      ...volumeMeta(volumeId, "front"),
       fill: block.front,
       kind: "polygon",
       lineWidth: 2,
@@ -58,6 +75,7 @@ function pushCuboid(
       stroke: block.stroke,
     },
     {
+      ...volumeMeta(volumeId, "side"),
       fill: block.side,
       kind: "polygon",
       lineWidth: 2,
@@ -65,6 +83,7 @@ function pushCuboid(
       stroke: block.stroke,
     },
     {
+      ...volumeMeta(volumeId, "top"),
       fill: block.top,
       kind: "polygon",
       lineWidth: 2,
@@ -77,7 +96,7 @@ function pushCuboid(
 function pushPlanter(
   commands: OfficeDrawCommand[],
   location: OfficeCanvasPoint,
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
 ): void {
   pushCuboid(
     commands,
@@ -129,7 +148,7 @@ function pushPlanter(
 
 export function pushOfficeAmenities(
   commands: OfficeDrawCommand[],
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
 ): void {
   for (const floor of accentFloors) {
     commands.push({
@@ -158,8 +177,8 @@ export function pushOfficeAmenities(
     });
   }
 
-  for (const block of officeCuboids) {
-    pushCuboid(commands, block, rotation);
+  for (const [index, block] of officeCuboids.entries()) {
+    pushCuboid(commands, block, rotation, `amenity-cuboid-${index}`);
   }
 
   for (const location of planterLocations) {

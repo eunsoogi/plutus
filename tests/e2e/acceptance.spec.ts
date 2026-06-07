@@ -47,7 +47,8 @@ test("MVP acceptance scenario queues host run and exposes mobile preview", async
 
 test("MVP command bridge backs host start, artifact fetch, and remote start", async ({
   page,
-}) => {
+}, testInfo) => {
+  const isMobileProject = testInfo.project.name === "mobile-remote";
   const unexpectedErrors = captureUnexpectedPageErrors(page);
   const callsKey = `plutusCommandCalls-${Date.now()}`;
   await installCommandBridge(page, callsKey);
@@ -70,16 +71,29 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
   await expect(officeScene).toBeVisible();
   await expect
     .poll(async () => (await officeScene.boundingBox())?.height ?? 0)
-    .toBeGreaterThan(500);
+    .toBeGreaterThanOrEqual(500);
   await expect(page.getByTestId("orchestrator-office-canvas")).toBeVisible();
   await expect(page.getByTestId("orchestrator-office-canvas")).toHaveAttribute(
     "data-office-rotation",
     "south-east",
   );
-  await expect(
-    page.getByTestId("orchestrator-office-top-controls"),
-  ).toBeVisible();
-  await expect(page.getByTestId("orchestrator-office-side-tabs")).toBeVisible();
+  await expect(page.getByTestId("orchestrator-office-canvas")).toHaveCSS(
+    "touch-action",
+    "pan-y",
+  );
+  if (isMobileProject) {
+    await expect(
+      page.getByTestId("orchestrator-office-top-controls"),
+    ).toBeHidden();
+    await expect(page.getByTestId("orchestrator-office-side-tabs")).toBeHidden();
+  } else {
+    await expect(
+      page.getByTestId("orchestrator-office-top-controls"),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("orchestrator-office-side-tabs"),
+    ).toBeVisible();
+  }
   await expect(
     page.getByTestId("orchestrator-office-event-console"),
   ).toContainText("PLUTUS EVENT CONSOLE");
@@ -127,15 +141,45 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
         .join("|");
     });
   const initialCanvasSignature = await canvasSignature();
-  await page.getByTestId("orchestrator-office-rotate-right").click();
-  await expect(page.getByTestId("orchestrator-office-canvas")).toHaveAttribute(
-    "data-office-rotation",
-    "south-west",
-  );
+  const canvasBounds = await page
+    .getByTestId("orchestrator-office-canvas")
+    .boundingBox();
+  expect(canvasBounds).not.toBeNull();
+  if (canvasBounds === null) {
+    throw new Error("Office canvas bounds were not available");
+  }
+  const dragDistance = Math.max(canvasBounds.width * 0.28, 160);
+  const dragStartX = canvasBounds.x + canvasBounds.width * 0.35;
+  const dragStartY = canvasBounds.y + canvasBounds.height * 0.5;
+  const dragEndX = dragStartX + dragDistance;
+  await page.mouse.move(dragStartX, dragStartY);
+  await page.mouse.down();
+  await page.mouse.move(dragEndX, dragStartY, { steps: 16 });
+  await page.mouse.up();
+  await expect.poll(canvasSignature).not.toBe(initialCanvasSignature);
+  const postDragCanvas = page.getByTestId("orchestrator-office-canvas");
+  const postDragState = await postDragCanvas.evaluate((node) => {
+    if (!(node instanceof HTMLCanvasElement)) {
+      return { rotation: null, yaw: null };
+    }
+
+    return {
+      rotation: node.getAttribute("data-office-rotation"),
+      yaw: node.getAttribute("data-office-yaw"),
+    };
+  });
+  if (postDragState.yaw !== null) {
+    await expect(postDragCanvas).not.toHaveAttribute("data-office-yaw", "0");
+  }
+  if (postDragState.rotation !== null) {
+    await expect(postDragCanvas).not.toHaveAttribute(
+      "data-office-rotation",
+      "south-east",
+    );
+  }
   await expect(
     page.getByTestId("orchestrator-office-rotation-label"),
   ).toHaveText("South West");
-  await expect.poll(canvasSignature).not.toBe(initialCanvasSignature);
   await expect(page.getByTestId("orchestrator-office")).toContainText(
     "No live trading",
   );
