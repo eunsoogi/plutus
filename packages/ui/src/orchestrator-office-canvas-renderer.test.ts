@@ -4,13 +4,18 @@ import { buildOfficeDrawCommands } from "./orchestrator-office-canvas-layout";
 import { officeNameplateFrame } from "./orchestrator-office-canvas-nameplates";
 import type {
   OfficeCanvasNameplateCommand,
+  OfficeRotation,
   OfficeCanvasViewport,
 } from "./orchestrator-office-canvas-types";
 import {
   slotFor,
   type OfficeAgent,
 } from "./orchestrator-office-scene-data";
-import { teamSpecialists } from "./orchestrator-office-teams";
+import {
+  defaultTeam,
+  type TeamId,
+  teamSpecialists,
+} from "./orchestrator-office-teams";
 
 type Bounds = {
   readonly bottom: number;
@@ -29,6 +34,13 @@ const desktopViewport = {
   width: 1200,
 } satisfies OfficeCanvasViewport;
 
+const officeRotations = [
+  "south-east",
+  "south-west",
+  "north-west",
+  "north-east",
+] satisfies readonly OfficeRotation[];
+
 function intersects(left: Bounds, right: Bounds): boolean {
   return (
     left.left < right.right &&
@@ -38,9 +50,12 @@ function intersects(left: Bounds, right: Bounds): boolean {
   );
 }
 
-function nameplateCommands(): readonly OfficeCanvasNameplateCommand[] {
+function nameplateCommands(
+  teamId: TeamId = defaultTeam,
+  rotation: OfficeRotation = "south-east",
+): readonly OfficeCanvasNameplateCommand[] {
   const englishOffice = officeCopy.en;
-  const specialists = teamSpecialists.quant_strategy_desk;
+  const specialists = teamSpecialists[teamId];
   const agents: readonly OfficeAgent[] = [
     {
       id: "orchestrator",
@@ -71,11 +86,41 @@ function nameplateCommands(): readonly OfficeCanvasNameplateCommand[] {
     deskSlots: specialists.map((_, index) =>
       slotFor(index, englishOffice.station),
     ),
-    rotation: "south-east",
+    rotation,
   }).filter(
     (command): command is OfficeCanvasNameplateCommand =>
       command.kind === "nameplate",
   );
+}
+
+function frameBounds(frame: {
+  readonly height: number;
+  readonly width: number;
+  readonly x: number;
+  readonly y: number;
+}): Bounds {
+  return {
+    bottom: frame.y + frame.height,
+    left: frame.x,
+    right: frame.x + frame.width,
+    top: frame.y,
+  };
+}
+
+function expectNoOverlappingFrames(
+  frames: readonly {
+    readonly height: number;
+    readonly width: number;
+    readonly x: number;
+    readonly y: number;
+  }[],
+): void {
+  for (const [index, frame] of frames.entries()) {
+    const bounds = frameBounds(frame);
+    for (const laterFrame of frames.slice(index + 1)) {
+      expect(intersects(bounds, frameBounds(laterFrame))).toBe(false);
+    }
+  }
 }
 
 describe("officeNameplateFrame", () => {
@@ -87,30 +132,23 @@ describe("officeNameplateFrame", () => {
     expect(frames.every((frame) => frame.mode === "full")).toBe(true);
   });
 
+  it.each(officeRotations)(
+    "keeps default desktop canvas nameplates non-overlapping in %s rotation",
+    (rotation) => {
+      const frames = nameplateCommands(defaultTeam, rotation).map((command) =>
+        officeNameplateFrame(command, desktopViewport),
+      );
+
+      expectNoOverlappingFrames(frames);
+    },
+  );
+
   it("keeps mobile canvas nameplates compact and non-overlapping", () => {
     const frames = nameplateCommands().map((command) =>
       officeNameplateFrame(command, mobileViewport),
     );
 
     expect(frames.every((frame) => frame.mode === "compact")).toBe(true);
-
-    for (const [index, frame] of frames.entries()) {
-      const bounds = {
-        bottom: frame.y + frame.height,
-        left: frame.x,
-        right: frame.x + frame.width,
-        top: frame.y,
-      };
-      for (const laterFrame of frames.slice(index + 1)) {
-        expect(
-          intersects(bounds, {
-            bottom: laterFrame.y + laterFrame.height,
-            left: laterFrame.x,
-            right: laterFrame.x + laterFrame.width,
-            top: laterFrame.y,
-          }),
-        ).toBe(false);
-      }
-    }
+    expectNoOverlappingFrames(frames);
   });
 });

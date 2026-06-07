@@ -7,12 +7,30 @@ import {
   pushDeskCommands,
   pushOfficeFixtureCommands,
 } from "./orchestrator-office-canvas-fixtures";
+import { officeNameplateFrame } from "./orchestrator-office-canvas-nameplates";
 import type {
+  OfficeCanvasAgentCommand,
+  OfficeCanvasNameplateCommand,
+  OfficeCanvasViewport,
   OfficeCanvasScene,
   OfficeDrawCommand,
   OfficeRotation,
 } from "./orchestrator-office-canvas-types";
 import type { AgentTone, OfficeAgent } from "./orchestrator-office-scene-data";
+
+type NameplateBounds = {
+  readonly bottom: number;
+  readonly left: number;
+  readonly right: number;
+  readonly top: number;
+};
+
+const DESKTOP_NAMEPLATE_COLLISION_VIEWPORT = {
+  height: 760,
+  width: 1200,
+} satisfies OfficeCanvasViewport;
+const NAMEPLATE_COLLISION_GUTTER = 8;
+const NAMEPLATE_COLLISION_MAX_STEPS = 16;
 
 function assertNever(value: never): never {
   throw new Error(`Unhandled agent tone: ${value}`);
@@ -55,30 +73,95 @@ function pushCommandTable(
   });
 }
 
-function pushAgent(
-  commands: OfficeDrawCommand[],
+function nameplateBounds(command: OfficeCanvasNameplateCommand): NameplateBounds {
+  const frame = officeNameplateFrame(
+    command,
+    DESKTOP_NAMEPLATE_COLLISION_VIEWPORT,
+  );
+
+  return {
+    bottom: frame.y + frame.height,
+    left: frame.x,
+    right: frame.x + frame.width,
+    top: frame.y,
+  };
+}
+
+function boundsIntersect(left: NameplateBounds, right: NameplateBounds): boolean {
+  return (
+    left.left < right.right &&
+    left.right > right.left &&
+    left.top < right.bottom &&
+    left.bottom > right.top
+  );
+}
+
+function shiftNameplate(
+  command: OfficeCanvasNameplateCommand,
+  offsetY: number,
+): OfficeCanvasNameplateCommand {
+  return {
+    ...command,
+    at: { x: command.at.x, y: command.at.y + offsetY },
+  };
+}
+
+function avoidNameplateOverlaps(
+  command: OfficeCanvasNameplateCommand,
+  placedNameplates: readonly OfficeCanvasNameplateCommand[],
+): OfficeCanvasNameplateCommand {
+  let candidate = command;
+
+  for (let step = 0; step < NAMEPLATE_COLLISION_MAX_STEPS; step += 1) {
+    const candidateBounds = nameplateBounds(candidate);
+    const collision = placedNameplates.find((placedNameplate) =>
+      boundsIntersect(candidateBounds, nameplateBounds(placedNameplate)),
+    );
+
+    if (!collision) {
+      return candidate;
+    }
+
+    const collisionBounds = nameplateBounds(collision);
+    candidate = shiftNameplate(
+      candidate,
+      collisionBounds.bottom -
+        candidateBounds.top +
+        NAMEPLATE_COLLISION_GUTTER,
+    );
+  }
+
+  return candidate;
+}
+
+function agentCommands(
   agent: OfficeAgent,
   rotation: OfficeRotation,
-): void {
+): {
+  readonly agent: OfficeCanvasAgentCommand;
+  readonly nameplate: OfficeCanvasNameplateCommand;
+} {
   const feet = projectOfficePoint(agent.tile, rotation);
   const fill = stationTone(agent.tone);
 
-  commands.push({
-    at: feet,
-    fill,
-    isLead: agent.isLead === true,
-    kind: "agent",
-    shortLabel: agent.shortLabel,
-  });
-  commands.push({
-    accent: fill,
-    at: { x: feet.x, y: feet.y - (agent.isLead === true ? 186 : 102) },
-    isLead: agent.isLead === true,
-    kind: "nameplate",
-    label: agent.label,
-    shortLabel: agent.shortLabel,
-    station: agent.isLead === true ? agent.role : agent.station,
-  });
+  return {
+    agent: {
+      at: feet,
+      fill,
+      isLead: agent.isLead === true,
+      kind: "agent",
+      shortLabel: agent.shortLabel,
+    },
+    nameplate: {
+      accent: fill,
+      at: { x: feet.x, y: feet.y - (agent.isLead === true ? 186 : 102) },
+      isLead: agent.isLead === true,
+      kind: "nameplate",
+      label: agent.label,
+      shortLabel: agent.shortLabel,
+      station: agent.isLead === true ? agent.role : agent.station,
+    },
+  };
 }
 
 function pushAgents(
@@ -90,8 +173,17 @@ function pushAgents(
       officeDepth(left.tile, scene.rotation) -
       officeDepth(right.tile, scene.rotation),
   );
+  const placedNameplates: OfficeCanvasNameplateCommand[] = [];
+
   for (const agent of agents) {
-    pushAgent(commands, agent, scene.rotation);
+    const commandPair = agentCommands(agent, scene.rotation);
+    const nameplate = avoidNameplateOverlaps(
+      commandPair.nameplate,
+      placedNameplates,
+    );
+
+    commands.push(commandPair.agent, nameplate);
+    placedNameplates.push(nameplate);
   }
 }
 
