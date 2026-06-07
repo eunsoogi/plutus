@@ -29,6 +29,10 @@ const DESKTOP_NAMEPLATE_COLLISION_VIEWPORT = {
   height: 760,
   width: 1200,
 } satisfies OfficeCanvasViewport;
+const MOBILE_NAMEPLATE_COLLISION_VIEWPORT = {
+  height: 500,
+  width: 390,
+} satisfies OfficeCanvasViewport;
 const NAMEPLATE_COLLISION_GUTTER = 8;
 const NAMEPLATE_COLLISION_MAX_STEPS = 16;
 
@@ -73,21 +77,36 @@ function pushCommandTable(
   });
 }
 
-function nameplateBounds(command: OfficeCanvasNameplateCommand): NameplateBounds {
-  const frame = officeNameplateFrame(
+function nameplateBounds(
+  command: OfficeCanvasNameplateCommand,
+): NameplateBounds {
+  const desktopFrame = officeNameplateFrame(
     command,
     DESKTOP_NAMEPLATE_COLLISION_VIEWPORT,
   );
+  const mobileFrame = officeNameplateFrame(
+    command,
+    MOBILE_NAMEPLATE_COLLISION_VIEWPORT,
+  );
 
   return {
-    bottom: frame.y + frame.height,
-    left: frame.x,
-    right: frame.x + frame.width,
-    top: frame.y,
+    bottom: Math.max(
+      desktopFrame.y + desktopFrame.height,
+      mobileFrame.y + mobileFrame.height,
+    ),
+    left: Math.min(desktopFrame.x, mobileFrame.x),
+    right: Math.max(
+      desktopFrame.x + desktopFrame.width,
+      mobileFrame.x + mobileFrame.width,
+    ),
+    top: Math.min(desktopFrame.y, mobileFrame.y),
   };
 }
 
-function boundsIntersect(left: NameplateBounds, right: NameplateBounds): boolean {
+function boundsIntersect(
+  left: NameplateBounds,
+  right: NameplateBounds,
+): boolean {
   return (
     left.left < right.right &&
     left.right > right.left &&
@@ -125,9 +144,7 @@ function avoidNameplateOverlaps(
     const collisionBounds = nameplateBounds(collision);
     candidate = shiftNameplate(
       candidate,
-      collisionBounds.bottom -
-        candidateBounds.top +
-        NAMEPLATE_COLLISION_GUTTER,
+      collisionBounds.bottom - candidateBounds.top + NAMEPLATE_COLLISION_GUTTER,
     );
   }
 

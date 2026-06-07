@@ -1,4 +1,5 @@
 import { roundedRect } from "./orchestrator-office-canvas-render-primitives";
+import { officeRenderTransform } from "./orchestrator-office-canvas-render-frame";
 import type {
   OfficeCanvasNameplateCommand,
   OfficeCanvasViewport,
@@ -15,14 +16,19 @@ export type OfficeNameplateFrame = {
 };
 
 const MOBILE_LABEL_BREAKPOINT = 520;
+const MOBILE_COMPACT_NAMEPLATE_SIZE = {
+  height: 36,
+  width: 58,
+} as const;
 
 export function officeNameplateFrame(
   command: OfficeCanvasNameplateCommand,
   viewport: OfficeCanvasViewport,
 ): OfficeNameplateFrame {
   if (viewport.width <= MOBILE_LABEL_BREAKPOINT) {
-    const width = 58;
-    const height = 36;
+    const { scale } = officeRenderTransform(viewport);
+    const width = MOBILE_COMPACT_NAMEPLATE_SIZE.width / scale;
+    const height = MOBILE_COMPACT_NAMEPLATE_SIZE.height / scale;
     return {
       height,
       mode: "compact",
@@ -48,27 +54,42 @@ function renderCompactNameplate(
   command: OfficeCanvasNameplateCommand,
   frame: OfficeNameplateFrame,
 ): void {
-  roundedRect(context, frame.x, frame.y, frame.width, frame.height, 4);
+  const metricScale = frame.width / MOBILE_COMPACT_NAMEPLATE_SIZE.width;
+
+  roundedRect(
+    context,
+    frame.x,
+    frame.y,
+    frame.width,
+    frame.height,
+    4 * metricScale,
+  );
   context.fillStyle = "rgb(13 17 22 / 0.9)";
   context.fill();
   context.strokeStyle = command.accent;
-  context.lineWidth = 1.5;
+  context.lineWidth = 1.5 * metricScale;
   context.stroke();
 
   context.fillStyle = command.accent;
   context.beginPath();
-  context.arc(frame.x + 12, frame.y + frame.height / 2, 4.5, 0, Math.PI * 2);
+  context.arc(
+    frame.x + 12 * metricScale,
+    frame.y + frame.height / 2,
+    4.5 * metricScale,
+    0,
+    Math.PI * 2,
+  );
   context.fill();
 
   context.fillStyle = "#f8fafc";
-  context.font = "900 18px ui-monospace, SFMono-Regular, Menlo, monospace";
+  context.font = `900 ${18 * metricScale}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.fillText(
     command.shortLabel,
-    frame.x + frame.width / 2 + 5,
-    frame.y + frame.height / 2 + 0.5,
-    frame.width - 22,
+    frame.x + frame.width / 2 + 5 * metricScale,
+    frame.y + frame.height / 2 + 0.5 * metricScale,
+    frame.width - 22 * metricScale,
   );
 }
 
