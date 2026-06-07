@@ -83,7 +83,9 @@ describe("ui helpers", () => {
     const koreanOffice = officeCopy.ko;
     const markup = renderToStaticMarkup(
       createElement(OrchestratorOfficeScene, {
+        angle: 0,
         canvasChromeLabels: koreanOffice.canvasChrome,
+        onAngleDrag: () => {},
         orchestratorLabel: koreanOffice.orchestrator,
         rotation: "south-east",
         specialistLabels: koreanOffice.specialist,
@@ -108,7 +110,9 @@ describe("ui helpers", () => {
     const englishOffice = officeCopy.en;
     const markup = renderToStaticMarkup(
       createElement(OrchestratorOfficeScene, {
+        angle: 0,
         canvasChromeLabels: englishOffice.canvasChrome,
+        onAngleDrag: () => {},
         orchestratorLabel: englishOffice.orchestrator,
         rotation: "south-east",
         specialistLabels: englishOffice.specialist,
@@ -127,7 +131,7 @@ describe("ui helpers", () => {
     expect(markup).not.toContain("<svg");
   });
 
-  it("keeps the canvas office authored as a dense cockpit scene", () => {
+  it("keeps the canvas office richly staged with furniture and nameplate layers", () => {
     const englishOffice = officeCopy.en;
     const specialists = teamSpecialists.quant_strategy_desk;
     const agents = specialists.map((specialist, index) => ({

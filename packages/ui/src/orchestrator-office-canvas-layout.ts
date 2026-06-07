@@ -14,7 +14,7 @@ import type {
   OfficeCanvasViewport,
   OfficeCanvasScene,
   OfficeDrawCommand,
-  OfficeRotation,
+  OfficeProjection,
 } from "./orchestrator-office-canvas-types";
 import type { AgentTone, OfficeAgent } from "./orchestrator-office-scene-data";
 
@@ -66,13 +66,13 @@ function stationTone(tone: AgentTone): string {
 
 function pushCommandTable(
   commands: OfficeDrawCommand[],
-  rotation: OfficeRotation,
+  projection: OfficeProjection,
 ): void {
   commands.push({
     fill: "#232d37",
     kind: "polygon",
     lineWidth: 2,
-    points: officeFootprint(4.08, 3.54, 2.34, 1.24, rotation, 52),
+    points: officeFootprint(4.08, 3.54, 2.34, 1.24, projection, 52),
     stroke: "#a7d2ea",
   });
 }
@@ -153,12 +153,12 @@ function avoidNameplateOverlaps(
 
 function agentCommands(
   agent: OfficeAgent,
-  rotation: OfficeRotation,
+  projection: OfficeProjection,
 ): {
   readonly agent: OfficeCanvasAgentCommand;
   readonly nameplate: OfficeCanvasNameplateCommand;
 } {
-  const feet = projectOfficePoint(agent.tile, rotation);
+  const feet = projectOfficePoint(agent.tile, projection);
   const fill = stationTone(agent.tone);
 
   return {
@@ -185,15 +185,15 @@ function pushAgents(
   commands: OfficeDrawCommand[],
   scene: OfficeCanvasScene,
 ): void {
+  const projection = scene.angle ?? scene.rotation;
   const agents = [...scene.agents].sort(
     (left, right) =>
-      officeDepth(left.tile, scene.rotation) -
-      officeDepth(right.tile, scene.rotation),
+      officeDepth(left.tile, projection) - officeDepth(right.tile, projection),
   );
   const placedNameplates: OfficeCanvasNameplateCommand[] = [];
 
   for (const agent of agents) {
-    const commandPair = agentCommands(agent, scene.rotation);
+    const commandPair = agentCommands(agent, projection);
     const nameplate = avoidNameplateOverlaps(
       commandPair.nameplate,
       placedNameplates,
@@ -208,13 +208,14 @@ function pushDesks(
   commands: OfficeDrawCommand[],
   scene: OfficeCanvasScene,
 ): void {
+  const projection = scene.angle ?? scene.rotation;
   const desks = [...scene.deskSlots].sort(
     (left, right) =>
-      officeDepth(left.deskTile, scene.rotation) -
-      officeDepth(right.deskTile, scene.rotation),
+      officeDepth(left.deskTile, projection) -
+      officeDepth(right.deskTile, projection),
   );
   for (const [deskIndex, desk] of desks.entries()) {
-    pushDeskCommands(commands, desk, scene.rotation, deskIndex);
+    pushDeskCommands(commands, desk, projection, deskIndex);
   }
 }
 
@@ -222,9 +223,10 @@ export function buildOfficeDrawCommands(
   scene: OfficeCanvasScene,
 ): readonly OfficeDrawCommand[] {
   const commands: OfficeDrawCommand[] = [];
-  pushOfficeFixtureCommands(commands, scene.rotation);
+  const projection = scene.angle ?? scene.rotation;
+  pushOfficeFixtureCommands(commands, projection);
   pushDesks(commands, scene);
-  pushCommandTable(commands, scene.rotation);
+  pushCommandTable(commands, projection);
   pushAgents(commands, scene);
 
   return commands;

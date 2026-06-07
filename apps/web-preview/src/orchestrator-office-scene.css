@@ -1,10 +1,15 @@
 .pixel-office {
   background:
-    radial-gradient(circle at 52% 18%, rgb(255 255 255 / 9%), transparent 30%),
+    radial-gradient(
+      ellipse at 51% 56%,
+      rgb(255 243 214 / 11%),
+      transparent 40%
+    ),
+    radial-gradient(circle at 52% 18%, rgb(255 255 255 / 7%), transparent 28%),
     linear-gradient(180deg, #18191e 0%, #111317 40%, #08090b 100%);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 9%),
-    inset 0 -48px 88px rgb(0 0 0 / 42%);
+    inset 0 1px 0 rgb(255 255 255 / 7%),
+    inset 0 -40px 76px rgb(0 0 0 / 38%);
 }
 
 .pixel-office::before,
@@ -18,24 +23,30 @@
 
 .pixel-office::before {
   background:
-    linear-gradient(90deg, rgb(255 255 255 / 5%) 1px, transparent 1px),
-    linear-gradient(rgb(255 255 255 / 4%) 1px, transparent 1px);
+    linear-gradient(90deg, rgb(255 255 255 / 4%) 1px, transparent 1px),
+    linear-gradient(rgb(255 255 255 / 3%) 1px, transparent 1px);
   background-size: 40px 40px;
-  opacity: 0.26;
+  opacity: 0.14;
 }
 
 .pixel-office::after {
   background:
-    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 18%) 82%),
-    radial-gradient(circle at 50% 56%, transparent 30%, rgb(0 0 0 / 22%) 78%);
+    linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 16%) 82%),
+    radial-gradient(circle at 50% 58%, transparent 38%, rgb(0 0 0 / 18%) 80%);
 }
 
 .orchestrator-office__canvas {
+  cursor: grab;
   display: block;
   height: 100%;
   position: relative;
+  touch-action: none;
   width: 100%;
   z-index: 0;
+}
+
+.orchestrator-office__canvas[data-dragging="true"] {
+  cursor: grabbing;
 }
 
 .pixel-office__status-strip {
@@ -43,16 +54,16 @@
   background: rgb(13 17 22 / 88%);
   border: 1px solid rgb(159 210 234 / 28%);
   border-radius: 4px;
-  box-shadow: 0 16px 28px rgb(0 0 0 / 26%);
+  box-shadow: 0 14px 24px rgb(0 0 0 / 22%);
   color: #dbeafe;
   display: inline-flex;
   flex-wrap: wrap;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  gap: 10px;
+  gap: 8px;
   left: 14px;
   max-width: calc(100% - 28px);
-  padding: 9px 12px;
+  padding: 8px 10px;
   position: absolute;
   top: 12px;
   z-index: 3;
@@ -66,10 +77,10 @@
   color: #dbeafe;
   display: inline-flex;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   font-weight: 900;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 7px 9px;
   position: absolute;
   right: 14px;
   text-transform: uppercase;
@@ -81,7 +92,7 @@
   background: rgb(255 255 255 / 4%);
   border: 1px solid rgb(255 255 255 / 7%);
   border-radius: 3px;
-  padding: 5px 7px;
+  padding: 4px 6px;
 }
 
 .pixel-office__top-controls span:nth-child(2) {
@@ -90,10 +101,10 @@
 
 .pixel-office__side-tabs {
   display: grid;
-  gap: 6px;
+  gap: 5px;
   position: absolute;
   right: 8px;
-  top: 82px;
+  top: 76px;
   z-index: 3;
 }
 
@@ -103,10 +114,10 @@
   border-radius: 4px;
   color: #f5c65f;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.58rem;
+  font-size: 0.54rem;
   font-weight: 900;
-  letter-spacing: 0.08em;
-  padding: 9px 5px;
+  letter-spacing: 0.04em;
+  padding: 8px 4px;
   text-orientation: mixed;
   text-transform: uppercase;
   writing-mode: vertical-rl;
@@ -136,19 +147,19 @@
   border: 1px solid rgb(159 210 234 / 22%);
   border-radius: 3px;
   bottom: 12px;
-  box-shadow: 0 14px 28px rgb(0 0 0 / 28%);
+  box-shadow: 0 12px 24px rgb(0 0 0 / 24%);
   color: #b7f3ff;
   display: inline-flex;
   flex-wrap: wrap;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.66rem;
+  font-size: 0.61rem;
   font-weight: 800;
-  gap: 12px;
+  gap: 8px;
   left: 14px;
   letter-spacing: 0.06em;
   max-width: calc(100% - 28px);
-  min-width: min(430px, calc(100% - 28px));
-  padding: 10px 12px;
+  min-width: min(340px, calc(100% - 28px));
+  padding: 8px 10px;
   position: absolute;
   text-transform: uppercase;
   z-index: 3;

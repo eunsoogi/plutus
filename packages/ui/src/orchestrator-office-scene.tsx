@@ -13,7 +13,9 @@ import {
 import type { SpecialistId } from "./orchestrator-office-teams";
 
 export function OrchestratorOfficeScene({
+  angle,
   canvasChromeLabels,
+  onAngleDrag,
   orchestratorLabel,
   stationLabels,
   specialistLabels,
@@ -22,7 +24,9 @@ export function OrchestratorOfficeScene({
   teamLabel,
   rotation,
 }: {
+  readonly angle: number;
   readonly canvasChromeLabels: OfficeCanvasChromeLabels;
+  readonly onAngleDrag: (deltaX: number) => void;
   readonly orchestratorLabel: string;
   readonly rotation: OfficeRotation;
   readonly stationLabels: OfficeStationLabels;
@@ -62,10 +66,11 @@ export function OrchestratorOfficeScene({
   const canvasScene = useMemo(
     () => ({
       agents,
+      angle,
       deskSlots,
       rotation,
     }),
-    [agents, deskSlots, rotation],
+    [agents, angle, deskSlots, rotation],
   );
 
   return (
@@ -98,7 +103,7 @@ export function OrchestratorOfficeScene({
         <span>{canvasChromeLabels.market}</span>
         <span>{canvasChromeLabels.analytics}</span>
       </div>
-      <OrchestratorOfficeCanvas scene={canvasScene} />
+      <OrchestratorOfficeCanvas onAngleDrag={onAngleDrag} scene={canvasScene} />
       <ul
         className="orchestrator-office__scene-mirror"
         data-testid="orchestrator-office-canvas-mirror"

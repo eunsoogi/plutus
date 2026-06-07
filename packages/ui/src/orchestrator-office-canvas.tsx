@@ -1,15 +1,36 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { buildOfficeDrawCommands } from "./orchestrator-office-canvas-layout";
+import {
+  reduceOfficeCanvasPointerDrag,
+  type OfficeCanvasDrag,
+} from "./orchestrator-office-canvas-drag";
 import { renderOfficeCanvas } from "./orchestrator-office-canvas-renderer";
 import type { OfficeCanvasScene } from "./orchestrator-office-canvas-types";
 
+function serializeOfficeYaw(angle: number | undefined): string {
+  const safeAngle =
+    typeof angle === "number" && Number.isFinite(angle) ? angle : 0;
+  const roundedAngle = Math.round(safeAngle * 100) / 100;
+
+  if (Object.is(roundedAngle, -0) || roundedAngle === 0) {
+    return "0";
+  }
+
+  return roundedAngle.toString();
+}
+
 export function OrchestratorOfficeCanvas({
+  onAngleDrag,
   scene,
 }: {
+  readonly onAngleDrag: (deltaX: number) => void;
   readonly scene: OfficeCanvasScene;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const dragRef = useRef<OfficeCanvasDrag | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const commands = useMemo(() => buildOfficeDrawCommands(scene), [scene]);
+  const yaw = serializeOfficeYaw(scene.angle);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -44,12 +65,82 @@ export function OrchestratorOfficeCanvas({
     return () => observer.disconnect();
   }, [commands]);
 
+  const releasePointerCapture = (
+    canvas: HTMLCanvasElement,
+    pointerId: number,
+  ) => {
+    if (canvas.hasPointerCapture(pointerId)) {
+      canvas.releasePointerCapture(pointerId);
+    }
+  };
+
   return (
     <canvas
       aria-hidden="true"
       className="orchestrator-office__canvas"
       data-office-rotation={scene.rotation}
+      data-office-yaw={yaw}
+      data-dragging={isDragging ? "true" : "false"}
       data-testid="orchestrator-office-canvas"
+      onPointerCancel={(event) => {
+        const transition = reduceOfficeCanvasPointerDrag(dragRef.current, {
+          clientX: event.clientX,
+          kind: "pointercancel",
+          pointerId: event.pointerId,
+        });
+
+        dragRef.current = transition.nextDrag;
+        setIsDragging(transition.nextDrag !== null);
+
+        if (transition.shouldRelease) {
+          releasePointerCapture(event.currentTarget, event.pointerId);
+        }
+      }}
+      onPointerDown={(event) => {
+        const transition = reduceOfficeCanvasPointerDrag(dragRef.current, {
+          clientX: event.clientX,
+          isPrimary: event.isPrimary,
+          kind: "pointerdown",
+          pointerId: event.pointerId,
+        });
+
+        dragRef.current = transition.nextDrag;
+        setIsDragging(transition.nextDrag !== null);
+
+        if (transition.shouldCapture) {
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }
+      }}
+      onPointerMove={(event) => {
+        const transition = reduceOfficeCanvasPointerDrag(dragRef.current, {
+          clientX: event.clientX,
+          isPrimary: event.isPrimary,
+          kind: "pointermove",
+          pointerId: event.pointerId,
+        });
+
+        dragRef.current = transition.nextDrag;
+
+        if (transition.deltaX === null) {
+          return;
+        }
+
+        onAngleDrag(transition.deltaX);
+      }}
+      onPointerUp={(event) => {
+        const transition = reduceOfficeCanvasPointerDrag(dragRef.current, {
+          clientX: event.clientX,
+          kind: "pointerup",
+          pointerId: event.pointerId,
+        });
+
+        dragRef.current = transition.nextDrag;
+        setIsDragging(transition.nextDrag !== null);
+
+        if (transition.shouldRelease) {
+          releasePointerCapture(event.currentTarget, event.pointerId);
+        }
+      }}
       ref={canvasRef}
     />
   );

@@ -64,31 +64,31 @@ const defaultStationLabels = officeCopy.en.station;
 
 const defaultSpecialistSlot = slot(
   "market_desk",
-  point(1.55, 1.8),
-  point(2.75, 3.25),
+  point(0.95, 2.05),
+  point(2.1, 3.35),
 );
 
 const specialistSlots = [
   defaultSpecialistSlot,
   slot(
     "strategy_board",
-    point(5.95, 1.35),
-    point(7.05, 2.8),
+    point(6.45, 1.1),
+    point(7.75, 2.45),
   ),
   slot(
     "risk_table",
-    point(7.05, 4.15),
-    point(7.95, 5.45),
+    point(7.55, 4.55),
+    point(8.45, 5.85),
   ),
   slot(
     "report_bay",
-    point(1.9, 4.75),
-    point(4.25, 5.7),
+    point(1.05, 5.15),
+    point(3.1, 6.05),
   ),
   slot(
     "signal_booth",
-    point(3.35, 0.9),
-    point(4.4, 2.15),
+    point(2.55, 0.8),
+    point(3.6, 2.0),
   ),
 ] satisfies readonly AgentSlotLayout[];
 

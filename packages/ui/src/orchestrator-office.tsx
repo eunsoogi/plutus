@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AppLocale } from "./core";
 import { useI18n } from "./i18n";
-import { nextOfficeRotation } from "./orchestrator-office-canvas-geometry";
-import type {
-  OfficeRotation,
-  OfficeRotationDirection,
-} from "./orchestrator-office-canvas-types";
+import {
+  nextOfficeYaw,
+  normalizeOfficeYaw,
+  officeRotationForYaw,
+  officeYawForRotation,
+} from "./orchestrator-office-canvas-geometry";
+import type { OfficeRotationDirection } from "./orchestrator-office-canvas-types";
 import { officeCopy } from "./orchestrator-office-copy";
 import { OrchestratorOfficeScene } from "./orchestrator-office-scene";
 import { slotFor } from "./orchestrator-office-scene-data";
@@ -92,16 +94,17 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
   const { locale } = useI18n();
   const text = officeCopy[locale];
   const [selectedTeam, setSelectedTeam] = useState(() => selectedTeamFor(run));
-  const [rotation, setRotation] = useState<OfficeRotation>("south-east");
+  const [angle, setAngle] = useState(() => officeYawForRotation("south-east"));
 
   useEffect(() => {
     setSelectedTeam(selectedTeamFor(run));
   }, [run.finalCard?.selectedTeam, run.id, run.selectedTeam]);
 
   const rotateOffice = useCallback((direction: OfficeRotationDirection) => {
-    setRotation((currentRotation) =>
-      nextOfficeRotation(currentRotation, direction),
-    );
+    setAngle((currentAngle) => nextOfficeYaw(currentAngle, direction));
+  }, []);
+  const dragOfficeAngle = useCallback((deltaX: number) => {
+    setAngle((currentAngle) => normalizeOfficeYaw(currentAngle + deltaX * 0.35));
   }, []);
 
   const activeTeam = rosterTeamFor(selectedTeam);
@@ -110,6 +113,7 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
   const teamOptions: readonly string[] = isKnownTeam(selectedTeam)
     ? orderedTeamIds
     : [selectedTeam, ...orderedTeamIds];
+  const rotation = officeRotationForYaw(angle);
   const rotationLabel = text.rotation[rotation];
   const specialists = specialistsFor(activeTeam);
   const stage = stageFor(run, locale);
@@ -187,8 +191,10 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
             </div>
           </div>
           <OrchestratorOfficeScene
+            angle={angle}
             canvasChromeLabels={text.canvasChrome}
             orchestratorLabel={text.orchestrator}
+            onAngleDrag={dragOfficeAngle}
             rotation={rotation}
             stage={sceneStageLabel(stage, run.status)}
             stationLabels={text.station}

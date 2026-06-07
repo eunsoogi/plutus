@@ -1,6 +1,7 @@
 import type {
   OfficeCanvasPoint,
   OfficeCanvasQuad,
+  OfficeProjection,
   OfficeRotation,
   OfficeRotationDirection,
 } from "./orchestrator-office-canvas-types";
@@ -14,6 +15,20 @@ export const OFFICE_GRID = {
   columns: 10,
   rows: 7,
 } as const;
+
+const OFFICE_YAW_BY_ROTATION: Readonly<Record<OfficeRotation, number>> = {
+  "south-east": 0,
+  "south-west": 90,
+  "north-west": 180,
+  "north-east": 270,
+} as const;
+
+const OFFICE_ROTATION_BY_YAW: readonly OfficeRotation[] = [
+  "south-east",
+  "south-west",
+  "north-west",
+  "north-east",
+] as const;
 
 const TILE_SIZE = {
   height: 74,
@@ -32,6 +47,56 @@ type OfficeBounds = {
 
 function assertNever(value: never): never {
   throw new Error(`Unhandled office rotation: ${value}`);
+}
+
+export function normalizeOfficeYaw(angle: number): number {
+  if (!Number.isFinite(angle)) {
+    return 0;
+  }
+
+  const normalized = angle % 360;
+  return normalized < 0 ? normalized + 360 : normalized;
+}
+
+export function officeRotationForYaw(angle: number): OfficeRotation {
+  const normalizedYaw = normalizeOfficeYaw(angle);
+  const index = Math.round(normalizedYaw / 90) % OFFICE_ROTATION_BY_YAW.length;
+  return OFFICE_ROTATION_BY_YAW[index];
+}
+
+export function officeYawForRotation(rotation: OfficeRotation): number {
+  return OFFICE_YAW_BY_ROTATION[rotation];
+}
+
+export function nextOfficeYaw(
+  angle: number,
+  direction: OfficeRotationDirection,
+): number {
+  const delta = direction === "right" ? 90 : -90;
+  return normalizeOfficeYaw(angle + delta);
+}
+
+function officeYawForProjection(projection: OfficeProjection): number {
+  return typeof projection === "number"
+    ? normalizeOfficeYaw(projection)
+    : officeYawForRotation(projection);
+}
+
+function officeProjectionAxes(
+  point: OfficeCanvasPoint,
+  projection: OfficeProjection,
+): {
+  readonly rotatedX: number;
+  readonly rotatedY: number;
+} {
+  const yaw = (officeYawForProjection(projection) * Math.PI) / 180;
+  const centeredX = point.x - OFFICE_GRID.columns / 2;
+  const centeredY = point.y - OFFICE_GRID.rows / 2;
+
+  return {
+    rotatedX: centeredX * Math.cos(yaw) - centeredY * Math.sin(yaw),
+    rotatedY: centeredX * Math.sin(yaw) + centeredY * Math.cos(yaw),
+  };
 }
 
 export function nextOfficeRotation(
@@ -103,18 +168,15 @@ export function rotateOfficePoint(
 
 export function projectOfficePoint(
   point: OfficeCanvasPoint,
-  rotation: OfficeRotation,
+  projection: OfficeProjection,
   lift = 0,
 ): OfficeCanvasPoint {
-  const rotated = rotateOfficePoint(point, rotation);
-  const bounds = officeBoundsFor(rotation);
-  const centeredX = rotated.x - bounds.columns / 2;
-  const centeredY = rotated.y - bounds.rows / 2;
+  const { rotatedX, rotatedY } = officeProjectionAxes(point, projection);
 
   return {
-    x: OFFICE_CENTER.x + (centeredX - centeredY) * (TILE_SIZE.width / 2),
+    x: OFFICE_CENTER.x + (rotatedX - rotatedY) * (TILE_SIZE.width / 2),
     y:
-      OFFICE_CENTER.y + (centeredX + centeredY) * (TILE_SIZE.height / 2) - lift,
+      OFFICE_CENTER.y + (rotatedX + rotatedY) * (TILE_SIZE.height / 2) - lift,
   };
 }
 
@@ -123,21 +185,21 @@ export function officeFootprint(
   y: number,
   width: number,
   depth: number,
-  rotation: OfficeRotation,
+  projection: OfficeProjection,
   lift = 0,
 ): OfficeCanvasQuad {
   return [
-    projectOfficePoint({ x, y }, rotation, lift),
-    projectOfficePoint({ x: x + width, y }, rotation, lift),
-    projectOfficePoint({ x: x + width, y: y + depth }, rotation, lift),
-    projectOfficePoint({ x, y: y + depth }, rotation, lift),
+    projectOfficePoint({ x, y }, projection, lift),
+    projectOfficePoint({ x: x + width, y }, projection, lift),
+    projectOfficePoint({ x: x + width, y: y + depth }, projection, lift),
+    projectOfficePoint({ x, y: y + depth }, projection, lift),
   ];
 }
 
 export function officeDepth(
   point: OfficeCanvasPoint,
-  rotation: OfficeRotation,
+  projection: OfficeProjection,
 ): number {
-  const rotated = rotateOfficePoint(point, rotation);
-  return rotated.x + rotated.y;
+  const { rotatedX, rotatedY } = officeProjectionAxes(point, projection);
+  return rotatedX + rotatedY;
 }

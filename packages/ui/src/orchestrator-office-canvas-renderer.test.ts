@@ -37,6 +37,7 @@ const mobileCompactCssSize = {
   height: 36,
   width: 58,
 } as const;
+const mobileViewportGutter = 8;
 
 const officeRotations = [
   "south-east",
@@ -115,6 +116,25 @@ function frameBounds(frame: {
   };
 }
 
+function renderedFrameBounds(
+  frame: {
+    readonly height: number;
+    readonly width: number;
+    readonly x: number;
+    readonly y: number;
+  },
+  viewport: OfficeCanvasViewport,
+): Bounds {
+  const { offsetX, offsetY, scale } = officeRenderTransform(viewport);
+
+  return {
+    bottom: (frame.y + frame.height) * scale + offsetY,
+    left: frame.x * scale + offsetX,
+    right: (frame.x + frame.width) * scale + offsetX,
+    top: frame.y * scale + offsetY,
+  };
+}
+
 function expectNoOverlappingFrames(
   frames: readonly {
     readonly height: number;
@@ -128,6 +148,26 @@ function expectNoOverlappingFrames(
     for (const laterFrame of frames.slice(index + 1)) {
       expect(intersects(bounds, frameBounds(laterFrame))).toBe(false);
     }
+  }
+}
+
+function expectRenderedFramesStayInsideViewportGutter(
+  frames: readonly {
+    readonly height: number;
+    readonly width: number;
+    readonly x: number;
+    readonly y: number;
+  }[],
+  viewport: OfficeCanvasViewport,
+  gutter: number,
+): void {
+  for (const frame of frames) {
+    const bounds = renderedFrameBounds(frame, viewport);
+
+    expect(bounds.left).toBeGreaterThanOrEqual(gutter);
+    expect(bounds.right).toBeLessThanOrEqual(viewport.width - gutter);
+    expect(bounds.top).toBeGreaterThanOrEqual(gutter);
+    expect(bounds.bottom).toBeLessThanOrEqual(viewport.height - gutter);
   }
 }
 
@@ -176,4 +216,20 @@ describe("officeNameplateFrame", () => {
     }
     expectNoOverlappingFrames(frames);
   });
+
+  it.each(mobileNameplateCases)(
+    "keeps rendered mobile compact nameplates inside the viewport gutter for $teamId in $rotation",
+    ({ rotation, teamId }) => {
+      const frames = nameplateCommands(teamId, rotation).map((command) =>
+        officeNameplateFrame(command, mobileViewport),
+      );
+
+      expectRenderedFramesStayInsideViewportGutter(
+        frames,
+        mobileViewport,
+        mobileViewportGutter,
+      );
+    },
+  );
+
 });

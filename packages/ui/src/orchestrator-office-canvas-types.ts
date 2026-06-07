@@ -7,6 +7,8 @@ export type OfficeRotation =
   | "north-east";
 
 export type OfficeRotationDirection = "left" | "right";
+export type OfficeProjection = OfficeRotation | number;
+export type OfficeVolumeSurface = "shadow" | "front" | "side" | "top";
 
 export type OfficeCanvasPoint = {
   readonly x: number;
@@ -27,11 +29,17 @@ export type OfficeCanvasViewport = {
 
 export type OfficeCanvasScene = {
   readonly agents: readonly OfficeAgent[];
+  readonly angle?: number;
   readonly deskSlots: readonly AgentSlot[];
   readonly rotation: OfficeRotation;
 };
 
-export type OfficeCanvasPolygonCommand = {
+type OfficeCanvasVolumeMeta = {
+  readonly surface?: OfficeVolumeSurface;
+  readonly volumeId?: string;
+};
+
+export type OfficeCanvasPolygonCommand = OfficeCanvasVolumeMeta & {
   readonly kind: "polygon";
   readonly points: readonly OfficeCanvasPoint[];
   readonly fill: string;
@@ -40,7 +48,7 @@ export type OfficeCanvasPolygonCommand = {
   readonly alpha?: number;
 };
 
-export type OfficeCanvasRectCommand = {
+export type OfficeCanvasRectCommand = OfficeCanvasVolumeMeta & {
   readonly kind: "rect";
   readonly x: number;
   readonly y: number;

@@ -9,14 +9,14 @@ import { pushFurniture } from "./orchestrator-office-canvas-furniture";
 import type {
   OfficeCanvasPoint,
   OfficeDrawCommand,
-  OfficeRotation,
+  OfficeProjection,
 } from "./orchestrator-office-canvas-types";
 import type { AgentSlot } from "./orchestrator-office-scene-data";
 
 function wallPanel(
   start: OfficeCanvasPoint,
   end: OfficeCanvasPoint,
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
   height: number,
 ): readonly OfficeCanvasPoint[] {
   return [
@@ -29,7 +29,7 @@ function wallPanel(
 
 function pushFloor(
   commands: OfficeDrawCommand[],
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
 ): void {
   commands.push({
     fill: "#10100d",
@@ -80,7 +80,7 @@ function pushFloor(
 
 function pushRooms(
   commands: OfficeDrawCommand[],
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
 ): void {
   const partitions = [
     [
@@ -132,7 +132,7 @@ function pushRooms(
 export function pushDeskCommands(
   commands: OfficeDrawCommand[],
   slot: AgentSlot,
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
   deskIndex: number,
 ): void {
   const volumeId = `desk-${deskIndex}`;
@@ -233,7 +233,7 @@ export function pushDeskCommands(
 
 export function pushOfficeFixtureCommands(
   commands: OfficeDrawCommand[],
-  rotation: OfficeRotation,
+  rotation: OfficeProjection,
 ): void {
   pushFloor(commands, rotation);
   pushRooms(commands, rotation);

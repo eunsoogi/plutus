@@ -127,15 +127,44 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
         .join("|");
     });
   const initialCanvasSignature = await canvasSignature();
-  await page.getByTestId("orchestrator-office-rotate-right").click();
-  await expect(page.getByTestId("orchestrator-office-canvas")).toHaveAttribute(
-    "data-office-rotation",
-    "south-west",
-  );
+  const canvasBounds = await page
+    .getByTestId("orchestrator-office-canvas")
+    .boundingBox();
+  expect(canvasBounds).not.toBeNull();
+  if (canvasBounds === null) {
+    throw new Error("Office canvas bounds were not available");
+  }
+  const dragStartX = canvasBounds.x + canvasBounds.width * 0.54;
+  const dragStartY = canvasBounds.y + canvasBounds.height * 0.5;
+  const dragEndX = dragStartX + canvasBounds.width * 0.28;
+  await page.mouse.move(dragStartX, dragStartY);
+  await page.mouse.down();
+  await page.mouse.move(dragEndX, dragStartY, { steps: 16 });
+  await page.mouse.up();
+  await expect.poll(canvasSignature).not.toBe(initialCanvasSignature);
+  const postDragCanvas = page.getByTestId("orchestrator-office-canvas");
+  const postDragState = await postDragCanvas.evaluate((node) => {
+    if (!(node instanceof HTMLCanvasElement)) {
+      return { rotation: null, yaw: null };
+    }
+
+    return {
+      rotation: node.getAttribute("data-office-rotation"),
+      yaw: node.getAttribute("data-office-yaw"),
+    };
+  });
+  if (postDragState.yaw !== null) {
+    await expect(postDragCanvas).not.toHaveAttribute("data-office-yaw", "0");
+  }
+  if (postDragState.rotation !== null) {
+    await expect(postDragCanvas).not.toHaveAttribute(
+      "data-office-rotation",
+      "south-east",
+    );
+  }
   await expect(
     page.getByTestId("orchestrator-office-rotation-label"),
   ).toHaveText("South West");
-  await expect.poll(canvasSignature).not.toBe(initialCanvasSignature);
   await expect(page.getByTestId("orchestrator-office")).toContainText(
     "No live trading",
   );

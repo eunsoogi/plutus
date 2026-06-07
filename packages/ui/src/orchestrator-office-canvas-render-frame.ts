@@ -31,7 +31,7 @@ const MOBILE_FRAME: OfficeRenderFrame = {
   centerX: 600,
   centerY: 418,
   height: 720,
-  width: 900,
+  width: 950,
 };
 
 function renderFrameFor(viewport: OfficeCanvasViewport): OfficeRenderFrame {
