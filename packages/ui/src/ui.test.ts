@@ -1,5 +1,5 @@
-import { createRequire } from "node:module";
 import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
   formatCurrency,
@@ -14,9 +14,6 @@ import { sceneStageLabel } from "./orchestrator-office";
 import { OrchestratorOfficeScene } from "./orchestrator-office-scene";
 import { slotFor } from "./orchestrator-office-scene-data";
 import { teamSpecialists } from "./orchestrator-office-teams";
-
-const require = createRequire(import.meta.url);
-const { renderToStaticMarkup } = require("react-dom/server");
 
 describe("ui helpers", () => {
   it("formats compact financial values and risk states used by the preview", () => {
