@@ -67,10 +67,9 @@ function riskSummary(run: OrchestratorOfficeRun, locale: AppLocale) {
   }`;
 }
 
-function sceneStageLabel(stage: string, status: string) {
-  return stage.toLowerCase() === status.toLowerCase()
-    ? stage
-    : `${stage} · ${status}`;
+export function sceneStageLabel(stage: string, status: string) {
+  void status;
+  return stage;
 }
 
 export function OrchestratorOffice({ run }: { run: OrchestratorOfficeRun }) {

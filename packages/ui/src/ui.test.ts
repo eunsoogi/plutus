@@ -7,6 +7,7 @@ import {
   riskToneForCategory,
   translate,
 } from "./index";
+import { sceneStageLabel } from "./orchestrator-office";
 import { slotFor } from "./orchestrator-office-scene-data";
 import { teamSpecialists } from "./orchestrator-office-teams";
 
@@ -54,5 +55,11 @@ describe("ui helpers", () => {
       );
       expect(new Set(slotClasses).size).toBe(slotClasses.length);
     }
+  });
+
+  it("keeps Korean office stage labels localized without raw run statuses", () => {
+    expect(sceneStageLabel("계획", "queued")).toBe("계획");
+    expect(sceneStageLabel("계획", "ready")).toBe("계획");
+    expect(sceneStageLabel("완료", "completed")).toBe("완료");
   });
 });
