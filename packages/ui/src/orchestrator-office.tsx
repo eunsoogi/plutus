@@ -46,21 +46,16 @@ export type OrchestratorOfficeRun = {
   };
 };
 
-function selectedTeamFor(run: OrchestratorOfficeRun) {
+function selectedTeamFor(run: OrchestratorOfficeRun): string {
   return run.selectedTeam ?? run.finalCard?.selectedTeam ?? defaultTeam;
 }
 
-function activeTeamFor(run: OrchestratorOfficeRun): TeamId {
-  const selectedTeam = selectedTeamFor(run);
+function rosterTeamFor(selectedTeam: string): TeamId {
   return isKnownTeam(selectedTeam) ? selectedTeam : defaultTeam;
 }
 
 function specialistsFor(team: TeamId): readonly SpecialistId[] {
   return teamSpecialists[team];
-}
-
-function nextTeam(currentTeam: TeamId, candidate: string): TeamId {
-  return isKnownTeam(candidate) ? candidate : currentTeam;
 }
 
 function stageFor(run: OrchestratorOfficeRun, locale: AppLocale) {
@@ -99,11 +94,11 @@ export function OrchestratorOffice({ run }: { run: OrchestratorOfficeRun }) {
 function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
   const { locale } = useI18n();
   const text = officeCopy[locale];
-  const [team, setTeam] = useState<TeamId>(() => activeTeamFor(run));
+  const [selectedTeam, setSelectedTeam] = useState(() => selectedTeamFor(run));
   const [rotation, setRotation] = useState<OfficeRotation>("south-east");
 
   useEffect(() => {
-    setTeam(activeTeamFor(run));
+    setSelectedTeam(selectedTeamFor(run));
   }, [run.finalCard?.selectedTeam, run.id, run.selectedTeam]);
 
   const rotateOffice = useCallback((direction: OfficeRotationDirection) => {
@@ -112,9 +107,14 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
     );
   }, []);
 
-  const teamLabel = officeTeamLabel(team, locale);
+  const activeTeam = rosterTeamFor(selectedTeam);
+  const selectedTeamLabel = officeTeamLabel(selectedTeam, locale);
+  const activeTeamLabel = officeTeamLabel(activeTeam, locale);
+  const teamOptions: readonly string[] = isKnownTeam(selectedTeam)
+    ? orderedTeamIds
+    : [selectedTeam, ...orderedTeamIds];
   const rotationLabel = officeRotationLabel(rotation);
-  const specialists = specialistsFor(team);
+  const specialists = specialistsFor(activeTeam);
   const stage = stageFor(run, locale);
   const teamRoster = specialists.map((specialist, index) => ({
     id: specialist,
@@ -135,7 +135,7 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
             <p>
               {text.selectedTeam}:{" "}
               <strong data-testid="orchestrator-office-team-name">
-                {teamLabel}
+                {selectedTeamLabel}
               </strong>
             </p>
           </div>
@@ -153,14 +153,11 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
               <select
                 data-testid="orchestrator-office-team-select"
                 onChange={(event) => {
-                  const candidateTeam = event.currentTarget.value;
-                  setTeam((currentTeam) =>
-                    nextTeam(currentTeam, candidateTeam),
-                  );
+                  setSelectedTeam(event.currentTarget.value);
                 }}
-                value={team}
+                value={selectedTeam}
               >
-                {orderedTeamIds.map((teamId) => (
+                {teamOptions.map((teamId) => (
                   <option key={teamId} value={teamId}>
                     {officeTeamLabel(teamId, locale)}
                   </option>
@@ -199,7 +196,7 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
             stationLabels={text.station}
             specialistLabels={text.specialist}
             specialists={specialists}
-            teamLabel={teamLabel}
+            teamLabel={activeTeamLabel}
           />
         </div>
         <aside

@@ -183,6 +183,28 @@ describe("ui helpers", () => {
     expect(markup).not.toContain("Quant Strategy Desk</strong>");
   });
 
+  it("displays an unknown selected office team with the default roster fallback", () => {
+    const run = {
+      category: "portfolio_review",
+      finalCard: {
+        selectedTeam: "quant_strategy_desk",
+      },
+      id: "run-legacy-team",
+      selectedTeam: "legacy_alpha_desk",
+      status: "completed",
+      title: "Legacy team run",
+    } satisfies OrchestratorOfficeRun;
+
+    const markup = renderToStaticMarkup(
+      createElement(OrchestratorOffice, { run }),
+    );
+
+    expect(markup).toContain("legacy_alpha_desk</strong>");
+    expect(markup).toContain('value="legacy_alpha_desk"');
+    expect(markup).toContain("Portfolio Manager");
+    expect(markup).not.toContain("Quant Strategy Researcher");
+  });
+
   it("keeps the office guard stable when an empty run is followed by a populated run", () => {
     const emptyRun = {
       category: "",
