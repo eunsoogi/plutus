@@ -10,10 +10,20 @@ import {
   translate,
 } from "./index";
 import { officeCopy } from "./orchestrator-office-copy";
-import { sceneStageLabel } from "./orchestrator-office";
+import {
+  OrchestratorOffice,
+  sceneStageLabel,
+  type OrchestratorOfficeRun,
+} from "./orchestrator-office";
+import {
+  nextOfficeRotation,
+  officeRotationLabel,
+  projectOfficePoint,
+} from "./orchestrator-office-canvas-geometry";
+import { buildOfficeDrawCommands } from "./orchestrator-office-canvas-layout";
 import { OrchestratorOfficeScene } from "./orchestrator-office-scene";
 import { slotFor } from "./orchestrator-office-scene-data";
-import { teamSpecialists } from "./orchestrator-office-teams";
+import { officeTeamLabel, teamSpecialists } from "./orchestrator-office-teams";
 
 describe("ui helpers", () => {
   it("formats compact financial values and risk states used by the preview", () => {
@@ -54,10 +64,11 @@ describe("ui helpers", () => {
 
   it("assigns each selected specialist a unique office slot", () => {
     for (const specialists of Object.values(teamSpecialists)) {
-      const slotClasses = specialists.map(
-        (_, index) => slotFor(index).slotClass,
+      const slotKeys = specialists.map(
+        (_, index) =>
+          `${slotFor(index).deskTile.x}:${slotFor(index).deskTile.y}`,
       );
-      expect(new Set(slotClasses).size).toBe(slotClasses.length);
+      expect(new Set(slotKeys).size).toBe(slotKeys.length);
     }
   });
 
@@ -72,10 +83,12 @@ describe("ui helpers", () => {
     const markup = renderToStaticMarkup(
       createElement(OrchestratorOfficeScene, {
         orchestratorLabel: koreanOffice.orchestrator,
+        rotation: "south-east",
         specialistLabels: koreanOffice.specialist,
         specialists: teamSpecialists.portfolio_review_committee,
         stage: koreanOffice.stage.planning,
         stationLabels: koreanOffice.station,
+        teamLabel: "포트폴리오 리뷰 위원회",
       }),
     );
 
@@ -87,5 +100,152 @@ describe("ui helpers", () => {
     expect(markup).not.toContain("Strategy board");
     expect(markup).not.toContain("Risk table");
     expect(markup).not.toContain("Command table");
+  });
+
+  it("renders the office scene through an accessible canvas shell", () => {
+    const englishOffice = officeCopy.en;
+    const markup = renderToStaticMarkup(
+      createElement(OrchestratorOfficeScene, {
+        orchestratorLabel: englishOffice.orchestrator,
+        rotation: "south-east",
+        specialistLabels: englishOffice.specialist,
+        specialists: teamSpecialists.quant_strategy_desk,
+        stage: englishOffice.stage.executing,
+        stationLabels: englishOffice.station,
+        teamLabel: "Quant Strategy Desk",
+      }),
+    );
+
+    expect(markup).toContain('data-testid="orchestrator-office-canvas"');
+    expect(markup).toContain('aria-hidden="true"');
+    expect(markup).toContain('data-office-rotation="south-east"');
+    expect(markup).toContain("Market Data Researcher");
+    expect(markup).toContain("Research Orchestrator");
+    expect(markup).not.toContain("<svg");
+  });
+
+  it("keeps the canvas office authored as a dense cockpit scene", () => {
+    const englishOffice = officeCopy.en;
+    const specialists = teamSpecialists.quant_strategy_desk;
+    const agents = specialists.map((specialist, index) => ({
+      id: specialist,
+      isLead: false,
+      label: englishOffice.specialist[specialist],
+      role: englishOffice.station.market_desk,
+      shortLabel: "A",
+      station: slotFor(index, englishOffice.station).station,
+      testId: specialist,
+      tile: slotFor(index, englishOffice.station).agentTile,
+      tone: "cyan" as const,
+    }));
+    const commands = buildOfficeDrawCommands({
+      agents,
+      deskSlots: specialists.map((_, index) =>
+        slotFor(index, englishOffice.station),
+      ),
+      rotation: "south-east",
+    });
+
+    expect(commands.length).toBeGreaterThanOrEqual(170);
+    expect(
+      commands.filter((command) => command.kind === "polygon").length,
+    ).toBeGreaterThanOrEqual(140);
+    expect(
+      commands.filter((command) => command.kind === "nameplate").length,
+    ).toBe(specialists.length);
+  });
+
+  it("renders office rotation controls without mutating the selected run team", () => {
+    const run = {
+      category: "risk_warning",
+      finalCard: {
+        riskChecklist: [{ check: "Concentration", status: "warning" }],
+        selectedTeam: "quant_strategy_desk",
+        supportingEvidence: [{ label: "Real portfolio" }],
+      },
+      id: "run-real",
+      selectedTeam: "crypto_research_desk",
+      status: "completed",
+      title: "BTC and NVDA risk review",
+    } satisfies OrchestratorOfficeRun;
+
+    const markup = renderToStaticMarkup(
+      createElement(OrchestratorOffice, { run }),
+    );
+
+    expect(markup).toContain('data-testid="orchestrator-office-rotate-left"');
+    expect(markup).toContain('data-testid="orchestrator-office-rotate-right"');
+    expect(markup).toContain(
+      'data-testid="orchestrator-office-rotation-label"',
+    );
+    expect(markup).toContain("South East");
+    expect(markup).toContain("Crypto Research Desk");
+    expect(markup).not.toContain("Quant Strategy Desk</strong>");
+  });
+
+  it("keeps the office guard stable when an empty run is followed by a populated run", () => {
+    const emptyRun = {
+      category: "",
+      id: "",
+      status: "ready",
+      title: "Pending run",
+    } satisfies OrchestratorOfficeRun;
+    const populatedRun = {
+      category: "risk_warning",
+      finalCard: {
+        riskChecklist: [{ check: "Concentration", status: "warning" }],
+        selectedTeam: "portfolio_review_committee",
+        supportingEvidence: [{ label: "Real portfolio" }],
+      },
+      id: "run-real",
+      status: "completed",
+      title: "BTC and NVDA risk review",
+    } satisfies OrchestratorOfficeRun;
+
+    const emptyMarkup = renderToStaticMarkup(
+      createElement(OrchestratorOffice, { run: emptyRun }),
+    );
+    const populatedMarkup = renderToStaticMarkup(
+      createElement(OrchestratorOffice, { run: populatedRun }),
+    );
+
+    expect(emptyMarkup).toBe("");
+    expect(populatedMarkup).toContain(
+      'data-testid="orchestrator-office-team-name"',
+    );
+    expect(populatedMarkup).toContain("Portfolio Review Committee");
+  });
+
+  it("cycles office rotations through four discrete orientations", () => {
+    expect(nextOfficeRotation("south-east", "right")).toBe("south-west");
+    expect(nextOfficeRotation("south-west", "right")).toBe("north-west");
+    expect(nextOfficeRotation("north-west", "right")).toBe("north-east");
+    expect(nextOfficeRotation("north-east", "right")).toBe("south-east");
+    expect(nextOfficeRotation("south-east", "left")).toBe("north-east");
+    expect(officeRotationLabel("north-west")).toBe("North West");
+  });
+
+  it("projects the same office point to different canvas positions after rotation", () => {
+    const point = { x: 2, y: 5 };
+    const southEastPoint = projectOfficePoint(point, "south-east");
+    const northWestPoint = projectOfficePoint(point, "north-west");
+    const northEastPoint = projectOfficePoint(point, "north-east");
+
+    expect(southEastPoint.x).not.toBe(northWestPoint.x);
+    expect(southEastPoint.y).not.toBe(northWestPoint.y);
+    expect(northEastPoint.x).not.toBe(southEastPoint.x);
+  });
+
+  it("maps office team ids to human-readable localized labels", () => {
+    expect(officeTeamLabel("quant_strategy_desk", "en")).toBe(
+      "Quant Strategy Desk",
+    );
+    expect(officeTeamLabel("knowledge_curation_desk", "ko")).toBe(
+      "지식 큐레이션 데스크",
+    );
+  });
+
+  it("falls back to the raw team id when the office team is unknown", () => {
+    expect(officeTeamLabel("custom_team", "en")).toBe("custom_team");
   });
 });

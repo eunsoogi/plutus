@@ -1,0 +1,81 @@
+@media (max-width: 960px) {
+  .orchestrator-office__experience {
+    grid-template-columns: 1fr;
+  }
+
+  .orchestrator-office__controls {
+    grid-template-columns: minmax(0, 1fr) minmax(230px, auto);
+  }
+
+  .orchestrator-office__roster {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .orchestrator-office__header,
+  .orchestrator-office__signals,
+  .orchestrator-office__roster {
+    grid-template-columns: 1fr;
+  }
+
+  .orchestrator-office__header,
+  .orchestrator-office__controls {
+    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+    min-width: 0;
+  }
+
+  .orchestrator-office__team-control {
+    max-width: none;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .orchestrator-office__controls,
+  .orchestrator-office__rotation-control {
+    max-width: calc(100vw - 56px);
+    width: 100%;
+  }
+
+  .orchestrator-office__scene {
+    aspect-ratio: 1 / 1.18;
+    min-height: 500px;
+  }
+
+  .pixel-office__status-strip {
+    font-size: 0.64rem;
+    gap: 7px;
+    left: 12px;
+    padding: 7px 10px;
+    top: 12px;
+  }
+
+  .orchestrator-office__scene-console {
+    font-size: 0.58rem;
+    gap: 8px;
+    padding: 8px 9px;
+  }
+
+  .pixel-office__top-controls,
+  .pixel-office__side-tabs {
+    display: none;
+  }
+}
+
+@media (max-width: 460px) {
+  .orchestrator-office__scene-shell {
+    padding: 5px;
+  }
+
+  .orchestrator-office__scene {
+    min-height: 500px;
+  }
+
+  .pixel-office__status-strip,
+  .orchestrator-office__scene-console {
+    max-width: calc(100% - 18px);
+  }
+}
