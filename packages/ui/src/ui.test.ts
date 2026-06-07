@@ -1,3 +1,5 @@
+import { createRequire } from "node:module";
+import { createElement } from "react";
 import { describe, expect, it } from "vitest";
 import {
   formatCurrency,
@@ -7,9 +9,14 @@ import {
   riskToneForCategory,
   translate,
 } from "./index";
+import { officeCopy } from "./orchestrator-office-copy";
 import { sceneStageLabel } from "./orchestrator-office";
+import { OrchestratorOfficeScene } from "./orchestrator-office-scene";
 import { slotFor } from "./orchestrator-office-scene-data";
 import { teamSpecialists } from "./orchestrator-office-teams";
+
+const require = createRequire(import.meta.url);
+const { renderToStaticMarkup } = require("react-dom/server");
 
 describe("ui helpers", () => {
   it("formats compact financial values and risk states used by the preview", () => {
@@ -61,5 +68,27 @@ describe("ui helpers", () => {
     expect(sceneStageLabel("계획", "queued")).toBe("계획");
     expect(sceneStageLabel("계획", "ready")).toBe("계획");
     expect(sceneStageLabel("완료", "completed")).toBe("완료");
+  });
+
+  it("localizes office station labels in Korean scenes", () => {
+    const koreanOffice = officeCopy.ko;
+    const markup = renderToStaticMarkup(
+      createElement(OrchestratorOfficeScene, {
+        orchestratorLabel: koreanOffice.orchestrator,
+        specialistLabels: koreanOffice.specialist,
+        specialists: teamSpecialists.portfolio_review_committee,
+        stage: koreanOffice.stage.planning,
+        stationLabels: koreanOffice.station,
+      }),
+    );
+
+    expect(markup).toContain("시장 데스크");
+    expect(markup).toContain("전략 보드");
+    expect(markup).toContain("리스크 테이블");
+    expect(markup).toContain("지휘 테이블");
+    expect(markup).not.toContain("Market desk");
+    expect(markup).not.toContain("Strategy board");
+    expect(markup).not.toContain("Risk table");
+    expect(markup).not.toContain("Command table");
   });
 });

@@ -1,6 +1,11 @@
+import {
+  officeCopy,
+  type OfficeStationLabels,
+} from "./orchestrator-office-copy";
 import type { SpecialistId } from "./orchestrator-office-teams";
 
 type GridPoint = { readonly x: number; readonly y: number };
+type OfficeStationId = keyof OfficeStationLabels;
 
 export type OfficeScenePolygon = {
   readonly className: string;
@@ -214,14 +219,18 @@ export const OFFICE_COMMAND_TABLE_FRONT = [
   polygon("pixel-office__chair", footprint(6.15, 4.18, 0.36, 0.3, 12)),
 ] satisfies readonly OfficeScenePolygon[];
 
+type AgentSlotLayout = Omit<AgentSlot, "station"> & {
+  readonly station: OfficeStationId;
+};
+
 const slot = (
-  station: string,
+  station: OfficeStationId,
   deskTile: GridPoint,
   agentTile: GridPoint,
   index: number,
   pathTiles: readonly GridPoint[],
   agentOffsetY = 0,
-): AgentSlot => ({
+): AgentSlotLayout => ({
   agentOffsetX: 0,
   agentOffsetY,
   agentTile,
@@ -235,8 +244,10 @@ const slot = (
   station,
 });
 
+const defaultStationLabels = officeCopy.en.station;
+
 const defaultSpecialistSlot = slot(
-  "Market desk",
+  "market_desk",
   point(1.55, 1.8),
   point(2.75, 3.25),
   0,
@@ -246,7 +257,7 @@ const defaultSpecialistSlot = slot(
 const specialistSlots = [
   defaultSpecialistSlot,
   slot(
-    "Strategy board",
+    "strategy_board",
     point(5.95, 1.35),
     point(7.05, 2.8),
     1,
@@ -254,7 +265,7 @@ const specialistSlots = [
     2,
   ),
   slot(
-    "Risk table",
+    "risk_table",
     point(7.05, 4.15),
     point(7.95, 5.45),
     2,
@@ -262,7 +273,7 @@ const specialistSlots = [
     4,
   ),
   slot(
-    "Report bay",
+    "report_bay",
     point(1.9, 4.75),
     point(4.25, 5.7),
     3,
@@ -270,14 +281,14 @@ const specialistSlots = [
     2,
   ),
   slot(
-    "Signal booth",
+    "signal_booth",
     point(3.35, 0.9),
     point(4.4, 2.15),
     4,
     [point(5.1, 4.9), point(5, 3.95), point(4.85, 3.05)],
     2,
   ),
-] satisfies readonly AgentSlot[];
+] satisfies readonly AgentSlotLayout[];
 
 const specialistShortLabels = {
   crypto_analyst: "CA",
@@ -303,16 +314,33 @@ const specialistTones = {
   technical_analyst: "pixel-agent--rose",
 } satisfies Record<SpecialistId, string>;
 
-export function slotFor(index: number): AgentSlot {
-  return specialistSlots[index] ?? defaultSpecialistSlot;
+function localizedSlot(
+  slotLayout: AgentSlotLayout,
+  stationLabels: OfficeStationLabels,
+): AgentSlot {
+  return {
+    ...slotLayout,
+    station: stationLabels[slotLayout.station],
+  };
+}
+
+export function slotFor(
+  index: number,
+  stationLabels: OfficeStationLabels = defaultStationLabels,
+): AgentSlot {
+  return localizedSlot(
+    specialistSlots[index] ?? defaultSpecialistSlot,
+    stationLabels,
+  );
 }
 
 export function specialistAgent(
   specialist: SpecialistId,
   index: number,
   label: string,
+  stationLabels: OfficeStationLabels = defaultStationLabels,
 ): OfficeAgent {
-  const slot = slotFor(index);
+  const slot = slotFor(index, stationLabels);
   const feet = isoPoint(slot.agentTile.x, slot.agentTile.y);
 
   return {

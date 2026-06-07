@@ -96,6 +96,7 @@ export function OrchestratorOffice({ run }: { run: OrchestratorOfficeRun }) {
       </div>
       <OrchestratorOfficeScene
         orchestratorLabel={text.orchestrator}
+        stationLabels={text.station}
         specialistLabels={text.specialist}
         specialists={specialists}
         stage={sceneStageLabel(stage, run.status)}

@@ -1,3 +1,4 @@
+import type { OfficeStationLabels } from "./orchestrator-office-copy";
 import { OrchestratorOfficeMap } from "./orchestrator-office-map";
 import {
   slotFor,
@@ -8,11 +9,13 @@ import type { SpecialistId } from "./orchestrator-office-teams";
 
 export function OrchestratorOfficeScene({
   orchestratorLabel,
+  stationLabels,
   specialistLabels,
   specialists,
   stage,
 }: {
   readonly orchestratorLabel: string;
+  readonly stationLabels: OfficeStationLabels;
   readonly specialistLabels: Record<SpecialistId, string>;
   readonly specialists: readonly SpecialistId[];
   readonly stage: string;
@@ -24,7 +27,7 @@ export function OrchestratorOfficeScene({
       label: orchestratorLabel,
       role: stage,
       shortLabel: "O",
-      station: "Command table",
+      station: stationLabels.command_table,
       testId: "orchestrator-node",
       toneClass: "pixel-agent--lead",
       x: 600,
@@ -33,10 +36,17 @@ export function OrchestratorOfficeScene({
       routeClass: "pixel-agent--lead-route",
     },
     ...specialists.map((specialist, index) =>
-      specialistAgent(specialist, index, specialistLabels[specialist]),
+      specialistAgent(
+        specialist,
+        index,
+        specialistLabels[specialist],
+        stationLabels,
+      ),
     ),
   ];
-  const deskSlots = specialists.map((_, index) => slotFor(index));
+  const deskSlots = specialists.map((_, index) =>
+    slotFor(index, stationLabels),
+  );
 
   return (
     <div

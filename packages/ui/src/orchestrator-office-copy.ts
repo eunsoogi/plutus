@@ -1,5 +1,14 @@
 import type { AppLocale } from "./core";
 
+export type OfficeStationLabels = {
+  readonly market_desk: string;
+  readonly strategy_board: string;
+  readonly risk_table: string;
+  readonly report_bay: string;
+  readonly signal_booth: string;
+  readonly command_table: string;
+};
+
 export const officeCopy = {
   en: {
     title: "Orchestrator Office",
@@ -12,6 +21,14 @@ export const officeCopy = {
     noRisk: "No risk checks yet",
     check: "check",
     unknown: "unknown",
+    station: {
+      market_desk: "Market desk",
+      strategy_board: "Strategy board",
+      risk_table: "Risk table",
+      report_bay: "Report bay",
+      signal_booth: "Signal booth",
+      command_table: "Command table",
+    } satisfies OfficeStationLabels,
     stage: {
       planning: "Planning",
       executing: "Executing",
@@ -42,6 +59,14 @@ export const officeCopy = {
     noRisk: "리스크 점검 대기",
     check: "점검",
     unknown: "알 수 없음",
+    station: {
+      market_desk: "시장 데스크",
+      strategy_board: "전략 보드",
+      risk_table: "리스크 테이블",
+      report_bay: "보고 구역",
+      signal_booth: "시그널 부스",
+      command_table: "지휘 테이블",
+    } satisfies OfficeStationLabels,
     stage: {
       planning: "계획",
       executing: "실행",
