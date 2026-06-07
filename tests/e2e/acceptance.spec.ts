@@ -260,6 +260,16 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
   await expect
     .poll(async () => (await mobileScene.boundingBox())?.height ?? 0)
     .toBeGreaterThan(320);
+  await expect
+    .poll(
+      async () =>
+        (
+          await page
+            .getByTestId("orchestrator-agent-market_data_researcher")
+            .boundingBox()
+        )?.height ?? 0,
+    )
+    .toBeGreaterThan(60);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,

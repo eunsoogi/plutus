@@ -25,75 +25,72 @@ export function PixelPerson({ agent }: { readonly agent: OfficeAgent }) {
             className="pixel-person-agent__shadow"
             cx="0"
             cy="2"
-            rx="26"
+            rx="24"
             ry="8"
-          />
-          <path
-            className="pixel-person-agent__desk-shadow"
-            d="M-20 -2 0 -8 22 -2 0 4Z"
           />
           <rect
             className="pixel-person-agent__leg pixel-person-agent__leg--left"
             height="18"
-            rx="3"
             width="8"
-            x="-11"
+            x="-10"
             y="-16"
           />
           <rect
             className="pixel-person-agent__leg pixel-person-agent__leg--right"
             height="18"
-            rx="3"
             width="8"
-            x="3"
+            x="2"
             y="-16"
           />
           <rect
             className="pixel-person-agent__body"
-            height="32"
-            rx="9"
+            height="30"
             width="34"
             x="-17"
-            y="-44"
+            y="-46"
           />
           <rect
             className="pixel-person-agent__arm pixel-person-agent__arm--left"
-            height="18"
-            rx="5"
+            height="12"
             width="10"
-            x="-26"
-            y="-38"
+            x="-25"
+            y="-40"
           />
           <rect
             className="pixel-person-agent__arm pixel-person-agent__arm--right"
-            height="18"
-            rx="5"
+            height="12"
             width="10"
-            x="16"
-            y="-38"
+            x="15"
+            y="-40"
           />
-          <circle className="pixel-person-agent__head" cx="0" cy="-60" r="16" />
+          <rect
+            className="pixel-person-agent__head"
+            height="22"
+            width="24"
+            x="-12"
+            y="-68"
+          />
           <path
             className="pixel-person-agent__hair"
-            d="M-14 -62 Q-2 -80 15 -66 L15 -56 L-14 -56 Z"
+            d="M-12 -68 H12 V-60 H8 V-56 H-6 V-60 H-12 Z"
           />
           <circle
             className="pixel-person-agent__eye pixel-person-agent__eye--left"
-            cx="-6"
-            cy="-60"
-            r="2"
+            cx="-5"
+            cy="-58"
+            r="1.8"
           />
           <circle
             className="pixel-person-agent__eye pixel-person-agent__eye--right"
-            cx="7"
-            cy="-60"
-            r="2"
+            cx="6"
+            cy="-58"
+            r="1.8"
           />
           <text
             className="pixel-person-agent__initial"
             textAnchor="middle"
             x="0"
-            y="-24"
+            y="-26"
           >
             {agent.shortLabel}
           </text>
@@ -101,7 +98,7 @@ export function PixelPerson({ agent }: { readonly agent: OfficeAgent }) {
             className="pixel-person-agent__label"
             textAnchor="middle"
             x="0"
-            y="-92"
+            y="-90"
           >
             {agent.label}
           </text>
@@ -109,7 +106,7 @@ export function PixelPerson({ agent }: { readonly agent: OfficeAgent }) {
             className="pixel-person-agent__station"
             textAnchor="middle"
             x="0"
-            y="-78"
+            y="-76"
           >
             {agent.isLead ? agent.role : agent.station}
           </text>
