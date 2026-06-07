@@ -1,4 +1,5 @@
 import type { AppLocale } from "./core";
+import type { OfficeRotation } from "./orchestrator-office-canvas-types";
 
 export type OfficeStationLabels = {
   readonly market_desk: string;
@@ -9,11 +10,47 @@ export type OfficeStationLabels = {
   readonly command_table: string;
 };
 
+export type OfficeRotationLabels = Readonly<Record<OfficeRotation, string>>;
+
+export type OfficeCanvasChromeLabels = {
+  readonly agentCount: (agentCount: number) => string;
+  readonly hqConnected: string;
+  readonly canvas: string;
+  readonly openHq: string;
+  readonly market: string;
+  readonly analytics: string;
+  readonly eventConsole: string;
+  readonly noLiveTrading: string;
+};
+
 export const officeCopy = {
   en: {
     title: "Orchestrator Office",
     orchestrator: "Research Orchestrator",
     selectedTeam: "Selected team",
+    activeTeam: "Active team",
+    activeDesks: "Active desks",
+    orientation: "Orientation",
+    rotateLeft: "Rotate left",
+    rotateRight: "Rotate right",
+    rotateLeftControl: "Left",
+    rotateRightControl: "Right",
+    canvasChrome: {
+      agentCount: (agentCount: number) => `${agentCount} agents`,
+      hqConnected: "HQ connected",
+      canvas: "Canvas",
+      openHq: "Open HQ",
+      market: "Market",
+      analytics: "Analytics",
+      eventConsole: "PLUTUS EVENT CONSOLE",
+      noLiveTrading: "No live trading",
+    } satisfies OfficeCanvasChromeLabels,
+    rotation: {
+      "south-east": "South East",
+      "south-west": "South West",
+      "north-west": "North West",
+      "north-east": "North East",
+    } satisfies OfficeRotationLabels,
     safety: "No live trading",
     evidence: "Evidence",
     risk: "Risk checks",
@@ -52,6 +89,29 @@ export const officeCopy = {
     title: "오케스트레이터 오피스",
     orchestrator: "리서치 오케스트레이터",
     selectedTeam: "선택된 팀",
+    activeTeam: "활성 팀",
+    activeDesks: "가동 중인 데스크",
+    orientation: "방향",
+    rotateLeft: "왼쪽 회전",
+    rotateRight: "오른쪽 회전",
+    rotateLeftControl: "왼쪽",
+    rotateRightControl: "오른쪽",
+    canvasChrome: {
+      agentCount: (agentCount: number) => `에이전트 ${agentCount}명`,
+      hqConnected: "HQ 연결됨",
+      canvas: "캔버스",
+      openHq: "본부 열기",
+      market: "시장",
+      analytics: "분석",
+      eventConsole: "PLUTUS 이벤트 콘솔",
+      noLiveTrading: "실거래 없음",
+    } satisfies OfficeCanvasChromeLabels,
+    rotation: {
+      "south-east": "남동쪽",
+      "south-west": "남서쪽",
+      "north-west": "북서쪽",
+      "north-east": "북동쪽",
+    } satisfies OfficeRotationLabels,
     safety: "실거래 없음",
     evidence: "근거",
     risk: "리스크 점검",
