@@ -47,7 +47,7 @@
     overflow: auto;
   }
 
-  .dashboard-grid > .dashboard-stack:last-child {
+  .dashboard-grid > .dashboard-stack:not(:first-child) {
     grid-area: side;
     min-height: 0;
     overflow: auto;

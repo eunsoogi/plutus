@@ -81,6 +81,58 @@ test("host dashboard fits the first screen at 1440x960 without clipping the Kore
   expect(metrics.officeRect.top).toBeLessThan(metrics.viewportHeight - 120);
 });
 
+test("host dashboard keeps the side stack in the desktop side area with internal recovery scroll", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/dashboard?runtime=local&locale=ko");
+
+  const metrics = await page.evaluate(() => {
+    const mainSurface = document.querySelector<HTMLElement>(".main-surface");
+    const sideStack = document.querySelector<HTMLElement>(
+      ".dashboard-grid > .dashboard-stack:not(:first-child)",
+    );
+
+    if (mainSurface === null || sideStack === null) {
+      throw new Error("Side stack recovery metrics were unavailable");
+    }
+
+    const beforeStyle = window.getComputedStyle(sideStack);
+    for (let index = 0; index < 10; index += 1) {
+      const filler = document.createElement("article");
+      filler.className = "panel";
+      filler.textContent = `recovery filler ${index + 1}`;
+      filler.style.minHeight = "11rem";
+      sideStack.append(filler);
+    }
+
+    const afterStyle = window.getComputedStyle(sideStack);
+    const mainSurfaceScrollTopBefore = mainSurface.scrollTop;
+    sideStack.scrollTop = sideStack.scrollHeight;
+
+    return {
+      gridArea: beforeStyle.gridArea,
+      minHeight: beforeStyle.minHeight,
+      overflowY: afterStyle.overflowY,
+      sideHasOverflow: sideStack.scrollHeight > sideStack.clientHeight + 1,
+      sideScrolled: sideStack.scrollTop > 0,
+      mainSurfaceScrollTopBefore,
+      mainSurfaceScrollTopAfter: mainSurface.scrollTop,
+      mainSurfaceOverflows:
+        mainSurface.scrollHeight > mainSurface.clientHeight + 1,
+    };
+  });
+
+  expect(metrics.gridArea).toBe("side");
+  expect(metrics.minHeight).toBe("0px");
+  expect(["auto", "scroll"]).toContain(metrics.overflowY);
+  expect(metrics.sideHasOverflow).toBe(true);
+  expect(metrics.sideScrolled).toBe(true);
+  expect(metrics.mainSurfaceScrollTopBefore).toBe(0);
+  expect(metrics.mainSurfaceScrollTopAfter).toBe(0);
+  expect(metrics.mainSurfaceOverflows).toBe(false);
+});
+
 test("host dashboard keeps vertical recovery scroll when header pills wrap beyond the desktop fixture", async ({
   page,
 }) => {
