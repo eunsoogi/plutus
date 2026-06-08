@@ -689,6 +689,78 @@ test("ready run placeholder with only an id does not render started progress", a
   await expect(page.getByTestId("command-source")).toHaveCount(0);
 });
 
+test("command bridge run source persists after returning to Runs", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const runStartedKey = "plutus.commandBridgeRunStarted";
+    window.__PLUTUS_COMMAND_BRIDGE__ = (async (envelope) => {
+      const runStarted = localStorage.getItem(runStartedKey) === "1";
+      if (envelope.command === "app.getSnapshot") {
+        return {
+          profileId: "profile-bridge",
+          portfolios: [
+            {
+              id: "portfolio-bridge",
+              name: "Bridge Portfolio",
+              baseCurrency: "USD",
+              positions: [
+                {
+                  id: "position-bridge",
+                  symbol: "AAPL",
+                  name: "Apple Inc.",
+                  quantity: 1,
+                  averageCost: 100,
+                  thesis: "Bridge position",
+                },
+              ],
+            },
+          ],
+          watchlists: [],
+          runs: [
+            {
+              id: "run-bridge",
+              portfolioId: "portfolio-bridge",
+              status: runStarted ? "completed" : "ready",
+              title: "Bridge run",
+              category: runStarted ? "portfolio_review" : "",
+              finalCard: runStarted
+                ? {
+                    selectedTeam: "portfolio_review_committee",
+                    summary: "Bridge run complete",
+                  }
+                : undefined,
+            },
+          ],
+          artifacts: [],
+          memoryActivity: [],
+          wikiPages: [],
+          remoteDevices: [],
+        };
+      }
+      if (envelope.command === "researchRuns.start") {
+        localStorage.setItem(runStartedKey, "1");
+        return {
+          id: "run-bridge",
+          portfolioId: "portfolio-bridge",
+          status: "queued",
+        };
+      }
+      throw new Error(`Unexpected command ${envelope.command}`);
+    }) as NonNullable<Window["__PLUTUS_COMMAND_BRIDGE__"]>;
+  });
+
+  await page.goto("/runs?runtime=local");
+  await page.getByRole("button", { name: "Start Research Run" }).click();
+  await expect(page.getByTestId("command-source")).toHaveText("Command bridge");
+
+  await page.goto("/dashboard?runtime=local");
+  await page.goto("/runs?runtime=local");
+
+  await expect(page.getByTestId("run-progress")).toContainText("completed");
+  await expect(page.getByTestId("command-source")).toHaveText("Command bridge");
+});
+
 test("browser local runtime queues a research run only after real portfolio state exists", async ({
   page,
 }) => {

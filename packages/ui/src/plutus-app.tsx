@@ -222,6 +222,8 @@ const visibleResearchRunStatuses: ReadonlySet<string> = new Set([
   "cancelled",
 ]);
 
+type CommandSource = "Command bridge" | "Local runtime";
+
 function hasVisibleResearchRun(run: PlutusScenario["run"]) {
   return Boolean(
     run.category ||
@@ -229,6 +231,21 @@ function hasVisibleResearchRun(run: PlutusScenario["run"]) {
       run.artifacts.length > 0 ||
       visibleResearchRunStatuses.has(run.status),
   );
+}
+
+function hasInjectedCommandBridge() {
+  return (
+    typeof window !== "undefined" &&
+    Reflect.get(window, "__PLUTUS_COMMAND_BRIDGE__") !== undefined
+  );
+}
+
+function commandSourceForRuntime(
+  commandClient: PlutusCommandClient | undefined,
+): CommandSource {
+  if (!commandClient) return "Local runtime";
+  if (hasInjectedCommandBridge()) return "Command bridge";
+  return currentRuntimeParam() === "local" ? "Local runtime" : "Command bridge";
 }
 
 function commandErrorMessage(error: unknown) {
@@ -926,15 +943,18 @@ export function RunsPage({
   const [runStatus, setRunStatus] = useState(
     localizedScenarioText(scenario.run.status, t),
   );
-  const [commandSource, setCommandSource] = useState<
-    "Command bridge" | "Local runtime"
-  >("Local runtime");
+  const [commandSource, setCommandSource] = useState<CommandSource>(() =>
+    commandSourceForRuntime(commandClient),
+  );
   const [commandError, setCommandError] = useState<string | null>(null);
 
   useEffect(() => {
     setCurrentScenario(scenario);
     setRunStatus(localizedScenarioText(scenario.run.status, t));
-  }, [scenario, t]);
+    if (hasVisibleResearchRun(scenario.run)) {
+      setCommandSource(commandSourceForRuntime(commandClient));
+    }
+  }, [commandClient, scenario, t]);
   const visibleRunStarted =
     started || hasVisibleResearchRun(currentScenario.run);
 
@@ -967,7 +987,7 @@ export function RunsPage({
           t,
         ),
       );
-      setCommandSource("Command bridge");
+      setCommandSource(commandSourceForRuntime(commandClient));
       if (refreshScenario) {
         for (let attempt = 0; attempt < 5; attempt += 1) {
           await new Promise((resolve) => setTimeout(resolve, 400));
