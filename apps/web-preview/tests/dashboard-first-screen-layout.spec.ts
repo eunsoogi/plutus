@@ -191,3 +191,68 @@ test("host dashboard keeps vertical recovery scroll when header pills wrap beyon
     metrics.viewportHeight,
   );
 });
+
+test("host dashboard recovers clipped office content at 1280x800 with internal panel scroll", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/dashboard?runtime=local&locale=ko");
+
+  const metrics = await page.evaluate(() => {
+    const mainSurface = document.querySelector<HTMLElement>(".main-surface");
+    const office = document.querySelector<HTMLElement>(
+      "[data-testid='orchestrator-office']",
+    );
+    const officeSignals = document.querySelector<HTMLElement>(
+      ".orchestrator-office__signals",
+    );
+
+    if (mainSurface === null || office === null || officeSignals === null) {
+      throw new Error("Office recovery metrics were unavailable");
+    }
+
+    for (let index = 0; index < 6; index += 1) {
+      const signal = document.createElement("div");
+      const label = document.createElement("span");
+      const detail = document.createElement("strong");
+      label.textContent = `recovery signal ${index + 1}`;
+      detail.textContent = `office overflow ${index + 1}`;
+      signal.style.minHeight = "6rem";
+      signal.append(label, detail);
+      officeSignals.append(signal);
+    }
+
+    const officeRect = office.getBoundingClientRect();
+    const lastSignal = officeSignals.lastElementChild;
+    if (!(lastSignal instanceof HTMLElement)) {
+      throw new Error("Office recovery signal was unavailable");
+    }
+
+    const lastSignalBottomBeforeScroll = lastSignal.getBoundingClientRect().bottom;
+    const officeOverflowY = window.getComputedStyle(office).overflowY;
+    office.scrollTop = office.scrollHeight;
+
+    return {
+      bodyOverflows:
+        document.documentElement.scrollHeight > window.innerHeight + 1,
+      mainSurfaceOverflows:
+        mainSurface.scrollHeight > mainSurface.clientHeight + 1,
+      officeOverflowY,
+      officeHasOverflow: office.scrollHeight > office.clientHeight + 1,
+      officeScrolled: office.scrollTop > 0,
+      lastSignalBottomAfterScroll: lastSignal.getBoundingClientRect().bottom,
+      lastSignalBottomBeforeScroll,
+      officeBottom: officeRect.bottom,
+    };
+  });
+
+  expect(metrics.bodyOverflows).toBe(false);
+  expect(metrics.mainSurfaceOverflows).toBe(false);
+  expect(["auto", "scroll"]).toContain(metrics.officeOverflowY);
+  expect(metrics.officeHasOverflow).toBe(true);
+  expect(metrics.lastSignalBottomBeforeScroll).toBeGreaterThan(metrics.officeBottom);
+  expect(metrics.officeScrolled).toBe(true);
+  expect(metrics.lastSignalBottomAfterScroll).toBeLessThanOrEqual(
+    metrics.officeBottom - 8,
+  );
+});
