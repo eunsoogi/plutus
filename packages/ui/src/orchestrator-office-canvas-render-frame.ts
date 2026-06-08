@@ -15,8 +15,8 @@ type OfficeRenderTransform = {
 
 const DESKTOP_FRAME: OfficeRenderFrame = {
   centerX: 600,
-  centerY: 404,
-  height: 670,
+  centerY: 377,
+  height: 800,
   width: 1080,
 };
 
@@ -45,6 +45,7 @@ export function officeRenderTransform(
 ): OfficeRenderTransform {
   const frame = renderFrameFor(viewport);
   const scale = Math.min(
+    1,
     viewport.width / frame.width,
     viewport.height / frame.height,
   );

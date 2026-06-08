@@ -39,6 +39,9 @@ const TILE_SIZE = {
   width: 132,
 } as const;
 
+const PITCH_VERTICAL_RESPONSE = 0.297;
+const LIFT_VERTICAL_RESPONSE = 0.05;
+
 const OFFICE_CENTER = {
   x: 600,
   y: 410,
@@ -109,11 +112,13 @@ function officePitchForProjection(projection: OfficeProjection): number {
 }
 
 function officePitchScaleFor(projection: OfficeProjection): number {
-  return officePitchForProjection(projection) / DEFAULT_OFFICE_PITCH;
+  const pitchDelta = officePitchForProjection(projection) - DEFAULT_OFFICE_PITCH;
+
+  return 1 + (pitchDelta / DEFAULT_OFFICE_PITCH) * PITCH_VERTICAL_RESPONSE;
 }
 
-function officeLiftScaleFor(projection: OfficeProjection): number {
-  return 0.72 + officePitchScaleFor(projection) * 0.28;
+function officeLiftScaleFor(pitchScale: number): number {
+  return 1 + (pitchScale - 1) * LIFT_VERTICAL_RESPONSE;
 }
 
 function officeProjectionAxes(
@@ -207,7 +212,7 @@ export function projectOfficePoint(
 ): OfficeCanvasPoint {
   const { rotatedX, rotatedY } = officeProjectionAxes(point, projection);
   const pitchScale = officePitchScaleFor(projection);
-  const liftScale = officeLiftScaleFor(projection);
+  const liftScale = officeLiftScaleFor(pitchScale);
 
   return {
     x: OFFICE_CENTER.x + (rotatedX - rotatedY) * (TILE_SIZE.width / 2),

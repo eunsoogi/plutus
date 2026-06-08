@@ -4,7 +4,9 @@ import { buildOfficeDrawCommands } from "./orchestrator-office-canvas-layout";
 import { officeNameplateFrame } from "./orchestrator-office-canvas-nameplates";
 import { officeRenderTransform } from "./orchestrator-office-canvas-render-frame";
 import type {
+  OfficeCanvasPoint,
   OfficeCanvasNameplateCommand,
+  OfficeDrawCommand,
   OfficeRotation,
   OfficeCanvasViewport,
 } from "./orchestrator-office-canvas-types";
@@ -23,6 +25,13 @@ type Bounds = {
   readonly top: number;
 };
 
+type Frame = {
+  readonly height: number;
+  readonly width: number;
+  readonly x: number;
+  readonly y: number;
+};
+
 const mobileViewport = {
   height: 500,
   width: 390,
@@ -33,11 +42,9 @@ const desktopViewport = {
   width: 1200,
 } satisfies OfficeCanvasViewport;
 
-const mobileCompactCssSize = {
-  height: 36,
-  width: 58,
-} as const;
+const mobileCompactCssSize = { height: 36, width: 58 } as const;
 const mobileViewportGutter = 8;
+const desktopSceneGutter = 16;
 
 const officeRotations = [
   "south-east",
@@ -102,12 +109,7 @@ function nameplateCommands(
   );
 }
 
-function frameBounds(frame: {
-  readonly height: number;
-  readonly width: number;
-  readonly x: number;
-  readonly y: number;
-}): Bounds {
+function frameBounds(frame: Frame): Bounds {
   return {
     bottom: frame.y + frame.height,
     left: frame.x,
@@ -116,33 +118,62 @@ function frameBounds(frame: {
   };
 }
 
-function renderedFrameBounds(
-  frame: {
-    readonly height: number;
-    readonly width: number;
-    readonly x: number;
-    readonly y: number;
-  },
+function boundsFor(points: readonly OfficeCanvasPoint[]): Bounds {
+  return {
+    bottom: Math.max(...points.map((point) => point.y)),
+    left: Math.min(...points.map((point) => point.x)),
+    right: Math.max(...points.map((point) => point.x)),
+    top: Math.min(...points.map((point) => point.y)),
+  };
+}
+
+function renderedFrameBounds(frame: Frame, viewport: OfficeCanvasViewport): Bounds {
+  return renderedBounds(frameBounds(frame), viewport);
+}
+
+function renderedBounds(
+  bounds: Bounds,
   viewport: OfficeCanvasViewport,
 ): Bounds {
   const { offsetX, offsetY, scale } = officeRenderTransform(viewport);
 
   return {
-    bottom: (frame.y + frame.height) * scale + offsetY,
-    left: frame.x * scale + offsetX,
-    right: (frame.x + frame.width) * scale + offsetX,
-    top: frame.y * scale + offsetY,
+    bottom: bounds.bottom * scale + offsetY,
+    left: bounds.left * scale + offsetX,
+    right: bounds.right * scale + offsetX,
+    top: bounds.top * scale + offsetY,
   };
 }
 
-function expectNoOverlappingFrames(
-  frames: readonly {
-    readonly height: number;
-    readonly width: number;
-    readonly x: number;
-    readonly y: number;
-  }[],
-): void {
+function polygonPoints(
+  commands: readonly OfficeDrawCommand[],
+): readonly OfficeCanvasPoint[] {
+  return commands.flatMap((command) =>
+    command.kind === "polygon" &&
+    command.stroke !== "#6d4b4d" &&
+    command.stroke !== "#5e626b" &&
+    command.stroke !== "#7d9aad"
+      ? command.points
+      : [],
+  );
+}
+
+function defaultOfficeSceneCommands(): readonly OfficeDrawCommand[] {
+  const englishOffice = officeCopy.en;
+  const specialists = teamSpecialists[defaultTeam];
+
+  return buildOfficeDrawCommands({
+    agents: [],
+    angle: 0,
+    deskSlots: specialists.map((_, index) =>
+      slotFor(index, englishOffice.station),
+    ),
+    pitch: 58,
+    rotation: "south-east",
+  });
+}
+
+function expectNoOverlappingFrames(frames: readonly Frame[]): void {
   for (const [index, frame] of frames.entries()) {
     const bounds = frameBounds(frame);
     for (const laterFrame of frames.slice(index + 1)) {
@@ -152,12 +183,7 @@ function expectNoOverlappingFrames(
 }
 
 function expectRenderedFramesStayInsideViewportGutter(
-  frames: readonly {
-    readonly height: number;
-    readonly width: number;
-    readonly x: number;
-    readonly y: number;
-  }[],
+  frames: readonly Frame[],
   viewport: OfficeCanvasViewport,
   gutter: number,
 ): void {
@@ -172,6 +198,28 @@ function expectRenderedFramesStayInsideViewportGutter(
 }
 
 describe("officeNameplateFrame", () => {
+  it("keeps max-pitch office geometry inside the desktop render frame", () => {
+    const renderedSceneBounds = renderedBounds(
+      boundsFor(polygonPoints(defaultOfficeSceneCommands())),
+      desktopViewport,
+    );
+
+    expect(renderedSceneBounds.left).toBeGreaterThanOrEqual(desktopSceneGutter);
+    expect(renderedSceneBounds.right).toBeLessThanOrEqual(
+      desktopViewport.width - desktopSceneGutter,
+    );
+    expect(renderedSceneBounds.top).toBeGreaterThanOrEqual(desktopSceneGutter);
+    expect(renderedSceneBounds.bottom).toBeLessThanOrEqual(
+      desktopViewport.height - desktopSceneGutter,
+    );
+  });
+
+  it("keeps desktop render scale near normal size", () => {
+    expect(officeRenderTransform(desktopViewport).scale).toBeGreaterThanOrEqual(
+      0.95,
+    );
+  });
+
   it("keeps desktop canvas nameplates in full card mode", () => {
     const frames = nameplateCommands().map((command) =>
       officeNameplateFrame(command, desktopViewport),
