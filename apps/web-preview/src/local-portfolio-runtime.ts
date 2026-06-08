@@ -119,6 +119,10 @@ export function syncPortfolioFromProvider(
         (candidate) => candidate.id === parsed.portfolioId,
       )
     : undefined;
+  if (parsed.portfolioId && !existingPortfolio) {
+    throw new Error("Portfolio not found");
+  }
+
   const portfolio = {
     id: existingPortfolio?.id ?? newId("portfolio"),
     name: portfolioName,
@@ -148,10 +152,22 @@ function parseProviderPortfolioSyncInput(
   return {
     providerId,
     baseCurrency: stringValue(record.baseCurrency),
-    holdings: Array.isArray(record.holdings) ? record.holdings : undefined,
+    holdings: parseOptionalHoldings(record),
     portfolioId: stringValue(record.portfolioId),
     portfolioName: stringValue(record.portfolioName),
   };
+}
+
+function parseOptionalHoldings(
+  record: Record<string, unknown>,
+): readonly unknown[] | undefined {
+  if (!("holdings" in record) || record.holdings === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(record.holdings)) {
+    throw new Error("Provider sync holdings must be an array.");
+  }
+  return record.holdings;
 }
 
 function positionFromSyncedHolding(input: unknown): LocalPortfolioPosition {

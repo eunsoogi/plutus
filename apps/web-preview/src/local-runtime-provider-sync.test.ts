@@ -139,4 +139,59 @@ describe("local web runtime provider portfolio sync", () => {
     });
     expect(snapshot.portfolios).toEqual([]);
   });
+
+  it("rejects a malformed holdings payload before falling back to preview data", async () => {
+    await callBridge<TradingProviderConfig>({
+      command: "providers.save",
+      args: [connectedUpbitProvider],
+    });
+
+    await expect(
+      callBridge({
+        command: "portfolios.syncFromProvider",
+        args: [
+          {
+            providerId: "upbit",
+            portfolioName: "Upbit Synced Holdings",
+            baseCurrency: "KRW",
+            holdings: "btc-krw",
+          },
+        ],
+      }),
+    ).rejects.toThrow("Provider sync holdings must be an array.");
+    const snapshot = await callBridge<AppSnapshot>({
+      command: "app.getSnapshot",
+      args: [],
+    });
+    expect(snapshot.portfolios).toEqual([]);
+  });
+
+  it("rejects provider portfolio sync when the requested portfolio is missing", async () => {
+    await callBridge<TradingProviderConfig>({
+      command: "providers.save",
+      args: [connectedUpbitProvider],
+    });
+
+    await expect(
+      callProviderSyncBridge({
+        providerId: "upbit",
+        portfolioId: "portfolio-missing",
+        portfolioName: "Upbit Synced Holdings",
+        baseCurrency: "KRW",
+        holdings: [
+          {
+            symbol: "btc-krw",
+            quantity: 0.42,
+            averageCost: 91000000,
+            costCurrency: "KRW",
+          },
+        ],
+      }),
+    ).rejects.toThrow("Portfolio not found");
+    const snapshot = await callBridge<AppSnapshot>({
+      command: "app.getSnapshot",
+      args: [],
+    });
+    expect(snapshot.portfolios).toEqual([]);
+  });
 });
