@@ -86,6 +86,67 @@ describe("local web runtime provider portfolio sync", () => {
     expect(JSON.stringify(snapshot)).not.toContain("secretKey");
   });
 
+  it("reuses the provider-synced portfolio on repeated syncs without portfolio id", async () => {
+    await callBridge<TradingProviderConfig>({
+      command: "providers.save",
+      args: [connectedUpbitProvider],
+    });
+
+    const firstResult =
+      await callProviderSyncBridge<ProviderPortfolioSyncResult>({
+        providerId: "upbit",
+        portfolioName: "Upbit Synced Holdings",
+        baseCurrency: "KRW",
+        holdings: [
+          {
+            symbol: "btc-krw",
+            name: "Bitcoin",
+            quantity: 0.42,
+            averageCost: 91000000,
+            costCurrency: "KRW",
+          },
+        ],
+      });
+
+    const secondResult =
+      await callProviderSyncBridge<ProviderPortfolioSyncResult>({
+        providerId: "upbit",
+        portfolioName: "Upbit Synced Holdings",
+        baseCurrency: "KRW",
+        holdings: [
+          {
+            symbol: "eth-krw",
+            name: "Ethereum",
+            quantity: 2.5,
+            averageCost: 4800000,
+            costCurrency: "KRW",
+          },
+        ],
+      });
+
+    const snapshot = await callBridge<AppSnapshot>({
+      command: "app.getSnapshot",
+      args: [],
+    });
+    expect(secondResult.portfolioId).toBe(firstResult.portfolioId);
+    expect(snapshot.portfolios).toEqual([
+      expect.objectContaining({
+        id: firstResult.portfolioId,
+        name: "Upbit Synced Holdings",
+        baseCurrency: "KRW",
+        positions: [
+          expect.objectContaining({
+            symbol: "ETH-KRW",
+            quantity: 2.5,
+            averageCost: 4800000,
+            costCurrency: "KRW",
+          }),
+        ],
+      }),
+    ]);
+    expect(JSON.stringify(snapshot.portfolios)).not.toContain("BTC-KRW");
+  });
+
   it("rejects provider portfolio sync when the provider is not configured", async () => {
     const snapshot = await callBridge<AppSnapshot>({
       command: "app.getSnapshot",

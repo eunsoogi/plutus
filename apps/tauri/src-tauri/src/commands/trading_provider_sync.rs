@@ -109,13 +109,37 @@ impl<'a> PlutusCommands<'a> {
             if owner_profile_id != profile_id {
                 bail!("portfolio outside active profile");
             }
-            self.db.conn.execute(
-                "UPDATE portfolios SET name = ?1, base_currency = ?2, updated_at = ?3 WHERE id = ?4",
-                params![name, base_currency, now(), portfolio_id],
-            )?;
-            return self.load_portfolio(portfolio_id);
+            return self.update_synced_portfolio(portfolio_id, &name, base_currency);
+        }
+        if let Some(existing_portfolio_id) = self.synced_portfolio_id_for_name(profile_id, &name)? {
+            return self.update_synced_portfolio(&existing_portfolio_id, &name, base_currency);
         }
         self.db.create_portfolio(profile_id, &name, base_currency)
+    }
+
+    fn synced_portfolio_id_for_name(&self, profile_id: &str, name: &str) -> Result<Option<String>> {
+        self.db
+            .conn
+            .query_row(
+                "SELECT id FROM portfolios WHERE profile_id = ?1 AND name = ?2 ORDER BY updated_at DESC, created_at DESC LIMIT 1",
+                params![profile_id, name],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(Into::into)
+    }
+
+    fn update_synced_portfolio(
+        &self,
+        portfolio_id: &str,
+        name: &str,
+        base_currency: &str,
+    ) -> Result<Portfolio> {
+        self.db.conn.execute(
+            "UPDATE portfolios SET name = ?1, base_currency = ?2, updated_at = ?3 WHERE id = ?4",
+            params![name, base_currency, now(), portfolio_id],
+        )?;
+        self.load_portfolio(portfolio_id)
     }
 
     fn load_portfolio(&self, portfolio_id: &str) -> Result<Portfolio> {

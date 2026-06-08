@@ -107,18 +107,15 @@ export function syncPortfolioFromProvider(
     requestedBaseCurrency || providerBaseCurrency(provider),
   );
   const sourceHoldings =
-    parsed.holdings ??
-    previewSyncedHoldingsForProvider(provider, baseCurrency);
+    parsed.holdings ?? previewSyncedHoldingsForProvider(provider, baseCurrency);
   const positions = sourceHoldings.map((holding) =>
     positionFromSyncedHolding(holding),
   );
   const portfolioName =
     parsed.portfolioName?.trim() || `${provider.displayName} Synced Holdings`;
   const existingPortfolio = parsed.portfolioId
-    ? state.portfolios.find(
-        (candidate) => candidate.id === parsed.portfolioId,
-      )
-    : undefined;
+    ? state.portfolios.find((candidate) => candidate.id === parsed.portfolioId)
+    : state.portfolios.find((candidate) => candidate.name === portfolioName);
   if (parsed.portfolioId && !existingPortfolio) {
     throw new Error("Portfolio not found");
   }

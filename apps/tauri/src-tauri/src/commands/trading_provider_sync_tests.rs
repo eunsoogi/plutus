@@ -85,6 +85,64 @@ fn sync_portfolio_from_provider_imports_configured_upbit_without_raw_secrets() {
 }
 
 #[test]
+fn sync_portfolio_from_provider_reuses_provider_portfolio_when_id_is_omitted() {
+    let db = PlutusDatabase::in_memory().unwrap();
+    db.ensure_default_profile().unwrap();
+    let commands = PlutusCommands::new(&db);
+
+    let mut provider = provider_config("upbit", "Upbit", "Spot crypto", "CCXT");
+    provider.health = "connected".to_string();
+    provider.credential_ref = Some("secure://plutus/providers/upbit/main".to_string());
+    commands.save_trading_provider(provider).unwrap();
+
+    let first_result = commands
+        .sync_portfolio_from_provider(ProviderPortfolioSyncInput {
+            profile_id: Some(MVP_PROFILE_ID.to_string()),
+            provider_id: "upbit".to_string(),
+            portfolio_id: None,
+            portfolio_name: Some("Upbit Synced Holdings".to_string()),
+            base_currency: Some("KRW".to_string()),
+            holdings: Some(vec![ProviderSyncedHolding {
+                symbol: "btc-krw".to_string(),
+                name: Some("Bitcoin".to_string()),
+                quantity: 0.42,
+                average_cost: 91_000_000.0,
+                cost_currency: "KRW".to_string(),
+                thesis: Some("First import.".to_string()),
+            }]),
+        })
+        .unwrap();
+
+    let second_result = commands
+        .sync_portfolio_from_provider(ProviderPortfolioSyncInput {
+            profile_id: Some(MVP_PROFILE_ID.to_string()),
+            provider_id: "upbit".to_string(),
+            portfolio_id: None,
+            portfolio_name: Some("Upbit Synced Holdings".to_string()),
+            base_currency: Some("KRW".to_string()),
+            holdings: Some(vec![ProviderSyncedHolding {
+                symbol: "eth-krw".to_string(),
+                name: Some("Ethereum".to_string()),
+                quantity: 2.5,
+                average_cost: 4_800_000.0,
+                cost_currency: "KRW".to_string(),
+                thesis: Some("Second import.".to_string()),
+            }]),
+        })
+        .unwrap();
+
+    assert_eq!(second_result.portfolio_id, first_result.portfolio_id);
+    let portfolios = commands.list_portfolios(MVP_PROFILE_ID).unwrap();
+    assert_eq!(portfolios.len(), 1);
+    let snapshot = commands
+        .get_portfolio_snapshot(&second_result.portfolio_id)
+        .unwrap();
+    let snapshot_text = snapshot.to_string();
+    assert!(snapshot_text.contains("ETH-KRW"));
+    assert!(!snapshot_text.contains("BTC-KRW"));
+}
+
+#[test]
 fn sync_portfolio_from_provider_rejects_unconfigured_provider_without_mutating_portfolios() {
     let db = PlutusDatabase::in_memory().unwrap();
     db.ensure_default_profile().unwrap();
