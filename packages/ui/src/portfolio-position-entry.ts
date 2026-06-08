@@ -60,7 +60,15 @@ export function parsePositionEntryForm(
     return { ok: false, messageKey: "portfolio.positionQuantityRequired" };
   }
 
-  const averageCost = Number(values.averageCost);
+  const averageCostValue = values.averageCost.trim();
+  if (!averageCostValue) {
+    return {
+      ok: false,
+      messageKey: "portfolio.positionAverageCostRequired",
+    };
+  }
+
+  const averageCost = Number(averageCostValue);
   if (!Number.isFinite(averageCost) || averageCost < 0) {
     return {
       ok: false,

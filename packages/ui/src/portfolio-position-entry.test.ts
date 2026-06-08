@@ -94,6 +94,21 @@ describe("portfolio position entry", () => {
 
     expect(
       parsePositionEntryForm({
+        averageCost: " ",
+        costCurrency: "USD",
+        portfolioId: "portfolio-core",
+        profileId: "profile-core",
+        quantity: "1",
+        symbol: "AAPL",
+        thesis: "",
+      }),
+    ).toEqual({
+      ok: false,
+      messageKey: "portfolio.positionAverageCostRequired",
+    });
+
+    expect(
+      parsePositionEntryForm({
         averageCost: "10",
         costCurrency: "US",
         portfolioId: "portfolio-core",
