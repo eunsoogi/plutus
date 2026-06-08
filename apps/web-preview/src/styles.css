@@ -359,6 +359,45 @@ p {
   gap: 8px;
 }
 
+.portfolio-entry-form {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.portfolio-entry-form label {
+  color: #cbd5e1;
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.portfolio-entry-form span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.portfolio-entry-form input,
+.portfolio-entry-form textarea {
+  background: #0b121a;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  min-height: 40px;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.portfolio-entry-form textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.portfolio-entry-form__thesis {
+  grid-column: 1 / -1;
+}
+
 .toggle-row,
 .field-row {
   color: #cbd5e1;
@@ -710,6 +749,10 @@ p {
     grid-template-columns: 1fr;
   }
 
+  .portfolio-entry-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .dashboard-span {
     grid-column: auto;
   }
@@ -747,6 +790,10 @@ p {
 
   .main-surface {
     padding: 12px;
+  }
+
+  .portfolio-entry-form {
+    grid-template-columns: 1fr;
   }
 
   .page-header {

@@ -810,3 +810,170 @@ test("browser local runtime restores queued run state after returning to Runs", 
   await expect(page.getByTestId("run-progress")).toContainText("queued");
   await expect(page.getByTestId("command-source")).toHaveText("Local runtime");
 });
+
+test("portfolio screen adds a position before starting a research run", async ({
+  page,
+}) => {
+  const callsKey = `plutusPortfolioPositionCalls-${Date.now()}`;
+  await page.addInitScript((key) => {
+    type BridgeEnvelope = { command: string; args: unknown[] };
+    type LocalPosition = {
+      id: string;
+      symbol: string;
+      name: string;
+      quantity: number;
+      averageCost: number;
+      costCurrency: string;
+      thesis: string;
+    };
+    type LocalPortfolio = {
+      id: string;
+      name: string;
+      baseCurrency: string;
+      positions: LocalPosition[];
+    };
+    type BridgeState = {
+      profileId: string;
+      portfolios: LocalPortfolio[];
+      runs: Array<{
+        id: string;
+        portfolioId: string;
+        status: string;
+        title: string;
+        category: string;
+      }>;
+    };
+    const stateKey = `${key}:state`;
+    function readState(): BridgeState {
+      const stored = localStorage.getItem(stateKey);
+      if (stored) return JSON.parse(stored) as BridgeState;
+      return {
+        profileId: "profile-real",
+        portfolios: [],
+        runs: [],
+      };
+    }
+    function writeState(state: BridgeState) {
+      localStorage.setItem(stateKey, JSON.stringify(state));
+    }
+    window.__PLUTUS_COMMAND_BRIDGE__ = (async (envelope) => {
+      const calls = JSON.parse(
+        localStorage.getItem(key) ?? "[]",
+      ) as BridgeEnvelope[];
+      calls.push(envelope);
+      localStorage.setItem(key, JSON.stringify(calls));
+
+      const state = readState();
+      if (envelope.command === "app.getSnapshot") {
+        return {
+          profileId: state.profileId,
+          portfolios: state.portfolios,
+          watchlists: [],
+          runs: state.runs,
+          artifacts: [],
+          memoryActivity: [],
+          wikiPages: [],
+          remoteDevices: [],
+        };
+      }
+      if (envelope.command === "portfolios.create") {
+        const [input] = envelope.args as [{ name?: string }];
+        const portfolio = {
+          id: "portfolio-created",
+          name: input.name ?? "Core Portfolio",
+          baseCurrency: "USD",
+          positions: [],
+        };
+        state.portfolios = [portfolio];
+        writeState(state);
+        return portfolio;
+      }
+      if (envelope.command === "portfolios.addPosition") {
+        const [input] = envelope.args as [
+          {
+            averageCost: number;
+            costCurrency: string;
+            portfolioId: string;
+            quantity: number;
+            symbol: string;
+            thesis?: string;
+          },
+        ];
+        const portfolio = state.portfolios.find(
+          (candidate) => candidate.id === input.portfolioId,
+        );
+        if (!portfolio) throw new Error("Portfolio not found");
+        const position = {
+          id: "position-btc",
+          symbol: input.symbol,
+          name: input.symbol,
+          quantity: input.quantity,
+          averageCost: input.averageCost,
+          costCurrency: input.costCurrency,
+          thesis: input.thesis ?? "",
+        };
+        portfolio.positions = [...portfolio.positions, position];
+        writeState(state);
+        return position;
+      }
+      if (envelope.command === "researchRuns.start") {
+        const [input] = envelope.args as [
+          { portfolioId?: string; userRequest?: string },
+        ];
+        const run = {
+          id: "run-added-symbol",
+          portfolioId: input.portfolioId ?? "",
+          status: "queued",
+          title: input.userRequest ?? "Portfolio review",
+          category: "",
+        };
+        state.runs = [run];
+        writeState(state);
+        return run;
+      }
+      throw new Error(`Unexpected command ${envelope.command}`);
+    }) as NonNullable<Window["__PLUTUS_COMMAND_BRIDGE__"]>;
+  }, callsKey);
+
+  await page.goto("/portfolios?runtime=local");
+  await page.getByRole("button", { name: "Create Portfolio" }).click();
+  await expect(page.getByTestId("portfolio-command-status")).toContainText(
+    "Created Core Portfolio",
+  );
+
+  await page.getByLabel("Symbol").fill("btc");
+  await page.getByLabel("Quantity").fill("0.75");
+  await page.getByLabel("Average cost").fill("65000");
+  await page.getByLabel("Cost currency").fill("usd");
+  await page.getByLabel("Position thesis").fill("Crypto beta sleeve");
+  await page.getByRole("button", { name: "Add Position" }).click();
+
+  await expect(page.getByTestId("portfolio-command-status")).toContainText(
+    "Added BTC",
+  );
+  await expect(page.getByTestId("portfolio-core")).toContainText("BTC");
+  await expect(page.getByTestId("portfolio-core")).toContainText("$48,750");
+
+  await page.goto("/runs?runtime=local");
+  await page.getByRole("button", { name: "Start Research Run" }).click();
+  await expect(page.getByTestId("run-progress")).toContainText("queued");
+
+  const calls = await page.evaluate((key) => {
+    return JSON.parse(localStorage.getItem(key) ?? "[]") as Array<{
+      command: string;
+      args: unknown[];
+    }>;
+  }, callsKey);
+  expect(calls).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        command: "researchRuns.start",
+        args: [
+          expect.objectContaining({
+            symbols: ["BTC"],
+          }),
+        ],
+      }),
+    ]),
+  );
+});

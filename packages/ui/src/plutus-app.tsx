@@ -108,6 +108,15 @@ export type PlutusCommandClient = {
       benchmarkId?: string | null;
       riskProfile?: Record<string, unknown>;
     }) => Promise<{ id?: string; name?: string }>;
+    addPosition?: (input: {
+      profileId?: string;
+      portfolioId: string;
+      symbol: string;
+      quantity: number;
+      averageCost: number;
+      costCurrency: string;
+      thesis?: string;
+    }) => Promise<Record<string, unknown>>;
     updatePositionThesis?: (input: {
       positionId: string;
       profileId?: string;
@@ -252,7 +261,7 @@ function commandErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Command failed";
 }
 
-function localizedScenarioText(
+export function localizedScenarioText(
   value: string | undefined,
   t: ReturnType<typeof useI18n>["t"],
 ) {
@@ -728,130 +737,6 @@ function AgentActivityPanel({ scenario }: { scenario: PlutusScenario }) {
           </div>
         ))}
       </div>
-    </article>
-  );
-}
-
-export function PortfoliosPage({
-  scenario,
-  commandClient,
-}: {
-  scenario: PlutusScenario;
-  commandClient?: PlutusCommandClient;
-}) {
-  const { t } = useI18n();
-  const [creating, setCreating] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [createdPortfolio, setCreatedPortfolio] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
-  const visibleScenario =
-    !scenario.portfolio.id && createdPortfolio
-      ? {
-          ...scenario,
-          portfolio: {
-            ...scenario.portfolio,
-            id: createdPortfolio.id,
-            name: createdPortfolio.name,
-          },
-        }
-      : scenario;
-
-  async function createPortfolio() {
-    setMessage(null);
-    if (!commandClient?.portfolios?.create) {
-      setMessage(t("portfolio.bridgeMissing"));
-      return;
-    }
-    setCreating(true);
-    try {
-      const created = await commandClient.portfolios.create({
-        profileId: scenario.profileId,
-        name: t("portfolio.defaultName"),
-        baseCurrency: "USD",
-      });
-      if (created.id) {
-        const createdName = localizedScenarioText(
-          created.name ?? t("portfolio.defaultName"),
-          t,
-        );
-        setCreatedPortfolio({
-          id: created.id,
-          name: createdName,
-        });
-      }
-      setMessage(
-        t("portfolio.created", {
-          name: localizedScenarioText(
-            created.name ?? t("portfolio.defaultName"),
-            t,
-          ),
-        }),
-      );
-    } catch (error) {
-      setMessage(commandErrorMessage(error));
-    } finally {
-      setCreating(false);
-    }
-  }
-
-  return (
-    <HostShell>
-      <h1>{t("portfolio.title")}</h1>
-      {!visibleScenario.portfolio.id ? (
-        <section className="panel">
-          <h2>{t("portfolio.create")}</h2>
-          <button
-            className="primary"
-            onClick={createPortfolio}
-            disabled={creating}
-          >
-            {creating ? t("portfolio.creating") : t("portfolio.create")}
-          </button>
-        </section>
-      ) : null}
-      {message ? <p data-testid="portfolio-command-status">{message}</p> : null}
-      <PortfolioRows scenario={visibleScenario} />
-    </HostShell>
-  );
-}
-
-export function PortfolioDetailPage({
-  scenario,
-}: {
-  scenario: PlutusScenario;
-}) {
-  const { t } = useI18n();
-  return (
-    <HostShell>
-      <h1>{localizedScenarioText(scenario.portfolio.name, t)}</h1>
-      <PortfolioRows scenario={scenario} />
-      <section className="panel">
-        <h2>{t("portfolio.thesisNotes")}</h2>
-        {scenario.portfolio.positions.map((position) => (
-          <p key={position.symbol}>
-            <strong>{position.symbol}</strong>: {position.thesis}
-          </p>
-        ))}
-      </section>
-    </HostShell>
-  );
-}
-
-function PortfolioRows({ scenario }: { scenario: PlutusScenario }) {
-  const { locale, t } = useI18n();
-  return (
-    <article className="panel" data-testid="portfolio-core">
-      <h2>{localizedScenarioText(scenario.portfolio.name, t)}</h2>
-      {scenario.portfolio.positions.map((position) => (
-        <div className="row" key={position.symbol}>
-          <span>
-            {position.symbol} - {position.name}
-          </span>
-          <strong>{formatCurrency(position.value, "USD", locale)}</strong>
-        </div>
-      ))}
     </article>
   );
 }

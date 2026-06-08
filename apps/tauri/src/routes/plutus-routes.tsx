@@ -436,6 +436,7 @@ function renderPlutusRouteContent({
       <PortfoliosPage
         scenario={resolvedScenario}
         commandClient={resolvedCommandClient}
+        refreshScenario={refreshScenario}
       />
     );
   }
