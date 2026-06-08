@@ -668,3 +668,27 @@ test("browser local runtime queues a research run only after real portfolio stat
   await page.getByRole("button", { name: "Start Research Run" }).click();
   await expect(page.getByTestId("run-progress")).toContainText("queued");
 });
+
+test("browser local runtime restores queued run state after returning to Runs", async ({
+  page,
+}) => {
+  // Given: a persisted local-browser research run exists.
+  await page.goto("/runs?runtime=local");
+  await page.evaluate(() => localStorage.removeItem("plutus.localRuntime.v1"));
+  await page.goto("/portfolios?runtime=local");
+  await page.getByRole("button", { name: "Create Portfolio" }).click();
+  await expect(page.getByTestId("portfolio-command-status")).toContainText(
+    "Created Core Portfolio",
+  );
+  await page.goto("/runs?runtime=local");
+  await page.getByRole("button", { name: "Start Research Run" }).click();
+  await expect(page.getByTestId("run-progress")).toContainText("queued");
+
+  // When: the Runs page remounts after route navigation.
+  await page.goto("/dashboard?runtime=local");
+  await page.goto("/runs?runtime=local");
+
+  // Then: the visible run state comes from the latest scenario snapshot.
+  await expect(page.getByTestId("run-progress")).toContainText("queued");
+  await expect(page.getByTestId("command-source")).toHaveText("Local runtime");
+});

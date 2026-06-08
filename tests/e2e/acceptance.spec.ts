@@ -293,10 +293,35 @@ test("orchestrator office rerenders from empty to populated run without page err
   await page.goto("/runs?runtime=none");
 
   await page.evaluate(async (workspaceRoot) => {
+    type BrowserCreateElement = (
+      type: unknown,
+      props?: unknown,
+      ...children: unknown[]
+    ) => unknown;
+    type BrowserReactModule = {
+      readonly createElement?: BrowserCreateElement;
+      readonly default: { readonly createElement: BrowserCreateElement };
+    };
+    type BrowserRoot = { readonly render: (node: unknown) => void };
+    type BrowserReactDomClientModule = {
+      readonly createRoot?: (container: Element) => BrowserRoot;
+      readonly default: {
+        readonly createRoot: (container: Element) => BrowserRoot;
+      };
+    };
+    const importReactRuntime = (
+      path: string,
+    ): Promise<BrowserReactModule> => import(path);
+    const importReactDomClientRuntime = (
+      path: string,
+    ): Promise<BrowserReactDomClientModule> => import(path);
+    const reactModulePath = "/node_modules/.vite/deps/react.js";
+    const reactDomClientModulePath =
+      "/node_modules/.vite/deps/react-dom_client.js";
     const [reactModule, reactDomClientModule, { I18nProvider }, officeModule] =
       await Promise.all([
-        import("/node_modules/.vite/deps/react.js"),
-        import("/node_modules/.vite/deps/react-dom_client.js"),
+        importReactRuntime(reactModulePath),
+        importReactDomClientRuntime(reactDomClientModulePath),
         import(`${workspaceRoot}/packages/ui/src/i18n.tsx`),
         import(`${workspaceRoot}/packages/ui/src/orchestrator-office.tsx`),
       ]);

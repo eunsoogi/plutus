@@ -208,6 +208,30 @@ function commandStatusLabel(status: string | undefined, fallback: string) {
   return status;
 }
 
+const visibleResearchRunStatuses: ReadonlySet<string> = new Set([
+  "queued",
+  "planning",
+  "grounding",
+  "executing",
+  "debating",
+  "validating",
+  "reporting",
+  "running",
+  "completed",
+  "failed",
+  "cancelled",
+]);
+
+function hasVisibleResearchRun(run: PlutusScenario["run"]) {
+  return Boolean(
+    run.id ||
+      run.category ||
+      run.finalCard ||
+      run.artifacts.length > 0 ||
+      visibleResearchRunStatuses.has(run.status),
+  );
+}
+
 function commandErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Command failed";
 }
@@ -912,6 +936,8 @@ export function RunsPage({
     setCurrentScenario(scenario);
     setRunStatus(localizedScenarioText(scenario.run.status, t));
   }, [scenario, t]);
+  const visibleRunStarted =
+    started || hasVisibleResearchRun(currentScenario.run);
 
   async function startReview() {
     setCommandError(null);
@@ -988,7 +1014,7 @@ export function RunsPage({
         </section>
       ) : null}
       <section className="panel run-panel">
-        {started ? (
+        {visibleRunStarted ? (
           <>
             <div data-testid="run-progress">{runStatus}</div>
             <div data-testid="command-source">
@@ -1001,7 +1027,7 @@ export function RunsPage({
         {currentScenario.run.category ? <RiskWarning /> : null}
         <FinalRunCard
           run={currentScenario.run}
-          started={started}
+          started={visibleRunStarted}
           status={runStatus}
         />
         <ArtifactList scenario={currentScenario} />
