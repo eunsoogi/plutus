@@ -16,6 +16,14 @@ export function normalizePositionInput(input: AnyRecord): AnyRecord {
 export function normalizeProviderPortfolioSyncInput(
   input: AnyRecord,
 ): AnyRecord {
+  if (
+    "holdings" in input &&
+    input.holdings !== undefined &&
+    !Array.isArray(input.holdings)
+  ) {
+    throw new Error("Provider sync holdings must be an array.");
+  }
+
   return {
     profile_id: input.profileId,
     portfolio_id: input.portfolioId,
