@@ -71,8 +71,7 @@ const messages = {
     "portfolio.positionQuantityRequired": "Enter a quantity greater than 0.",
     "portfolio.positionAverageCostRequired":
       "Enter an average cost of 0 or greater.",
-    "portfolio.positionCurrencyRequired":
-      "Enter a 3-letter cost currency such as USD.",
+    "portfolio.positionCurrencyRequired": "Use USD as the cost currency.",
     "portfolio.defaultName": "Core Portfolio",
     "portfolio.title": "Portfolios",
     "portfolio.empty": "No portfolio yet",
@@ -277,8 +276,7 @@ const messages = {
     "portfolio.positionQuantityRequired": "0보다 큰 수량을 입력해 주세요.",
     "portfolio.positionAverageCostRequired":
       "0 이상의 평균 단가를 입력해 주세요.",
-    "portfolio.positionCurrencyRequired":
-      "USD처럼 3글자 통화 코드를 입력해 주세요.",
+    "portfolio.positionCurrencyRequired": "매입 통화는 USD만 사용할 수 있습니다.",
     "portfolio.defaultName": "기본 포트폴리오",
     "portfolio.title": "포트폴리오",
     "portfolio.empty": "아직 포트폴리오 없음",

@@ -118,5 +118,17 @@ describe("portfolio position entry", () => {
         thesis: "",
       }),
     ).toEqual({ ok: false, messageKey: "portfolio.positionCurrencyRequired" });
+
+    expect(
+      parsePositionEntryForm({
+        averageCost: "10000",
+        costCurrency: "KRW",
+        portfolioId: "portfolio-core",
+        profileId: "profile-core",
+        quantity: "1",
+        symbol: "AAPL",
+        thesis: "",
+      }),
+    ).toEqual({ ok: false, messageKey: "portfolio.positionCurrencyRequired" });
   });
 });

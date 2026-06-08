@@ -35,7 +35,7 @@ export type PositionEntryParseResult =
       readonly messageKey: PositionEntryValidationKey;
     };
 
-const COST_CURRENCY_PATTERN = /^[A-Z]{3}$/;
+const SUPPORTED_COST_CURRENCY = "USD";
 const DISPLAYED_CRYPTO_USD_ALIASES: Readonly<Record<string, string>> = {
   BTC: "BTC-USD",
   ETH: "ETH-USD",
@@ -77,7 +77,7 @@ export function parsePositionEntryForm(
   }
 
   const costCurrency = values.costCurrency.trim().toUpperCase();
-  if (!COST_CURRENCY_PATTERN.test(costCurrency)) {
+  if (costCurrency !== SUPPORTED_COST_CURRENCY) {
     return { ok: false, messageKey: "portfolio.positionCurrencyRequired" };
   }
 
