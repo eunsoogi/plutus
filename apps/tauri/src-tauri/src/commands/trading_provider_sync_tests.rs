@@ -1,7 +1,7 @@
 use super::{
     trading::provider_config,
     trading_types::{ProviderPortfolioSyncInput, ProviderSyncedHolding},
-    PlutusCommands,
+    CreatePortfolioInput, PlutusCommands, PositionInput,
 };
 use crate::storage::{AppDataPaths, PlutusDatabase, MVP_PROFILE_ID};
 
@@ -141,6 +141,74 @@ fn sync_portfolio_from_provider_reuses_provider_portfolio_when_localized_name_dr
     let snapshot_text = snapshot.to_string();
     assert!(snapshot_text.contains("ETH-KRW"));
     assert!(!snapshot_text.contains("BTC-KRW"));
+}
+
+#[test]
+fn sync_portfolio_from_provider_keeps_same_name_manual_portfolio_intact() {
+    let db = PlutusDatabase::in_memory().unwrap();
+    db.ensure_default_profile().unwrap();
+    let commands = PlutusCommands::new(&db);
+
+    let manual_portfolio = commands
+        .create_portfolio(CreatePortfolioInput {
+            profile_id: MVP_PROFILE_ID.to_string(),
+            name: "Upbit Synced Holdings".to_string(),
+            base_currency: "KRW".to_string(),
+        })
+        .unwrap();
+    commands
+        .add_portfolio_position(PositionInput {
+            profile_id: MVP_PROFILE_ID.to_string(),
+            portfolio_id: manual_portfolio.id.clone(),
+            account_id: None,
+            symbol: "AAPL".to_string(),
+            quantity: 3.0,
+            average_cost: 180.0,
+            cost_currency: Some("USD".to_string()),
+            thesis: Some("Manual same-name holding.".to_string()),
+        })
+        .unwrap();
+
+    let mut provider = provider_config("upbit", "Upbit", "Spot crypto", "CCXT");
+    provider.health = "connected".to_string();
+    provider.credential_ref = Some("secure://plutus/providers/upbit/main".to_string());
+    commands.save_trading_provider(provider).unwrap();
+
+    let sync_result = commands
+        .sync_portfolio_from_provider(ProviderPortfolioSyncInput {
+            profile_id: Some(MVP_PROFILE_ID.to_string()),
+            provider_id: "upbit".to_string(),
+            portfolio_id: None,
+            portfolio_name: Some("Upbit Synced Holdings".to_string()),
+            base_currency: Some("KRW".to_string()),
+            holdings: Some(vec![ProviderSyncedHolding {
+                symbol: "btc-krw".to_string(),
+                name: Some("Bitcoin".to_string()),
+                quantity: 0.42,
+                average_cost: 91_000_000.0,
+                cost_currency: "KRW".to_string(),
+                thesis: Some("Imported from Upbit account balance.".to_string()),
+            }]),
+        })
+        .unwrap();
+
+    assert_ne!(sync_result.portfolio_id, manual_portfolio.id);
+    let portfolios = commands.list_portfolios(MVP_PROFILE_ID).unwrap();
+    assert_eq!(portfolios.len(), 2);
+
+    let manual_snapshot = commands
+        .get_portfolio_snapshot(&manual_portfolio.id)
+        .unwrap()
+        .to_string();
+    assert!(manual_snapshot.contains("AAPL"));
+    assert!(!manual_snapshot.contains("BTC-KRW"));
+
+    let synced_snapshot = commands
+        .get_portfolio_snapshot(&sync_result.portfolio_id)
+        .unwrap()
+        .to_string();
+    assert!(synced_snapshot.contains("BTC-KRW"));
+    assert!(!synced_snapshot.contains("AAPL"));
 }
 
 #[test]

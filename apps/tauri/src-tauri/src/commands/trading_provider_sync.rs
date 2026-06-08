@@ -129,14 +129,6 @@ impl<'a> PlutusCommands<'a> {
                 &provider.provider_id,
             );
         }
-        if let Some(existing_portfolio_id) = self.synced_portfolio_id_for_name(profile_id, &name)? {
-            return self.update_synced_portfolio(
-                &existing_portfolio_id,
-                &name,
-                base_currency,
-                &provider.provider_id,
-            );
-        }
         let portfolio = self.db.create_portfolio(profile_id, &name, base_currency)?;
         self.update_synced_portfolio(&portfolio.id, &name, base_currency, &provider.provider_id)
     }
@@ -159,18 +151,6 @@ impl<'a> PlutusCommands<'a> {
             }
         }
         Ok(None)
-    }
-
-    fn synced_portfolio_id_for_name(&self, profile_id: &str, name: &str) -> Result<Option<String>> {
-        self.db
-            .conn
-            .query_row(
-                "SELECT id FROM portfolios WHERE profile_id = ?1 AND name = ?2 ORDER BY updated_at DESC, created_at DESC LIMIT 1",
-                params![profile_id, name],
-                |row| row.get(0),
-            )
-            .optional()
-            .map_err(Into::into)
     }
 
     fn update_synced_portfolio(

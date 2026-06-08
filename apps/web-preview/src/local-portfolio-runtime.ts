@@ -121,8 +121,7 @@ export function syncPortfolioFromProvider(
     parsed.portfolioName?.trim() || `${provider.displayName} Synced Holdings`;
   const existingPortfolio = parsed.portfolioId
     ? state.portfolios.find((candidate) => candidate.id === parsed.portfolioId)
-    : findProviderSyncedPortfolio(state.portfolios, provider.providerId) ??
-      state.portfolios.find((candidate) => candidate.name === portfolioName);
+    : findProviderSyncedPortfolio(state.portfolios, provider.providerId);
   if (parsed.portfolioId && !existingPortfolio) {
     throw new Error("Portfolio not found");
   }
