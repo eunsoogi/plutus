@@ -643,6 +643,52 @@ test("wiki detail uses the routed wiki page when multiple pages exist", async ({
   await expect(page.getByText("First page revision note.")).toHaveCount(0);
 });
 
+test("ready run placeholder with only an id does not render started progress", async ({
+  page,
+}) => {
+  // Given: the runtime has reserved a run id but has not started real work.
+  await page.addInitScript(() => {
+    window.__PLUTUS_COMMAND_BRIDGE__ = (async (envelope) => {
+      if (envelope.command === "app.getSnapshot") {
+        return {
+          profileId: "profile-placeholder",
+          portfolios: [
+            {
+              id: "portfolio-placeholder",
+              name: "Placeholder Portfolio",
+              baseCurrency: "USD",
+              positions: [],
+            },
+          ],
+          watchlists: [],
+          runs: [
+            {
+              id: "run-placeholder",
+              portfolioId: "portfolio-placeholder",
+              status: "ready",
+              title: "Pending placeholder",
+              category: "",
+            },
+          ],
+          artifacts: [],
+          memoryActivity: [],
+          wikiPages: [],
+          remoteDevices: [],
+        };
+      }
+      throw new Error(`Unexpected command ${envelope.command}`);
+    }) as NonNullable<Window["__PLUTUS_COMMAND_BRIDGE__"]>;
+  });
+
+  // When: the Runs page renders the placeholder snapshot.
+  await page.goto("/runs?runtime=local");
+
+  // Then: the unstarted stage list remains visible instead of run status chrome.
+  await expect(page.getByTestId("run-progress")).toContainText("planning");
+  await expect(page.getByTestId("run-progress")).not.toContainText("ready");
+  await expect(page.getByTestId("command-source")).toHaveCount(0);
+});
+
 test("browser local runtime queues a research run only after real portfolio state exists", async ({
   page,
 }) => {

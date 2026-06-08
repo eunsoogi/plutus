@@ -224,8 +224,7 @@ const visibleResearchRunStatuses: ReadonlySet<string> = new Set([
 
 function hasVisibleResearchRun(run: PlutusScenario["run"]) {
   return Boolean(
-    run.id ||
-      run.category ||
+    run.category ||
       run.finalCard ||
       run.artifacts.length > 0 ||
       visibleResearchRunStatuses.has(run.status),
