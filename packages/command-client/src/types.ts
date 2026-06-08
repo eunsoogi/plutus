@@ -11,6 +11,7 @@ export interface Portfolio {
     thesis: string;
     quantity?: number;
     averageCost?: number;
+    costCurrency?: string;
   }>;
 }
 

@@ -23,6 +23,15 @@ type LocalState = Omit<
 > &
   LocalTradingState;
 
+type LocalAddPositionInput = {
+  readonly averageCost?: number;
+  readonly costCurrency?: string;
+  readonly portfolioId?: string;
+  readonly quantity?: number;
+  readonly symbol?: string;
+  readonly thesis?: string;
+};
+
 const STORAGE_KEY = "plutus.localRuntime.v1";
 const PROFILE_ID = "local-browser-profile";
 
@@ -126,6 +135,35 @@ export function createLocalWebCommandBridge(): CommandBridge {
         writeState(state);
         return portfolio as T;
       }
+      case "portfolios.addPosition": {
+        const [input] = envelope.args as [LocalAddPositionInput];
+        const portfolio = state.portfolios.find(
+          (candidate) => candidate.id === input.portfolioId,
+        );
+        if (!portfolio) throw new Error("Portfolio not found");
+        const quantity = Number(input.quantity);
+        const averageCost = Number(input.averageCost);
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+          throw new Error("Quantity must be greater than 0.");
+        }
+        if (!Number.isFinite(averageCost) || averageCost < 0) {
+          throw new Error("Average cost must be 0 or greater.");
+        }
+        const symbol = input.symbol?.trim().toUpperCase();
+        if (!symbol) throw new Error("Symbol is required.");
+        const position = {
+          id: newId("position"),
+          symbol,
+          name: symbol,
+          thesis: input.thesis ?? "",
+          quantity,
+          averageCost,
+          costCurrency: input.costCurrency ?? "USD",
+        };
+        portfolio.positions = [...(portfolio.positions ?? []), position];
+        writeState(state);
+        return position as T;
+      }
       case "watchlists.list":
         return state.watchlists as T;
       case "watchlists.create": {
@@ -198,7 +236,6 @@ export function createLocalWebCommandBridge(): CommandBridge {
       case "wiki.getPage":
       case "wiki.revertRevision":
       case "portfolios.getSnapshot":
-      case "portfolios.addPosition":
       case "portfolios.updatePosition":
       case "portfolios.updatePositionThesis":
       case "remote.prepareUnlock":

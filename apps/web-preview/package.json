@@ -8,8 +8,8 @@
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --root ../.. packages/ui/src/ui.test.ts apps/web-preview/src/route-context.test.ts apps/web-preview/src/local-trading-runtime.test.ts",
-    "test:unit": "vitest run --root ../.. packages/ui/src/ui.test.ts apps/web-preview/src/route-context.test.ts apps/web-preview/src/local-trading-runtime.test.ts",
+    "test": "vitest run --root ../.. packages/ui/src/ui.test.ts apps/web-preview/src/route-context.test.ts apps/web-preview/src/local-trading-runtime.test.ts apps/web-preview/src/local-runtime.test.ts",
+    "test:unit": "vitest run --root ../.. packages/ui/src/ui.test.ts apps/web-preview/src/route-context.test.ts apps/web-preview/src/local-trading-runtime.test.ts apps/web-preview/src/local-runtime.test.ts",
     "test:integration": "vitest run --root ../.. packages/ui/src/ui.test.ts"
   },
   "dependencies": {
