@@ -68,6 +68,32 @@ export interface TradingProviderConfig {
   }[];
 }
 
+export interface ProviderSyncedHolding {
+  readonly averageCost: number;
+  readonly costCurrency: string;
+  readonly name?: string;
+  readonly quantity: number;
+  readonly symbol: string;
+  readonly thesis?: string;
+}
+
+export interface ProviderPortfolioSyncInput {
+  readonly baseCurrency?: string;
+  readonly holdings?: readonly ProviderSyncedHolding[];
+  readonly portfolioId?: string;
+  readonly portfolioName?: string;
+  readonly profileId?: string;
+  readonly providerId: TradingProviderId;
+}
+
+export interface ProviderPortfolioSyncResult {
+  readonly importedCount: number;
+  readonly portfolioId: string;
+  readonly providerId: TradingProviderId;
+  readonly skippedCount: number;
+  readonly positionSymbols: readonly string[];
+}
+
 export interface TradingOrderIntent {
   providerId: TradingProviderId;
   symbol: string;

@@ -1,4 +1,24 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function syncUpbitHoldings(page: Page): Promise<void> {
+  await page.goto("/settings/providers?runtime=local");
+  await page.getByTestId("provider-select").selectOption("upbit");
+  await page.getByTestId("credential-api-key-input").fill("upbit-api-key");
+  await page.getByTestId("credential-secret-input").fill("upbit-secret");
+  await page.getByRole("button", { name: "Save provider settings" }).click();
+  await expect(page.getByTestId("provider-preview-status")).toContainText(
+    "Provider settings saved locally",
+  );
+
+  await page.goto("/portfolios?runtime=local");
+  await expect(page.getByTestId("portfolio-provider-sync")).toContainText(
+    "Ready: Upbit",
+  );
+  await page.getByRole("button", { name: "Sync Upbit Holdings" }).click();
+  await expect(page.getByTestId("portfolio-command-status")).toContainText(
+    "Synced 2 holdings from Upbit",
+  );
+}
 
 test("browser runtime does not render seeded portfolio data without a command bridge", async ({
   page,
@@ -774,11 +794,7 @@ test("browser local runtime queues a research run only after real portfolio stat
   await expect(page.getByTestId("orchestrator-office")).toHaveCount(0);
   await expect(page.getByText(/BTC|NVDA/)).toHaveCount(0);
 
-  await page.goto("/portfolios?runtime=local");
-  await page.getByRole("button", { name: "Create Portfolio" }).click();
-  await expect(page.getByTestId("portfolio-command-status")).toContainText(
-    "Created Core Portfolio",
-  );
+  await syncUpbitHoldings(page);
   await page.goto("/runs?runtime=local");
   await expect(
     page.getByRole("button", { name: "Start Research Run" }),
@@ -787,17 +803,27 @@ test("browser local runtime queues a research run only after real portfolio stat
   await expect(page.getByTestId("run-progress")).toContainText("queued");
 });
 
+test("dashboard renders the orchestrator office before a research run starts", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.removeItem("plutus.localRuntime.v1");
+  });
+
+  await page.goto("/dashboard?runtime=local");
+
+  await expect(page.getByTestId("run-progress")).toContainText("planning");
+  await expect(page.getByTestId("orchestrator-office")).toBeVisible();
+  await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
+});
+
 test("browser local runtime restores queued run state after returning to Runs", async ({
   page,
 }) => {
   // Given: a persisted local-browser research run exists.
   await page.goto("/runs?runtime=local");
   await page.evaluate(() => localStorage.removeItem("plutus.localRuntime.v1"));
-  await page.goto("/portfolios?runtime=local");
-  await page.getByRole("button", { name: "Create Portfolio" }).click();
-  await expect(page.getByTestId("portfolio-command-status")).toContainText(
-    "Created Core Portfolio",
-  );
+  await syncUpbitHoldings(page);
   await page.goto("/runs?runtime=local");
   await page.getByRole("button", { name: "Start Research Run" }).click();
   await expect(page.getByTestId("run-progress")).toContainText("queued");
@@ -811,7 +837,7 @@ test("browser local runtime restores queued run state after returning to Runs", 
   await expect(page.getByTestId("command-source")).toHaveText("Local runtime");
 });
 
-test("portfolio screen adds a position before starting a research run", async ({
+test("portfolio screen syncs provider holdings before starting a research run", async ({
   page,
 }) => {
   const callsKey = `plutusPortfolioPositionCalls-${Date.now()}`;
@@ -856,6 +882,19 @@ test("portfolio screen adds a position before starting a research run", async ({
     function writeState(state: BridgeState) {
       localStorage.setItem(stateKey, JSON.stringify(state));
     }
+    const configuredProvider = {
+      providerId: "upbit",
+      displayName: "Upbit",
+      market: "crypto",
+      region: "KR",
+      environment: "sandbox",
+      mode: "read_only",
+      permissions: ["market_data", "account_read"],
+      health: "connected",
+      lastCheckedAt: "2026-06-08T00:00:00.000Z",
+      credentialRef: "secure://plutus/providers/upbit/main",
+      warnings: [],
+    };
     window.__PLUTUS_COMMAND_BRIDGE__ = (async (envelope) => {
       const calls = JSON.parse(
         localStorage.getItem(key) ?? "[]",
@@ -874,51 +913,58 @@ test("portfolio screen adds a position before starting a research run", async ({
           memoryActivity: [],
           wikiPages: [],
           remoteDevices: [],
+          tradingProviders: [configuredProvider],
         };
       }
-      if (envelope.command === "portfolios.create") {
-        const [input] = envelope.args as [{ name?: string }];
+      if (envelope.command === "providers.list") {
+        return [configuredProvider];
+      }
+      if (envelope.command === "portfolios.syncFromProvider") {
+        const [input] = envelope.args as [
+          {
+            baseCurrency?: string;
+            portfolioName?: string;
+            providerId: string;
+          },
+        ];
         const portfolio = {
-          id: "portfolio-created",
-          name: input.name ?? "Core Portfolio",
-          baseCurrency: "USD",
-          positions: [],
+          id: "portfolio-synced",
+          name: input.portfolioName ?? "Upbit Synced Holdings",
+          baseCurrency: input.baseCurrency ?? "KRW",
+          positions: [
+            {
+              id: "position-btc",
+              symbol: "BTC-KRW",
+              name: "Bitcoin",
+              quantity: 0.42,
+              averageCost: 91000000,
+              costCurrency: "KRW",
+              thesis: "Imported from Upbit account balance.",
+            },
+            {
+              id: "position-eth",
+              symbol: "ETH-KRW",
+              name: "Ethereum",
+              quantity: 2.5,
+              averageCost: 4800000,
+              costCurrency: "KRW",
+              thesis: "",
+            },
+          ],
         };
         state.portfolios = [portfolio];
         writeState(state);
-        return portfolio;
-      }
-      if (envelope.command === "portfolios.addPosition") {
-        const [input] = envelope.args as [
-          {
-            averageCost: number;
-            costCurrency: string;
-            portfolioId: string;
-            quantity: number;
-            symbol: string;
-            thesis?: string;
-          },
-        ];
-        const portfolio = state.portfolios.find(
-          (candidate) => candidate.id === input.portfolioId,
-        );
-        if (!portfolio) throw new Error("Portfolio not found");
-        const position = {
-          id: "position-btc",
-          symbol: input.symbol,
-          name: input.symbol,
-          quantity: input.quantity,
-          averageCost: input.averageCost,
-          costCurrency: input.costCurrency,
-          thesis: input.thesis ?? "",
+        return {
+          importedCount: 2,
+          portfolioId: portfolio.id,
+          providerId: input.providerId,
+          skippedCount: 0,
+          positionSymbols: ["BTC-KRW", "ETH-KRW"],
         };
-        portfolio.positions = [...portfolio.positions, position];
-        writeState(state);
-        return position;
       }
       if (envelope.command === "researchRuns.start") {
         const [input] = envelope.args as [
-          { portfolioId?: string; userRequest?: string },
+          { portfolioId?: string; symbols?: string[]; userRequest?: string },
         ];
         const run = {
           id: "run-added-symbol",
@@ -936,23 +982,15 @@ test("portfolio screen adds a position before starting a research run", async ({
   }, callsKey);
 
   await page.goto("/portfolios?runtime=local");
-  await page.getByRole("button", { name: "Create Portfolio" }).click();
-  await expect(page.getByTestId("portfolio-command-status")).toContainText(
-    "Created Core Portfolio",
+  await expect(page.getByTestId("portfolio-provider-sync")).toContainText(
+    "Ready: Upbit",
   );
-
-  await page.getByLabel("Symbol").fill("btc");
-  await page.getByLabel("Quantity").fill("0.75");
-  await page.getByLabel("Average cost").fill("65000");
-  await page.getByLabel("Cost currency").fill("usd");
-  await page.getByLabel("Position thesis").fill("Crypto beta sleeve");
-  await page.getByRole("button", { name: "Add Position" }).click();
-
+  await page.getByRole("button", { name: "Sync Upbit Holdings" }).click();
   await expect(page.getByTestId("portfolio-command-status")).toContainText(
-    "Added BTC",
+    "Synced 2 holdings from Upbit",
   );
-  await expect(page.getByTestId("portfolio-core")).toContainText("BTC");
-  await expect(page.getByTestId("portfolio-core")).toContainText("$48,750");
+  await expect(page.getByTestId("portfolio-core")).toContainText("BTC-KRW");
+  await expect(page.getByTestId("portfolio-core")).toContainText("ETH-KRW");
 
   await page.goto("/runs?runtime=local");
   await page.getByRole("button", { name: "Start Research Run" }).click();
@@ -967,10 +1005,20 @@ test("portfolio screen adds a position before starting a research run", async ({
   expect(calls).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
+        command: "portfolios.syncFromProvider",
+        args: [
+          expect.objectContaining({
+            providerId: "upbit",
+            baseCurrency: "KRW",
+          }),
+        ],
+      }),
+      expect.objectContaining({
         command: "researchRuns.start",
         args: [
           expect.objectContaining({
-            symbols: ["BTC"],
+            portfolioId: "portfolio-synced",
+            symbols: ["BTC-KRW", "ETH-KRW"],
           }),
         ],
       }),

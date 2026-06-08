@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img alt="Plutus README hero" src="./assets/readme/plutus-hero.png" />
+  <img alt="Plutus abstract market workspace" src="./assets/readme/plutus-abstract.png" />
 </p>
 
 Plutus is a local-first trading research workspace centered on a macOS host. It coordinates Codex-powered specialist agents for market research, portfolio review, backtesting, risk analysis, and report generation, while keeping the user in control of the final decision.

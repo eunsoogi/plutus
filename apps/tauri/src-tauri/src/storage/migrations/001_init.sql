@@ -62,6 +62,13 @@ CREATE TABLE IF NOT EXISTS positions (
   updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS trading_provider_configs (
+  provider_id TEXT PRIMARY KEY,
+  config_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS watchlists (
   id TEXT PRIMARY KEY,
   profile_id TEXT NOT NULL REFERENCES local_profiles(id),

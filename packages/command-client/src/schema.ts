@@ -6,6 +6,7 @@ export const AllowedCommandSchema = z.enum([
   "portfolios.create",
   "portfolios.getSnapshot",
   "portfolios.addPosition",
+  "portfolios.syncFromProvider",
   "portfolios.updatePosition",
   "portfolios.updatePositionThesis",
   "watchlists.list",

@@ -7,6 +7,7 @@ import {
 } from "./schema";
 import {
   normalizePositionInput,
+  normalizeProviderPortfolioSyncInput,
   normalizeRemoteUnlock,
   normalizeTauriResult,
   normalizeTradingDecisionInput,
@@ -54,6 +55,12 @@ const tauriCommandMap: Record<
   "portfolios.addPosition": ([input]) => ({
     command: "add_portfolio_position",
     args: { input: normalizePositionInput(input as AnyRecord) },
+  }),
+  "portfolios.syncFromProvider": ([input]) => ({
+    command: "sync_portfolio_from_provider",
+    args: {
+      input: normalizeProviderPortfolioSyncInput(input as AnyRecord),
+    },
   }),
   "portfolios.updatePosition": ([input]) => ({
     command: "update_portfolio_position",
