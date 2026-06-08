@@ -10,11 +10,6 @@ import {
   providerBaseCurrency,
 } from "./local-provider-holdings";
 
-export type LocalPortfolioRuntimeState = {
-  portfolios: Portfolio[];
-  tradingProviders: TradingProviderConfig[];
-};
-
 export type LocalCreatePortfolioInput = {
   readonly baseCurrency?: string;
   readonly name?: string;
@@ -30,6 +25,17 @@ export type LocalAddPositionInput = {
 };
 
 type LocalPortfolioPosition = NonNullable<Portfolio["positions"]>[number];
+
+type LocalProviderSyncedPortfolio = Portfolio & {
+  readonly providerSync?: {
+    readonly providerId: string;
+  };
+};
+
+export type LocalPortfolioRuntimeState = {
+  portfolios: LocalProviderSyncedPortfolio[];
+  tradingProviders: TradingProviderConfig[];
+};
 
 type LocalProviderPortfolioSyncInput = {
   readonly baseCurrency?: string;
@@ -115,7 +121,8 @@ export function syncPortfolioFromProvider(
     parsed.portfolioName?.trim() || `${provider.displayName} Synced Holdings`;
   const existingPortfolio = parsed.portfolioId
     ? state.portfolios.find((candidate) => candidate.id === parsed.portfolioId)
-    : state.portfolios.find((candidate) => candidate.name === portfolioName);
+    : findProviderSyncedPortfolio(state.portfolios, provider.providerId) ??
+      state.portfolios.find((candidate) => candidate.name === portfolioName);
   if (parsed.portfolioId && !existingPortfolio) {
     throw new Error("Portfolio not found");
   }
@@ -125,6 +132,9 @@ export function syncPortfolioFromProvider(
     name: portfolioName,
     baseCurrency,
     positions,
+    providerSync: {
+      providerId: provider.providerId,
+    },
   };
   state.portfolios = existingPortfolio
     ? state.portfolios.map((candidate) =>
@@ -138,6 +148,15 @@ export function syncPortfolioFromProvider(
     skippedCount: 0,
     positionSymbols: positions.map((position) => position.symbol),
   };
+}
+
+function findProviderSyncedPortfolio(
+  portfolios: readonly LocalProviderSyncedPortfolio[],
+  providerId: string,
+): LocalProviderSyncedPortfolio | undefined {
+  return portfolios.find(
+    (candidate) => candidate.providerSync?.providerId === providerId,
+  );
 }
 
 function parseProviderPortfolioSyncInput(

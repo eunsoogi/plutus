@@ -32,6 +32,7 @@ mod trading_catalog;
 mod trading_payload;
 mod trading_provider_config;
 mod trading_provider_sync;
+mod trading_provider_sync_metadata;
 #[cfg(test)]
 mod trading_provider_sync_tests;
 mod trading_types;

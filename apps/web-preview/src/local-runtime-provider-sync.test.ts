@@ -86,7 +86,7 @@ describe("local web runtime provider portfolio sync", () => {
     expect(JSON.stringify(snapshot)).not.toContain("secretKey");
   });
 
-  it("reuses the provider-synced portfolio on repeated syncs without portfolio id", async () => {
+  it("reuses the provider-synced portfolio when localized names drift", async () => {
     await callBridge<TradingProviderConfig>({
       command: "providers.save",
       args: [connectedUpbitProvider],
@@ -111,7 +111,7 @@ describe("local web runtime provider portfolio sync", () => {
     const secondResult =
       await callProviderSyncBridge<ProviderPortfolioSyncResult>({
         providerId: "upbit",
-        portfolioName: "Upbit Synced Holdings",
+        portfolioName: "Upbit 동기화 포트폴리오",
         baseCurrency: "KRW",
         holdings: [
           {
@@ -132,7 +132,7 @@ describe("local web runtime provider portfolio sync", () => {
     expect(snapshot.portfolios).toEqual([
       expect.objectContaining({
         id: firstResult.portfolioId,
-        name: "Upbit Synced Holdings",
+        name: "Upbit 동기화 포트폴리오",
         baseCurrency: "KRW",
         positions: [
           expect.objectContaining({

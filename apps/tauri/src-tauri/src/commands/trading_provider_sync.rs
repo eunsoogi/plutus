@@ -1,6 +1,6 @@
 use anyhow::{bail, Context, Result};
 use rusqlite::{params, OptionalExtension};
-use serde_json::json;
+use serde_json::{json, Value};
 
 use super::{
     provider_holdings::{
@@ -8,6 +8,9 @@ use super::{
         preview_synced_holdings_for_provider, provider_base_currency, NormalizedHolding,
     },
     trading_provider_config::provider_is_configured,
+    trading_provider_sync_metadata::{
+        normalized_portfolio_name, risk_profile_matches_provider, tag_provider_sync,
+    },
     trading_types::{
         ProviderPortfolioSyncInput, ProviderPortfolioSyncResult, TradingProviderConfig,
     },
@@ -109,12 +112,53 @@ impl<'a> PlutusCommands<'a> {
             if owner_profile_id != profile_id {
                 bail!("portfolio outside active profile");
             }
-            return self.update_synced_portfolio(portfolio_id, &name, base_currency);
+            return self.update_synced_portfolio(
+                portfolio_id,
+                &name,
+                base_currency,
+                &provider.provider_id,
+            );
+        }
+        if let Some(existing_portfolio_id) =
+            self.synced_portfolio_id_for_provider(profile_id, &provider.provider_id)?
+        {
+            return self.update_synced_portfolio(
+                &existing_portfolio_id,
+                &name,
+                base_currency,
+                &provider.provider_id,
+            );
         }
         if let Some(existing_portfolio_id) = self.synced_portfolio_id_for_name(profile_id, &name)? {
-            return self.update_synced_portfolio(&existing_portfolio_id, &name, base_currency);
+            return self.update_synced_portfolio(
+                &existing_portfolio_id,
+                &name,
+                base_currency,
+                &provider.provider_id,
+            );
         }
-        self.db.create_portfolio(profile_id, &name, base_currency)
+        let portfolio = self.db.create_portfolio(profile_id, &name, base_currency)?;
+        self.update_synced_portfolio(&portfolio.id, &name, base_currency, &provider.provider_id)
+    }
+
+    fn synced_portfolio_id_for_provider(
+        &self,
+        profile_id: &str,
+        provider_id: &str,
+    ) -> Result<Option<String>> {
+        let mut stmt = self.db.conn.prepare(
+            "SELECT id, risk_profile FROM portfolios WHERE profile_id = ?1 ORDER BY updated_at DESC, created_at DESC",
+        )?;
+        let rows = stmt.query_map(params![profile_id], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })?;
+        for row in rows {
+            let (portfolio_id, risk_profile) = row?;
+            if risk_profile_matches_provider(&risk_profile, provider_id) {
+                return Ok(Some(portfolio_id));
+            }
+        }
+        Ok(None)
     }
 
     fn synced_portfolio_id_for_name(&self, profile_id: &str, name: &str) -> Result<Option<String>> {
@@ -134,12 +178,27 @@ impl<'a> PlutusCommands<'a> {
         portfolio_id: &str,
         name: &str,
         base_currency: &str,
+        provider_id: &str,
     ) -> Result<Portfolio> {
+        let risk_profile = self.provider_synced_risk_profile(portfolio_id, provider_id)?;
         self.db.conn.execute(
-            "UPDATE portfolios SET name = ?1, base_currency = ?2, updated_at = ?3 WHERE id = ?4",
-            params![name, base_currency, now(), portfolio_id],
+            "UPDATE portfolios SET name = ?1, base_currency = ?2, risk_profile = ?3, updated_at = ?4 WHERE id = ?5",
+            params![name, base_currency, risk_profile.to_string(), now(), portfolio_id],
         )?;
         self.load_portfolio(portfolio_id)
+    }
+
+    fn provider_synced_risk_profile(&self, portfolio_id: &str, provider_id: &str) -> Result<Value> {
+        let raw_risk_profile = self.db.conn.query_row(
+            "SELECT risk_profile FROM portfolios WHERE id = ?1",
+            params![portfolio_id],
+            |row| row.get::<_, String>(0),
+        )?;
+        let risk_profile = match serde_json::from_str(&raw_risk_profile) {
+            Ok(value) => value,
+            Err(_) => json!({}),
+        };
+        Ok(tag_provider_sync(risk_profile, provider_id))
     }
 
     fn load_portfolio(&self, portfolio_id: &str) -> Result<Portfolio> {
@@ -197,24 +256,5 @@ impl<'a> PlutusCommands<'a> {
             ],
         )?;
         Ok(instrument_id)
-    }
-}
-
-fn normalized_portfolio_name(
-    portfolio_name: Option<&str>,
-    provider: &TradingProviderConfig,
-) -> String {
-    portfolio_name
-        .and_then(non_empty_trimmed)
-        .map(ToString::to_string)
-        .unwrap_or_else(|| format!("{} Synced Holdings", provider.display_name))
-}
-
-fn non_empty_trimmed(value: &str) -> Option<&str> {
-    let trimmed = value.trim();
-    if trimmed.is_empty() {
-        None
-    } else {
-        Some(trimmed)
     }
 }

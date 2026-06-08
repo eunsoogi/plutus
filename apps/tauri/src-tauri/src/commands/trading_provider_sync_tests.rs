@@ -85,7 +85,7 @@ fn sync_portfolio_from_provider_imports_configured_upbit_without_raw_secrets() {
 }
 
 #[test]
-fn sync_portfolio_from_provider_reuses_provider_portfolio_when_id_is_omitted() {
+fn sync_portfolio_from_provider_reuses_provider_portfolio_when_localized_name_drifts() {
     let db = PlutusDatabase::in_memory().unwrap();
     db.ensure_default_profile().unwrap();
     let commands = PlutusCommands::new(&db);
@@ -118,7 +118,7 @@ fn sync_portfolio_from_provider_reuses_provider_portfolio_when_id_is_omitted() {
             profile_id: Some(MVP_PROFILE_ID.to_string()),
             provider_id: "upbit".to_string(),
             portfolio_id: None,
-            portfolio_name: Some("Upbit Synced Holdings".to_string()),
+            portfolio_name: Some("Upbit 동기화 포트폴리오".to_string()),
             base_currency: Some("KRW".to_string()),
             holdings: Some(vec![ProviderSyncedHolding {
                 symbol: "eth-krw".to_string(),
@@ -134,6 +134,7 @@ fn sync_portfolio_from_provider_reuses_provider_portfolio_when_id_is_omitted() {
     assert_eq!(second_result.portfolio_id, first_result.portfolio_id);
     let portfolios = commands.list_portfolios(MVP_PROFILE_ID).unwrap();
     assert_eq!(portfolios.len(), 1);
+    assert_eq!(portfolios[0].name, "Upbit 동기화 포트폴리오");
     let snapshot = commands
         .get_portfolio_snapshot(&second_result.portfolio_id)
         .unwrap();
