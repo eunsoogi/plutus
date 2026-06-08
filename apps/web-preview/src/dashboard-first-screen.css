@@ -1,6 +1,7 @@
 @media (min-width: 1181px) {
   .main-surface:has(> .dashboard-grid) {
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .page-header:has(> h2 + .pill-row) {

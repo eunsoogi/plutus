@@ -80,3 +80,62 @@ test("host dashboard fits the first screen at 1440x960 without clipping the Kore
   );
   expect(metrics.officeRect.top).toBeLessThan(metrics.viewportHeight - 120);
 });
+
+test("host dashboard keeps vertical recovery scroll when header pills wrap beyond the desktop fixture", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/dashboard?runtime=local&locale=ko");
+
+  const metrics = await page.evaluate(() => {
+    const mainSurface = document.querySelector<HTMLElement>(".main-surface");
+    const header = document.querySelector<HTMLElement>(".page-header");
+    const pillRow = document.querySelector<HTMLElement>(".page-header .pill-row");
+    const runPanel = document.querySelector<HTMLElement>(".run-panel");
+
+    if (
+      mainSurface === null ||
+      header === null ||
+      pillRow === null ||
+      runPanel === null
+    ) {
+      throw new Error("Dashboard recovery metrics were unavailable");
+    }
+
+    for (let index = 0; index < 20; index += 1) {
+      const pill = document.createElement("span");
+      pill.className = "pill";
+      pill.style.minWidth = "20rem";
+      pill.textContent = `장기 포트폴리오 상태 ${index + 1} / 알림 확장 / 시장 감시 / 수익률 복구`;
+      pillRow.append(pill);
+    }
+
+    header.style.minHeight = "30rem";
+
+    const overflowY = window.getComputedStyle(mainSurface).overflowY;
+    const scrollHeight = mainSurface.scrollHeight;
+    const clientHeight = mainSurface.clientHeight;
+    const runPanelBottomBeforeScroll = runPanel.getBoundingClientRect().bottom;
+
+    mainSurface.scrollTop = scrollHeight;
+
+    return {
+      overflowY,
+      scrolled: mainSurface.scrollTop > 0,
+      hasVerticalOverflow: scrollHeight > clientHeight + 1,
+      runPanelBottomAfterScroll: runPanel.getBoundingClientRect().bottom,
+      runPanelBottomBeforeScroll,
+      viewportHeight: window.innerHeight,
+    };
+  });
+
+  expect(["auto", "scroll"]).toContain(metrics.overflowY);
+  expect(metrics.hasVerticalOverflow).toBe(true);
+  expect(metrics.scrolled).toBe(true);
+  expect(metrics.runPanelBottomBeforeScroll).toBeGreaterThan(
+    metrics.viewportHeight,
+  );
+  expect(metrics.runPanelBottomAfterScroll).toBeLessThanOrEqual(
+    metrics.viewportHeight,
+  );
+});
