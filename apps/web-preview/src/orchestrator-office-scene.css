@@ -27,7 +27,7 @@
   display: block;
   height: 100%;
   position: relative;
-  touch-action: pan-y;
+  touch-action: none;
   width: 100%;
   z-index: 0;
 }
