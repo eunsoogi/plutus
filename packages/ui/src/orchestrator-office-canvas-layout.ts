@@ -1,6 +1,7 @@
 import {
   officeDepth,
   officeFootprint,
+  officeYawForRotation,
   projectOfficePoint,
 } from "./orchestrator-office-canvas-geometry";
 import {
@@ -75,6 +76,12 @@ function pushCommandTable(
     points: officeFootprint(4.08, 3.54, 2.34, 1.24, projection, 52),
     stroke: "#a7d2ea",
   });
+}
+
+function officeProjectionForScene(scene: OfficeCanvasScene): OfficeProjection {
+  const yaw = scene.angle ?? officeYawForRotation(scene.rotation);
+
+  return scene.pitch === undefined ? yaw : { pitch: scene.pitch, yaw };
 }
 
 function nameplateBounds(
@@ -185,7 +192,7 @@ function pushAgents(
   commands: OfficeDrawCommand[],
   scene: OfficeCanvasScene,
 ): void {
-  const projection = scene.angle ?? scene.rotation;
+  const projection = officeProjectionForScene(scene);
   const agents = [...scene.agents].sort(
     (left, right) =>
       officeDepth(left.tile, projection) - officeDepth(right.tile, projection),
@@ -208,7 +215,7 @@ function pushDesks(
   commands: OfficeDrawCommand[],
   scene: OfficeCanvasScene,
 ): void {
-  const projection = scene.angle ?? scene.rotation;
+  const projection = officeProjectionForScene(scene);
   const desks = [...scene.deskSlots].sort(
     (left, right) =>
       officeDepth(left.deskTile, projection) -
@@ -223,7 +230,7 @@ export function buildOfficeDrawCommands(
   scene: OfficeCanvasScene,
 ): readonly OfficeDrawCommand[] {
   const commands: OfficeDrawCommand[] = [];
-  const projection = scene.angle ?? scene.rotation;
+  const projection = officeProjectionForScene(scene);
   pushOfficeFixtureCommands(commands, projection);
   pushDesks(commands, scene);
   pushCommandTable(commands, projection);

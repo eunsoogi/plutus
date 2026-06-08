@@ -13,6 +13,7 @@ import "./provider-settings-responsive.css";
 import { routeContextFromLocation } from "./route-context";
 import "./styles.css";
 import "./orchestrator-office.css";
+import "./dashboard-first-screen.css";
 
 declare global {
   interface Window {

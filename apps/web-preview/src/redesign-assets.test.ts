@@ -45,6 +45,17 @@ function listFiles(startPath: string, extension: string): SourceFile[] {
   return files;
 }
 
+function readPngDimensions(relativePath: string): {
+  readonly height: number;
+  readonly width: number;
+} {
+  const png = readFileSync(join(repoRoot, relativePath));
+  return {
+    width: png.readUInt32BE(16),
+    height: png.readUInt32BE(20),
+  };
+}
+
 describe("redesign asset and style constraints", () => {
   it("keeps committed web preview CSS free from gradient decorations", () => {
     // Given: the redesigned shell uses committed CSS from the web preview app.
@@ -60,23 +71,45 @@ describe("redesign asset and style constraints", () => {
     expect(gradientHits).toEqual([]);
   });
 
-  it("references the generated abstract image in both READMEs instead of the old hero screenshot", () => {
+  it("references the generated emblem image in both READMEs instead of the old abstract artwork", () => {
     // Given: README branding is part of the redesign acceptance criteria.
     const readmePaths = ["README.md", "README.ko.md"] as const;
+    const emblemPath = "assets/readme/plutus-emblem.png";
+    const bannedAltPattern = /\b(?:abstract|chart|market|workspace)\b/iu;
+    const requiredAltPattern = /\b(?:emblem|icon)\b/iu;
 
     // When/Then: the old screenshot path is gone and the replacement image exists.
     for (const readmePath of readmePaths) {
       const readme = readWorkspaceFile(readmePath);
-      const readmeImageRefs = Array.from(
-        readme.matchAll(/src="\.\/([^"]+)"/gu),
-        (match) => match[1] ?? "",
+      const readmeImages = Array.from(
+        readme.matchAll(/<img alt="([^"]+)" src="\.\/([^"]+)" \/>/gu),
+        (match) => ({
+          alt: match[1] ?? "",
+          src: match[2] ?? "",
+        }),
       );
-      expect(readmeImageRefs).not.toContain("assets/readme/plutus-hero.png");
-      expect(readmeImageRefs).toContain("assets/readme/plutus-abstract.png");
+      const emblemImage = readmeImages.find(({ src }) => src === emblemPath);
+
+      expect(
+        readmeImages.map(({ src }) => src),
+        `${readmePath} should drop the old README artwork paths`,
+      ).not.toEqual(
+        expect.arrayContaining([
+          "assets/readme/plutus-hero.png",
+          "assets/readme/plutus-abstract.png",
+        ]),
+      );
+      expect(emblemImage?.alt, `${readmePath} should reference the emblem asset`)
+        .toBeDefined();
+      expect(emblemImage?.alt ?? "").toMatch(requiredAltPattern);
+      expect(emblemImage?.alt ?? "").not.toMatch(bannedAltPattern);
     }
-    expect(existsSync(join(repoRoot, "assets/readme/plutus-abstract.png"))).toBe(
-      true,
-    );
+
+    expect(existsSync(join(repoRoot, emblemPath))).toBe(true);
+    expect(readPngDimensions(emblemPath)).toEqual({
+      width: 1024,
+      height: 1024,
+    });
   });
 
   it("configures generated Tauri icon assets for the packaged macOS app", () => {

@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { AppLocale } from "./core";
 import { useI18n } from "./i18n";
 import {
+  DEFAULT_OFFICE_PITCH,
   nextOfficeYaw,
+  normalizeOfficePitch,
   normalizeOfficeYaw,
   officeRotationForYaw,
   officeYawForRotation,
@@ -95,6 +97,7 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
   const text = officeCopy[locale];
   const [selectedTeam, setSelectedTeam] = useState(() => selectedTeamFor(run));
   const [angle, setAngle] = useState(() => officeYawForRotation("south-east"));
+  const [pitch, setPitch] = useState(DEFAULT_OFFICE_PITCH);
 
   useEffect(() => {
     setSelectedTeam(selectedTeamFor(run));
@@ -103,8 +106,11 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
   const rotateOffice = useCallback((direction: OfficeRotationDirection) => {
     setAngle((currentAngle) => nextOfficeYaw(currentAngle, direction));
   }, []);
-  const dragOfficeAngle = useCallback((deltaX: number) => {
+  const dragOfficeAngle = useCallback((deltaX: number, deltaY: number) => {
     setAngle((currentAngle) => normalizeOfficeYaw(currentAngle + deltaX * 0.35));
+    setPitch((currentPitch) =>
+      normalizeOfficePitch(currentPitch - deltaY * 0.12),
+    );
   }, []);
 
   const activeTeam = rosterTeamFor(selectedTeam);
@@ -195,6 +201,7 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
             canvasChromeLabels={text.canvasChrome}
             orchestratorLabel={text.orchestrator}
             onAngleDrag={dragOfficeAngle}
+            pitch={pitch}
             rotation={rotation}
             stage={sceneStageLabel(stage, run.status)}
             stationLabels={text.station}

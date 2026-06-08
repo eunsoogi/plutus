@@ -7,7 +7,11 @@ export type OfficeRotation =
   | "north-east";
 
 export type OfficeRotationDirection = "left" | "right";
-export type OfficeProjection = OfficeRotation | number;
+export type OfficeProjectionCamera = {
+  readonly pitch?: number;
+  readonly yaw: OfficeRotation | number;
+};
+export type OfficeProjection = OfficeRotation | number | OfficeProjectionCamera;
 export type OfficeVolumeSurface = "shadow" | "front" | "side" | "top";
 
 export type OfficeCanvasPoint = {
@@ -31,6 +35,7 @@ export type OfficeCanvasScene = {
   readonly agents: readonly OfficeAgent[];
   readonly angle?: number;
   readonly deskSlots: readonly AgentSlot[];
+  readonly pitch?: number;
   readonly rotation: OfficeRotation;
 };
 
