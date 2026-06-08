@@ -26,9 +26,15 @@ use crate::storage::{
     MVP_MANUAL_ACCOUNT_ID, MVP_PROFILE_ID,
 };
 
+mod provider_holdings;
 pub mod trading;
 mod trading_catalog;
 mod trading_payload;
+mod trading_provider_config;
+mod trading_provider_sync;
+mod trading_provider_sync_metadata;
+#[cfg(test)]
+mod trading_provider_sync_tests;
 mod trading_types;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

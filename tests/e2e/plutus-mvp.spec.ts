@@ -9,6 +9,20 @@ declare global {
   }
 }
 
+const configuredKoreanUpbitProvider = {
+  providerId: "upbit",
+  displayName: "업비트",
+  market: "crypto",
+  region: "KR",
+  environment: "sandbox",
+  mode: "read_only",
+  permissions: ["market_data", "account_read"],
+  health: "connected",
+  lastCheckedAt: "2026-06-08T00:00:00.000Z",
+  credentialRef: "secure://plutus/providers/upbit/main",
+  warnings: [],
+} as const;
+
 test("browser runtime starts empty instead of seeded with BTC/NVDA data", async ({
   page,
 }) => {
@@ -40,17 +54,38 @@ test("browser runtime starts empty instead of seeded with BTC/NVDA data", async 
   await expect(page.getByTestId("final-run-card")).toContainText("none");
 });
 
-test("Korean portfolio creation avoids internal milestone and English default labels", async ({
+test("Korean portfolio sync avoids internal milestone and English default labels", async ({
   page,
 }) => {
-  await page.goto("/portfolios?runtime=local&locale=ko");
-  await page.evaluate(() => localStorage.removeItem("plutus.localRuntime.v1"));
-  await page.reload();
-  await page.getByRole("button", { name: "포트폴리오 만들기" }).click();
+  await page.addInitScript((provider) => {
+    localStorage.setItem(
+      "plutus.localRuntime.v1",
+      JSON.stringify({
+        profileId: "profile-ko",
+        portfolios: [],
+        watchlists: [],
+        runs: [],
+        artifacts: [],
+        memoryActivity: [],
+        wikiPages: [],
+        remoteDevices: [],
+        tradingProviders: [provider],
+        tradingDecisions: [],
+        dryRunOrders: [],
+      }),
+    );
+  }, configuredKoreanUpbitProvider);
 
-  await expect(page.getByTestId("portfolio-command-status")).toContainText(
-    "기본 포트폴리오 생성됨",
+  await page.goto("/portfolios?runtime=local&locale=ko");
+  await expect(page.getByTestId("portfolio-provider-sync")).toContainText(
+    "준비됨: 업비트",
   );
+  await page.getByRole("button", { name: "업비트 보유 종목 동기화" }).click();
+  await expect(page.getByTestId("portfolio-command-status")).toContainText(
+    "업비트에서 2개 보유 종목 동기화됨",
+  );
+  await expect(page.getByTestId("portfolio-core")).toContainText("BTC-KRW");
+  await expect(page.getByTestId("portfolio-core")).toContainText("ETH-KRW");
   await expect(page.getByText("Primary Portfolio")).toHaveCount(0);
   await expect(page.getByText("MVP")).toHaveCount(0);
 });
@@ -91,15 +126,35 @@ test("legacy local preview portfolio names are localized before rendering", asyn
   await expect(page.getByText("기본 포트폴리오 포트폴리오")).toHaveCount(0);
 });
 
-test("Korean portfolio creation status localizes legacy command bridge names", async ({
+test("Korean portfolio sync status localizes command bridge provider names", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
+  await page.addInitScript((provider) => {
+    let synced = false;
     window.__PLUTUS_COMMAND_BRIDGE__ = async (envelope) => {
       if (envelope.command === "app.getSnapshot") {
         return {
           profileId: "profile-ko",
-          portfolios: [],
+          portfolios: synced
+            ? [
+                {
+                  id: "portfolio-synced",
+                  name: "Primary Portfolio",
+                  baseCurrency: "KRW",
+                  positions: [
+                    {
+                      id: "position-btc",
+                      symbol: "BTC-KRW",
+                      name: "Bitcoin",
+                      quantity: 0.42,
+                      averageCost: 91000000,
+                      costCurrency: "KRW",
+                      thesis: "Imported from Upbit account balance.",
+                    },
+                  ],
+                },
+              ]
+            : [],
           watchlists: [],
           runs: [],
           artifacts: [],
@@ -108,24 +163,37 @@ test("Korean portfolio creation status localizes legacy command bridge names", a
           remoteDevices: [],
         };
       }
-      if (envelope.command === "portfolios.create") {
+      if (envelope.command === "providers.list") {
+        return [provider];
+      }
+      if (envelope.command === "portfolios.syncFromProvider") {
+        synced = true;
         return {
-          id: "portfolio-created",
-          name: "Primary Portfolio",
-          baseCurrency: "USD",
-          positions: [],
+          importedCount: 1,
+          portfolioId: "portfolio-synced",
+          providerId: "upbit",
+          skippedCount: 0,
+          positionSymbols: ["BTC-KRW"],
         };
       }
       throw new Error(`Unexpected command ${envelope.command}`);
     };
-  });
+  }, configuredKoreanUpbitProvider);
   await page.goto("/portfolios?locale=ko");
-  await page.getByRole("button", { name: "포트폴리오 만들기" }).click();
+  await expect(page.getByTestId("portfolio-provider-sync")).toContainText(
+    "준비됨: 업비트",
+  );
+  await page.getByRole("button", { name: "업비트 보유 종목 동기화" }).click();
 
   await expect(page.getByTestId("portfolio-command-status")).toContainText(
-    "기본 포트폴리오 생성됨",
+    "업비트에서 1개 보유 종목 동기화됨",
   );
   await expect(page.getByText("Primary Portfolio")).toHaveCount(0);
+  await expect(page.getByTestId("portfolio-core")).toContainText(
+    "기본 포트폴리오",
+  );
+  await expect(page.getByTestId("portfolio-core")).toContainText("BTC-KRW");
+  await expect(page.getByText("Upbit Synced Holdings")).toHaveCount(0);
 });
 
 test("dashboard data status reflects loaded local state", async ({ page }) => {

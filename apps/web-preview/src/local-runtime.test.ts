@@ -1,30 +1,9 @@
-import type { AppSnapshot, CommandEnvelope } from "@plutus/command-client";
+import type {
+  AppSnapshot,
+} from "@plutus/command-client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createLocalWebCommandBridge } from "./local-runtime";
-
-type StoredValue = string | null;
-
-function installBrowserState() {
-  const storage = new Map<string, string>();
-  let idCounter = 0;
-  vi.stubGlobal("localStorage", {
-    clear: () => storage.clear(),
-    getItem: (key: string): StoredValue => storage.get(key) ?? null,
-    removeItem: (key: string) => storage.delete(key),
-    setItem: (key: string, value: string) => storage.set(key, value),
-  });
-  vi.stubGlobal("crypto", {
-    randomUUID: () => {
-      idCounter += 1;
-      return `local-runtime-${idCounter}`;
-    },
-  });
-}
-
-async function callBridge<T>(envelope: CommandEnvelope): Promise<T> {
-  return createLocalWebCommandBridge()<T>(envelope);
-}
+import { callBridge, installBrowserState } from "./local-runtime.test-support";
 
 describe("local web runtime portfolio positions", () => {
   beforeEach(() => {

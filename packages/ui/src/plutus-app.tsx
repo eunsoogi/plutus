@@ -117,6 +117,19 @@ export type PlutusCommandClient = {
       costCurrency: string;
       thesis?: string;
     }) => Promise<Record<string, unknown>>;
+    syncFromProvider?: (input: {
+      profileId?: string;
+      providerId: string;
+      portfolioId?: string;
+      portfolioName?: string;
+      baseCurrency?: string;
+    }) => Promise<{
+      importedCount: number;
+      portfolioId: string;
+      providerId: string;
+      skippedCount: number;
+      positionSymbols: readonly string[];
+    }>;
     updatePositionThesis?: (input: {
       positionId: string;
       profileId?: string;
@@ -288,6 +301,12 @@ export function localizedScenarioText(
     "Provider Settings": t("settings.providers"),
     Preferences: t("settings.preferences"),
     "Import Export": t("settings.importExport"),
+    Binance: t("provider.binance"),
+    Coinbase: t("provider.coinbase"),
+    Kiwoom: t("provider.kiwoom"),
+    "Kiwoom Securities": t("provider.kiwoom"),
+    Kraken: t("provider.kraken"),
+    Upbit: t("provider.upbit"),
   };
   return knownText[value] ?? value;
 }
@@ -600,6 +619,14 @@ export function HostDashboard({ scenario }: { scenario: PlutusScenario }) {
     (scenario.remoteDevice.name &&
       scenario.remoteDevice.name !== "No paired device"),
   );
+  const dashboardOfficeRun = hasRunActivity
+    ? scenario.run
+    : {
+        ...scenario.run,
+        id: "dashboard-office-planning",
+        status: "queued",
+        title: scenario.run.title || t("runs.noRunsYet"),
+      };
   return (
     <HostShell>
       <header className="page-header">
@@ -626,6 +653,7 @@ export function HostDashboard({ scenario }: { scenario: PlutusScenario }) {
             title={localizedScenarioText(scenario.watchlist.name, t)}
           />
         </div>
+        <OrchestratorOffice run={dashboardOfficeRun} />
         <article className="panel dashboard-span">
           <h2>{t("artifact.list")}</h2>
           <p data-testid="artifact-title">

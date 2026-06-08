@@ -46,8 +46,7 @@
 
 .orchestrator-office__controls {
   align-items: center;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 6%), transparent), #091017;
+  background: #091017;
   border: 1px solid rgb(122 160 190 / 24%);
   border-radius: 7px;
   display: grid;
@@ -84,9 +83,7 @@
 .orchestrator-office__rotation-buttons,
 .orchestrator-office__rotation-buttons button {
   appearance: none;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 6%), transparent),
-    var(--surface-2);
+  background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
@@ -138,8 +135,7 @@
 .orchestrator-office__scene-shell,
 .orchestrator-office__roster,
 .orchestrator-office__signals div {
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 4%), transparent), #0d141c;
+  background: #0d141c;
   border: 1px solid var(--border-soft);
   border-radius: 8px;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);
@@ -155,7 +151,7 @@
   aspect-ratio: 16 / 8.9;
   border: 1px solid rgb(122 160 190 / 28%);
   border-radius: 8px;
-  min-height: 540px;
+  min-height: 440px;
   overflow: hidden;
   position: relative;
   width: 100%;
@@ -197,7 +193,7 @@
 
 .orchestrator-office__roster-chip {
   align-items: center;
-  background: linear-gradient(180deg, #183446, #132532);
+  background: #132532;
   border: 1px solid rgb(128 212 228 / 22%);
   border-radius: 8px;
   color: #c7f4fb;

@@ -17,16 +17,33 @@ function captureUnexpectedPageErrors(page: Page): string[] {
   return unexpectedErrors;
 }
 
+async function syncUpbitHoldings(page: Page): Promise<void> {
+  await page.goto("/settings/providers?runtime=local");
+  await page.getByTestId("provider-select").selectOption("upbit");
+  await page.getByTestId("credential-api-key-input").fill("upbit-api-key");
+  await page.getByTestId("credential-secret-input").fill("upbit-secret");
+  await page.getByTestId("credential-passphrase-input").fill("upbit-passphrase");
+  await page.getByRole("button", { name: "Save provider settings" }).click();
+  await expect(page.getByTestId("provider-preview-status")).toContainText(
+    "Provider settings saved locally",
+  );
+
+  await page.goto("/portfolios?runtime=local");
+  await expect(page.getByTestId("portfolio-provider-sync")).toContainText(
+    "Ready: Upbit",
+  );
+  await page.getByRole("button", { name: "Sync Upbit Holdings" }).click();
+  await expect(page.getByTestId("portfolio-command-status")).toContainText(
+    "Synced 2 holdings from Upbit",
+  );
+}
+
 test("MVP acceptance scenario queues host run and exposes mobile preview", async ({
   page,
 }) => {
-  await page.goto("/portfolios?runtime=local");
+  await page.goto("/dashboard?runtime=local");
   await page.evaluate(() => localStorage.removeItem("plutus.localRuntime.v1"));
-  await page.reload();
-  await page.getByRole("button", { name: "Create Portfolio" }).click();
-  await expect(page.getByTestId("portfolio-command-status")).toContainText(
-    "Created Core Portfolio",
-  );
+  await syncUpbitHoldings(page);
 
   await page.goto("/runs?runtime=local");
   await expect(
@@ -71,7 +88,7 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
   await expect(officeScene).toBeVisible();
   await expect
     .poll(async () => (await officeScene.boundingBox())?.height ?? 0)
-    .toBeGreaterThanOrEqual(500);
+    .toBeGreaterThanOrEqual(440);
   await expect(page.getByTestId("orchestrator-office-canvas")).toBeVisible();
   await expect(page.getByTestId("orchestrator-office-canvas")).toHaveAttribute(
     "data-office-rotation",

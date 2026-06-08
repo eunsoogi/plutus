@@ -9,6 +9,13 @@ import type {
 } from "@plutus/command-client";
 
 import {
+  addPortfolioPosition,
+  createPortfolio,
+  syncPortfolioFromProvider,
+  type LocalAddPositionInput,
+  type LocalCreatePortfolioInput,
+} from "./local-portfolio-runtime";
+import {
   emptyTradingState,
   normalizeTradingState,
   previewTradingDecision,
@@ -22,15 +29,6 @@ type LocalState = Omit<
   "tradingProviders" | "tradingDecisions" | "dryRunOrders"
 > &
   LocalTradingState;
-
-type LocalAddPositionInput = {
-  readonly averageCost?: number;
-  readonly costCurrency?: string;
-  readonly portfolioId?: string;
-  readonly quantity?: number;
-  readonly symbol?: string;
-  readonly thesis?: string;
-};
 
 const STORAGE_KEY = "plutus.localRuntime.v1";
 const PROFILE_ID = "local-browser-profile";
@@ -122,47 +120,22 @@ export function createLocalWebCommandBridge(): CommandBridge {
       case "portfolios.list":
         return state.portfolios as T;
       case "portfolios.create": {
-        const [input] = envelope.args as [
-          { name?: string; baseCurrency?: string },
-        ];
-        const portfolio = {
-          id: newId("portfolio"),
-          name: input.name ?? "Untitled Portfolio",
-          baseCurrency: input.baseCurrency ?? "USD",
-          positions: [],
-        };
-        state.portfolios.push(portfolio);
+        const [input] = envelope.args as [LocalCreatePortfolioInput];
+        const portfolio = createPortfolio(state, input);
         writeState(state);
         return portfolio as T;
       }
       case "portfolios.addPosition": {
         const [input] = envelope.args as [LocalAddPositionInput];
-        const portfolio = state.portfolios.find(
-          (candidate) => candidate.id === input.portfolioId,
-        );
-        if (!portfolio) throw new Error("Portfolio not found");
-        const quantity = Number(input.quantity);
-        const averageCost = Number(input.averageCost);
-        if (!Number.isFinite(quantity) || quantity <= 0) {
-          throw new Error("Quantity must be greater than 0.");
-        }
-        if (!Number.isFinite(averageCost) || averageCost < 0) {
-          throw new Error("Average cost must be 0 or greater.");
-        }
-        const symbol = input.symbol?.trim().toUpperCase();
-        if (!symbol) throw new Error("Symbol is required.");
-        const position = {
-          id: newId("position"),
-          symbol,
-          name: symbol,
-          thesis: input.thesis ?? "",
-          quantity,
-          averageCost,
-          costCurrency: input.costCurrency ?? "USD",
-        };
-        portfolio.positions = [...(portfolio.positions ?? []), position];
+        const position = addPortfolioPosition(state, input);
         writeState(state);
         return position as T;
+      }
+      case "portfolios.syncFromProvider": {
+        const [input] = envelope.args;
+        const result = syncPortfolioFromProvider(state, input);
+        writeState(state);
+        return result as T;
       }
       case "watchlists.list":
         return state.watchlists as T;

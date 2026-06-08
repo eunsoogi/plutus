@@ -66,6 +66,35 @@ pub struct TradingDecisionInput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProviderSyncedHolding {
+    pub symbol: String,
+    pub name: Option<String>,
+    pub quantity: f64,
+    pub average_cost: f64,
+    pub cost_currency: String,
+    pub thesis: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProviderPortfolioSyncInput {
+    pub profile_id: Option<String>,
+    pub provider_id: String,
+    pub portfolio_id: Option<String>,
+    pub portfolio_name: Option<String>,
+    pub base_currency: Option<String>,
+    pub holdings: Option<Vec<ProviderSyncedHolding>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProviderPortfolioSyncResult {
+    pub imported_count: usize,
+    pub portfolio_id: String,
+    pub provider_id: String,
+    pub skipped_count: usize,
+    pub position_symbols: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DryRunOrderResult {
     pub order_id: String,
     pub provider_id: String,

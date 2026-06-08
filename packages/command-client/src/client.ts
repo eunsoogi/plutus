@@ -5,6 +5,8 @@ import type {
   AppSnapshot,
   DryRunOrderResult,
   Portfolio,
+  ProviderPortfolioSyncInput,
+  ProviderPortfolioSyncResult,
   RemoteUnlockPrepared,
   ResearchRun,
   TradingDecision,
@@ -79,6 +81,12 @@ export function createCommandClient(bridge: CommandBridge) {
         invoke<AnyRecord>(bridge, "portfolios.getSnapshot", [input]),
       addPosition: (input: AnyRecord) =>
         invoke<AnyRecord>(bridge, "portfolios.addPosition", [input]),
+      syncFromProvider: (input: ProviderPortfolioSyncInput) =>
+        invoke<ProviderPortfolioSyncResult>(
+          bridge,
+          "portfolios.syncFromProvider",
+          [input],
+        ),
       updatePosition: (input: AnyRecord) =>
         invoke<AnyRecord>(bridge, "portfolios.updatePosition", [input]),
       updatePositionThesis: (input: AnyRecord) =>

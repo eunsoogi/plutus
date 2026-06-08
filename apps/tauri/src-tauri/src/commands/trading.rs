@@ -3,25 +3,35 @@ use super::{
     trading_catalog::CCXT_EXCHANGE_IDS,
     trading_payload::provider_payload,
     trading_types::{
-        DryRunOrderResult, TradingAgentView, TradingDecision, TradingDecisionInput,
-        TradingOrderIntent, TradingProviderConfig,
+        DryRunOrderResult, ProviderPortfolioSyncInput, ProviderPortfolioSyncResult,
+        TradingAgentView, TradingDecision, TradingDecisionInput, TradingOrderIntent,
+        TradingProviderConfig,
     },
+    AppState,
 };
 use crate::storage::{new_id, now};
 
 #[tauri::command]
-pub fn list_trading_providers() -> Vec<TradingProviderConfig> {
-    default_trading_providers()
+pub fn list_trading_providers(
+    state: tauri::State<'_, AppState>,
+) -> std::result::Result<Vec<TradingProviderConfig>, String> {
+    command_result(state.with_commands(|commands| commands.list_trading_providers()))
 }
 
 #[tauri::command]
 pub fn save_trading_provider(
+    state: tauri::State<'_, AppState>,
     input: TradingProviderConfig,
 ) -> std::result::Result<TradingProviderConfig, String> {
-    command_result(Ok(TradingProviderConfig {
-        last_checked_at: now(),
-        ..input
-    }))
+    command_result(state.with_commands(|commands| commands.save_trading_provider(input)))
+}
+
+#[tauri::command]
+pub fn sync_portfolio_from_provider(
+    state: tauri::State<'_, AppState>,
+    input: ProviderPortfolioSyncInput,
+) -> std::result::Result<ProviderPortfolioSyncResult, String> {
+    command_result(state.with_commands(|commands| commands.sync_portfolio_from_provider(input)))
 }
 
 #[tauri::command]
@@ -55,7 +65,7 @@ pub fn submit_dry_run_order(
     }))
 }
 
-fn default_trading_providers() -> Vec<TradingProviderConfig> {
+pub(crate) fn default_trading_providers() -> Vec<TradingProviderConfig> {
     let mut providers = Vec::with_capacity(CCXT_EXCHANGE_IDS.len() + 1);
     providers.push(provider_config(
         "kiwoom",
@@ -74,7 +84,7 @@ fn default_trading_providers() -> Vec<TradingProviderConfig> {
     providers
 }
 
-fn provider_config(
+pub(crate) fn provider_config(
     provider_id: &str,
     display_name: &str,
     market: &str,
@@ -191,7 +201,7 @@ mod tests {
 
     #[test]
     fn lists_kiwoom_and_full_ccxt_catalog() {
-        let providers = list_trading_providers();
+        let providers = default_trading_providers();
 
         assert_eq!(providers.len(), 112);
         assert_eq!(providers[0].provider_id, "kiwoom");

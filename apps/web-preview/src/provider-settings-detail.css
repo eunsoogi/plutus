@@ -108,7 +108,7 @@
 
 .provider-actions button:nth-child(2),
 .provider-actions button:nth-child(3) {
-  background: linear-gradient(180deg, #67c7d7, #3f9cad);
+  background: var(--accent-strong);
   border-color: rgb(255 255 255 / 16%);
   color: #061117;
 }

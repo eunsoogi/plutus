@@ -55,6 +55,13 @@ describe("command client", () => {
       "portfolios.create": async (input) => input,
       "portfolios.getSnapshot": async (input) => input,
       "portfolios.addPosition": async (input) => input,
+      "portfolios.syncFromProvider": async (input) => ({
+        importedCount: 2,
+        portfolioId: input.portfolioId ?? "portfolio-synced",
+        providerId: input.providerId,
+        skippedCount: 0,
+        positionSymbols: ["BTC-KRW", "ETH-KRW"],
+      }),
       "portfolios.updatePosition": async (input) => input,
       "portfolios.updatePositionThesis": async (input) => input,
       "watchlists.list": async () => [],
@@ -91,6 +98,11 @@ describe("command client", () => {
     await client.portfolios.create({ name: "Core", baseCurrency: "USD" });
     await client.portfolios.getSnapshot({ portfolioId: "portfolio-core" });
     await client.portfolios.addPosition({ portfolioId: "portfolio-core" });
+    await client.portfolios.syncFromProvider({
+      providerId: "upbit",
+      portfolioName: "Upbit Synced Holdings",
+      baseCurrency: "KRW",
+    });
     await client.portfolios.updatePosition({ positionId: "position-btc" });
     await client.portfolios.updatePositionThesis({
       positionId: "position-btc",
@@ -132,6 +144,7 @@ describe("command client", () => {
       "portfolios.create",
       "portfolios.getSnapshot",
       "portfolios.addPosition",
+      "portfolios.syncFromProvider",
       "portfolios.updatePosition",
       "portfolios.updatePositionThesis",
       "watchlists.list",
@@ -202,6 +215,22 @@ describe("command client", () => {
       quantity: 1,
       averageCost: 100,
     });
+    await client.portfolios.syncFromProvider({
+      profileId: "profile-custom",
+      providerId: "upbit",
+      portfolioName: "Upbit Synced Holdings",
+      baseCurrency: "KRW",
+      holdings: [
+        {
+          symbol: "btc-krw",
+          name: "Bitcoin",
+          quantity: 0.5,
+          averageCost: 90000000,
+          costCurrency: "KRW",
+          thesis: "Provider import",
+        },
+      ],
+    });
     await client.portfolios.updatePosition({
       profileId: "profile-custom",
       positionId: "position-1",
@@ -253,6 +282,28 @@ describe("command client", () => {
             average_cost: 100,
             cost_currency: undefined,
             thesis: undefined,
+          },
+        },
+      },
+      {
+        command: "sync_portfolio_from_provider",
+        args: {
+          input: {
+            profile_id: "profile-custom",
+            portfolio_id: undefined,
+            provider_id: "upbit",
+            portfolio_name: "Upbit Synced Holdings",
+            base_currency: "KRW",
+            holdings: [
+              {
+                symbol: "btc-krw",
+                name: "Bitcoin",
+                quantity: 0.5,
+                average_cost: 90000000,
+                cost_currency: "KRW",
+                thesis: "Provider import",
+              },
+            ],
           },
         },
       },

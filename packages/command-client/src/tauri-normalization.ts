@@ -13,6 +13,31 @@ export function normalizePositionInput(input: AnyRecord): AnyRecord {
   };
 }
 
+export function normalizeProviderPortfolioSyncInput(
+  input: AnyRecord,
+): AnyRecord {
+  if (
+    "holdings" in input &&
+    input.holdings !== undefined &&
+    !Array.isArray(input.holdings)
+  ) {
+    throw new Error("Provider sync holdings must be an array.");
+  }
+
+  return {
+    profile_id: input.profileId,
+    portfolio_id: input.portfolioId,
+    provider_id: input.providerId,
+    portfolio_name: input.portfolioName,
+    base_currency: input.baseCurrency,
+    holdings: Array.isArray(input.holdings)
+      ? input.holdings.map((holding) =>
+          normalizeProviderSyncedHolding(holding as AnyRecord),
+        )
+      : undefined,
+  };
+}
+
 export function normalizeWatchlistItem(input: AnyRecord): AnyRecord {
   return {
     profile_id: input.profileId,
@@ -86,6 +111,17 @@ function normalizeTradingIntent(input: AnyRecord): AnyRecord {
     quote_currency: input.quoteCurrency,
     rationale: input.rationale,
     live_requested: input.liveRequested,
+  };
+}
+
+function normalizeProviderSyncedHolding(input: AnyRecord): AnyRecord {
+  return {
+    symbol: input.symbol,
+    name: input.name,
+    quantity: input.quantity,
+    average_cost: input.averageCost,
+    cost_currency: input.costCurrency,
+    thesis: input.thesis,
   };
 }
 
