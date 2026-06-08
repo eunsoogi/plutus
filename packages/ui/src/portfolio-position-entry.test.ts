@@ -28,6 +28,30 @@ describe("portfolio position entry", () => {
     });
   });
 
+  it("submits displayed crypto aliases as canonical command symbols", () => {
+    const parsed = parsePositionEntryForm({
+      averageCost: "65000",
+      costCurrency: "usd",
+      portfolioId: "portfolio-core",
+      profileId: "profile-core",
+      quantity: "0.25",
+      symbol: " btc ",
+      thesis: "",
+    });
+
+    expect(parsed).toEqual({
+      ok: true,
+      input: {
+        averageCost: 65000,
+        costCurrency: "USD",
+        portfolioId: "portfolio-core",
+        profileId: "profile-core",
+        quantity: 0.25,
+        symbol: "BTC-USD",
+      },
+    });
+  });
+
   it("rejects malformed position values before they reach the command bridge", () => {
     expect(
       parsePositionEntryForm({

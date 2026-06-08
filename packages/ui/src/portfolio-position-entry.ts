@@ -36,6 +36,11 @@ export type PositionEntryParseResult =
     };
 
 const COST_CURRENCY_PATTERN = /^[A-Z]{3}$/;
+const DISPLAYED_CRYPTO_USD_ALIASES: Readonly<Record<string, string>> = {
+  BTC: "BTC-USD",
+  ETH: "ETH-USD",
+  USDC: "USDC-USD",
+};
 
 export function parsePositionEntryForm(
   values: PositionEntryFormValues,
@@ -45,7 +50,7 @@ export function parsePositionEntryForm(
     return { ok: false, messageKey: "portfolio.positionPortfolioRequired" };
   }
 
-  const symbol = values.symbol.trim().toUpperCase();
+  const symbol = normalizePositionSymbol(values.symbol);
   if (!symbol) {
     return { ok: false, messageKey: "portfolio.positionSymbolRequired" };
   }
@@ -81,4 +86,9 @@ export function parsePositionEntryForm(
       ...(thesis ? { thesis } : {}),
     },
   };
+}
+
+function normalizePositionSymbol(value: string): string {
+  const symbol = value.trim().toUpperCase();
+  return DISPLAYED_CRYPTO_USD_ALIASES[symbol] ?? symbol;
 }
