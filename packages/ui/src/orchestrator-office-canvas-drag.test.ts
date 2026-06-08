@@ -5,6 +5,7 @@ describe("orchestrator office canvas drag state", () => {
   it("keeps the active pointer in control until the matching pointer ends", () => {
     const primaryDrag = reduceOfficeCanvasPointerDrag(null, {
       clientX: 120,
+      clientY: 200,
       isPrimary: true,
       kind: "pointerdown",
       pointerId: 1,
@@ -12,7 +13,8 @@ describe("orchestrator office canvas drag state", () => {
 
     expect(primaryDrag).toMatchObject({
       deltaX: null,
-      nextDrag: { pointerId: 1, x: 120 },
+      deltaY: null,
+      nextDrag: { pointerId: 1, x: 120, y: 200 },
       shouldCapture: true,
       shouldRelease: false,
     });
@@ -21,6 +23,7 @@ describe("orchestrator office canvas drag state", () => {
       primaryDrag.nextDrag,
       {
         clientX: 300,
+        clientY: 250,
         isPrimary: false,
         kind: "pointerdown",
         pointerId: 2,
@@ -29,7 +32,8 @@ describe("orchestrator office canvas drag state", () => {
 
     expect(ignoredSecondaryStart).toMatchObject({
       deltaX: null,
-      nextDrag: { pointerId: 1, x: 120 },
+      deltaY: null,
+      nextDrag: { pointerId: 1, x: 120, y: 200 },
       shouldCapture: false,
       shouldRelease: false,
     });
@@ -38,6 +42,7 @@ describe("orchestrator office canvas drag state", () => {
       ignoredSecondaryStart.nextDrag,
       {
         clientX: 336,
+        clientY: 300,
         isPrimary: false,
         kind: "pointermove",
         pointerId: 2,
@@ -46,7 +51,8 @@ describe("orchestrator office canvas drag state", () => {
 
     expect(ignoredSecondaryMove).toMatchObject({
       deltaX: null,
-      nextDrag: { pointerId: 1, x: 120 },
+      deltaY: null,
+      nextDrag: { pointerId: 1, x: 120, y: 200 },
       shouldCapture: false,
       shouldRelease: false,
     });
@@ -55,6 +61,7 @@ describe("orchestrator office canvas drag state", () => {
       ignoredSecondaryMove.nextDrag,
       {
         clientX: 336,
+        clientY: 300,
         kind: "pointerup",
         pointerId: 2,
       },
@@ -62,7 +69,8 @@ describe("orchestrator office canvas drag state", () => {
 
     expect(ignoredSecondaryEnd).toMatchObject({
       deltaX: null,
-      nextDrag: { pointerId: 1, x: 120 },
+      deltaY: null,
+      nextDrag: { pointerId: 1, x: 120, y: 200 },
       shouldCapture: false,
       shouldRelease: false,
     });
@@ -71,6 +79,7 @@ describe("orchestrator office canvas drag state", () => {
       ignoredSecondaryEnd.nextDrag,
       {
         clientX: 168,
+        clientY: 170,
         isPrimary: true,
         kind: "pointermove",
         pointerId: 1,
@@ -79,22 +88,51 @@ describe("orchestrator office canvas drag state", () => {
 
     expect(primaryMove).toMatchObject({
       deltaX: 48,
-      nextDrag: { pointerId: 1, x: 168 },
+      deltaY: -30,
+      nextDrag: { pointerId: 1, x: 168, y: 170 },
       shouldCapture: false,
       shouldRelease: false,
     });
 
     const primaryEnd = reduceOfficeCanvasPointerDrag(primaryMove.nextDrag, {
       clientX: 168,
+      clientY: 170,
       kind: "pointercancel",
       pointerId: 1,
     });
 
     expect(primaryEnd).toMatchObject({
       deltaX: null,
+      deltaY: null,
       nextDrag: null,
       shouldCapture: false,
       shouldRelease: true,
+    });
+  });
+
+  it("tracks diagonal pointer movement on both axes", () => {
+    const startedDrag = reduceOfficeCanvasPointerDrag(null, {
+      clientX: 100,
+      clientY: 100,
+      isPrimary: true,
+      kind: "pointerdown",
+      pointerId: 7,
+    });
+
+    const movedDrag = reduceOfficeCanvasPointerDrag(startedDrag.nextDrag, {
+      clientX: 130,
+      clientY: 70,
+      isPrimary: true,
+      kind: "pointermove",
+      pointerId: 7,
+    });
+
+    expect(movedDrag).toMatchObject({
+      deltaX: 30,
+      deltaY: -30,
+      nextDrag: { pointerId: 7, x: 130, y: 70 },
+      shouldCapture: false,
+      shouldRelease: false,
     });
   });
 });

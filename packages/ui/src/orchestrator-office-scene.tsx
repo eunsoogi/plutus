@@ -4,6 +4,7 @@ import type {
   OfficeStationLabels,
 } from "./orchestrator-office-copy";
 import { OrchestratorOfficeCanvas } from "./orchestrator-office-canvas";
+import { DEFAULT_OFFICE_PITCH } from "./orchestrator-office-canvas-geometry";
 import type { OfficeRotation } from "./orchestrator-office-canvas-types";
 import {
   slotFor,
@@ -22,12 +23,14 @@ export function OrchestratorOfficeScene({
   specialists,
   stage,
   teamLabel,
+  pitch = DEFAULT_OFFICE_PITCH,
   rotation,
 }: {
   readonly angle: number;
   readonly canvasChromeLabels: OfficeCanvasChromeLabels;
-  readonly onAngleDrag: (deltaX: number) => void;
+  readonly onAngleDrag: (deltaX: number, deltaY: number) => void;
   readonly orchestratorLabel: string;
+  readonly pitch?: number;
   readonly rotation: OfficeRotation;
   readonly stationLabels: OfficeStationLabels;
   readonly specialistLabels: Record<SpecialistId, string>;
@@ -68,9 +71,10 @@ export function OrchestratorOfficeScene({
       agents,
       angle,
       deskSlots,
+      pitch,
       rotation,
     }),
-    [agents, angle, deskSlots, rotation],
+    [agents, angle, deskSlots, pitch, rotation],
   );
 
   return (

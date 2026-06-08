@@ -88,7 +88,7 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
   await expect(officeScene).toBeVisible();
   await expect
     .poll(async () => (await officeScene.boundingBox())?.height ?? 0)
-    .toBeGreaterThanOrEqual(440);
+    .toBeGreaterThanOrEqual(400);
   await expect(page.getByTestId("orchestrator-office-canvas")).toBeVisible();
   await expect(page.getByTestId("orchestrator-office-canvas")).toHaveAttribute(
     "data-office-rotation",

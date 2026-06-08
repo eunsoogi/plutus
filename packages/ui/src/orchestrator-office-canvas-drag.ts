@@ -1,27 +1,32 @@
 export type OfficeCanvasDrag = {
   readonly pointerId: number;
   readonly x: number;
+  readonly y: number;
 };
 
 export type OfficeCanvasDragStart = {
   readonly isPrimary?: boolean;
   readonly pointerId: number;
   readonly x: number;
+  readonly y: number;
 };
 
 export type OfficeCanvasDragMove = {
   readonly isPrimary?: boolean;
   readonly pointerId: number;
   readonly x: number;
+  readonly y: number;
 };
 
 export type OfficeCanvasDragUpdate = {
   readonly deltaX: number | null;
+  readonly deltaY: number | null;
   readonly drag: OfficeCanvasDrag | null;
 };
 
 export type OfficeCanvasPointerTransition = {
   readonly deltaX: number | null;
+  readonly deltaY: number | null;
   readonly nextDrag: OfficeCanvasDrag | null;
   readonly shouldCapture: boolean;
   readonly shouldRelease: boolean;
@@ -32,6 +37,7 @@ function unchangedDragUpdate(
 ): OfficeCanvasDragUpdate {
   return {
     deltaX: null,
+    deltaY: null,
     drag,
   };
 }
@@ -47,6 +53,7 @@ export function beginOfficeCanvasDrag(
   return {
     pointerId: event.pointerId,
     x: event.x,
+    y: event.y,
   };
 }
 
@@ -58,16 +65,18 @@ export function updateOfficeCanvasDrag(
     drag === null ||
     !(event.isPrimary ?? true) ||
     drag.pointerId !== event.pointerId ||
-    drag.x === event.x
+    (drag.x === event.x && drag.y === event.y)
   ) {
     return unchangedDragUpdate(drag);
   }
 
   return {
     deltaX: event.x - drag.x,
+    deltaY: event.y - drag.y,
     drag: {
       pointerId: drag.pointerId,
       x: event.x,
+      y: event.y,
     },
   };
 }
@@ -97,23 +106,27 @@ export function reduceOfficeCanvasPointerDrag(
   event:
     | {
         readonly clientX: number;
+        readonly clientY: number;
         readonly isPrimary?: boolean;
         readonly kind: "pointerdown";
         readonly pointerId: number;
       }
     | {
         readonly clientX: number;
+        readonly clientY: number;
         readonly isPrimary?: boolean;
         readonly kind: "pointermove";
         readonly pointerId: number;
       }
     | {
         readonly clientX: number;
+        readonly clientY: number;
         readonly kind: "pointercancel";
         readonly pointerId: number;
       }
     | {
         readonly clientX: number;
+        readonly clientY: number;
         readonly kind: "pointerup";
         readonly pointerId: number;
       },
@@ -124,10 +137,12 @@ export function reduceOfficeCanvasPointerDrag(
         isPrimary: event.isPrimary,
         pointerId: event.pointerId,
         x: event.clientX,
+        y: event.clientY,
       });
 
       return {
         deltaX: null,
+        deltaY: null,
         nextDrag,
         shouldCapture: nextDrag !== drag,
         shouldRelease: false,
@@ -138,10 +153,12 @@ export function reduceOfficeCanvasPointerDrag(
         isPrimary: event.isPrimary,
         pointerId: event.pointerId,
         x: event.clientX,
+        y: event.clientY,
       });
 
       return {
         deltaX: nextMove.deltaX,
+        deltaY: nextMove.deltaY,
         nextDrag: nextMove.drag,
         shouldCapture: false,
         shouldRelease: false,
@@ -153,6 +170,7 @@ export function reduceOfficeCanvasPointerDrag(
 
       return {
         deltaX: null,
+        deltaY: null,
         nextDrag: nextEnd.drag,
         shouldCapture: false,
         shouldRelease: nextEnd.didEnd,

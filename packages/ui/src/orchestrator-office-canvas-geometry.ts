@@ -16,6 +16,10 @@ export const OFFICE_GRID = {
   rows: 7,
 } as const;
 
+export const DEFAULT_OFFICE_PITCH = 42;
+export const MAX_OFFICE_PITCH = 58;
+export const MIN_OFFICE_PITCH = 28;
+
 const OFFICE_YAW_BY_ROTATION: Readonly<Record<OfficeRotation, number>> = {
   "south-east": 0,
   "south-west": 90,
@@ -58,6 +62,14 @@ export function normalizeOfficeYaw(angle: number): number {
   return normalized < 0 ? normalized + 360 : normalized;
 }
 
+export function normalizeOfficePitch(pitch: number | undefined): number {
+  if (typeof pitch !== "number" || !Number.isFinite(pitch)) {
+    return DEFAULT_OFFICE_PITCH;
+  }
+
+  return Math.max(MIN_OFFICE_PITCH, Math.min(MAX_OFFICE_PITCH, pitch));
+}
+
 export function officeRotationForYaw(angle: number): OfficeRotation {
   const normalizedYaw = normalizeOfficeYaw(angle);
   const index = Math.round(normalizedYaw / 90) % OFFICE_ROTATION_BY_YAW.length;
@@ -76,10 +88,32 @@ export function nextOfficeYaw(
   return normalizeOfficeYaw(angle + delta);
 }
 
-function officeYawForProjection(projection: OfficeProjection): number {
-  return typeof projection === "number"
-    ? normalizeOfficeYaw(projection)
-    : officeYawForRotation(projection);
+function officeYawForProjection(
+  projection: OfficeProjection | OfficeRotation | number,
+): number {
+  if (typeof projection === "number") {
+    return normalizeOfficeYaw(projection);
+  }
+
+  if (typeof projection === "string") {
+    return officeYawForRotation(projection);
+  }
+
+  return officeYawForProjection(projection.yaw);
+}
+
+function officePitchForProjection(projection: OfficeProjection): number {
+  return typeof projection === "object"
+    ? normalizeOfficePitch(projection.pitch)
+    : DEFAULT_OFFICE_PITCH;
+}
+
+function officePitchScaleFor(projection: OfficeProjection): number {
+  return officePitchForProjection(projection) / DEFAULT_OFFICE_PITCH;
+}
+
+function officeLiftScaleFor(projection: OfficeProjection): number {
+  return 0.72 + officePitchScaleFor(projection) * 0.28;
 }
 
 function officeProjectionAxes(
@@ -172,11 +206,15 @@ export function projectOfficePoint(
   lift = 0,
 ): OfficeCanvasPoint {
   const { rotatedX, rotatedY } = officeProjectionAxes(point, projection);
+  const pitchScale = officePitchScaleFor(projection);
+  const liftScale = officeLiftScaleFor(projection);
 
   return {
     x: OFFICE_CENTER.x + (rotatedX - rotatedY) * (TILE_SIZE.width / 2),
     y:
-      OFFICE_CENTER.y + (rotatedX + rotatedY) * (TILE_SIZE.height / 2) - lift,
+      OFFICE_CENTER.y +
+      (rotatedX + rotatedY) * (TILE_SIZE.height / 2) * pitchScale -
+      lift * liftScale,
   };
 }
 

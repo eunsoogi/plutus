@@ -1,0 +1,84 @@
+@media (min-width: 1181px) {
+  .main-surface:has(> .dashboard-grid) {
+    overflow: hidden;
+  }
+
+  .page-header:has(> h2 + .pill-row) {
+    gap: 6px;
+    min-height: 168px;
+    padding-bottom: 34px;
+  }
+
+  .page-header:has(> h2 + .pill-row) h1,
+  .page-header:has(> h2 + .pill-row) h2 {
+    margin-bottom: 6px;
+  }
+
+  .main-surface > .dashboard-grid {
+    align-items: stretch;
+    grid-template-areas:
+      "stack office office"
+      "run artifact side";
+    grid-template-columns: minmax(248px, 0.96fr) minmax(320px, 1.12fr) minmax(
+        240px,
+        0.88fr
+      );
+    grid-template-rows: minmax(0, 1fr) minmax(0, 176px);
+    height: calc(100vh - 240px);
+    min-height: 0;
+  }
+
+  .dashboard-grid > .dashboard-stack:first-child {
+    grid-area: stack;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .dashboard-grid > .orchestrator-office {
+    grid-area: office;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .dashboard-grid > .dashboard-span:not(.run-panel) {
+    grid-area: artifact;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .dashboard-grid > .dashboard-stack:last-child {
+    grid-area: side;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .dashboard-grid > .run-panel.dashboard-span {
+    grid-area: run;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .orchestrator-office {
+    gap: 10px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .orchestrator-office__header,
+  .orchestrator-office__heading,
+  .orchestrator-office__status {
+    gap: 8px;
+  }
+
+  .orchestrator-office__experience {
+    min-height: 0;
+  }
+
+  .orchestrator-office__scene {
+    min-height: 304px;
+  }
+
+  .orchestrator-office__roster {
+    max-height: 100%;
+    overflow: auto;
+  }
+}

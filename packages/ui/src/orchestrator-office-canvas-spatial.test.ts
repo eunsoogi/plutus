@@ -133,6 +133,24 @@ describe("orchestrator office spatial layout", () => {
     },
   );
 
+  it("changes projection vertical scale with clamped pitch", () => {
+    const anchor = { x: 8, y: 6 } satisfies OfficeCanvasPoint;
+    const defaultPitchPoint = projectOfficePoint(anchor, {
+      pitch: 42,
+      yaw: 0,
+    });
+    const lowPitchPoint = projectOfficePoint(anchor, { pitch: 28, yaw: 0 });
+    const highPitchPoint = projectOfficePoint(anchor, { pitch: 58, yaw: 0 });
+    const clampedHighPitchPoint = projectOfficePoint(anchor, {
+      pitch: 999,
+      yaw: 0,
+    });
+
+    expect(highPitchPoint.y).toBeGreaterThan(defaultPitchPoint.y + 20);
+    expect(defaultPitchPoint.y).toBeGreaterThan(lowPitchPoint.y + 20);
+    expect(clampedHighPitchPoint).toEqual(highPitchPoint);
+  });
+
   it.each(orderedTeamIds)(
     "keeps %s desks and specialists outside the command table circulation zone",
     (teamId) => {
