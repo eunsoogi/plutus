@@ -97,6 +97,36 @@ test("packaged startup renders a route shell while the initial snapshot is pendi
   );
 });
 
+test("packaged hash mode updates locale inside mobile hash routes", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Reflect.set(window, "__PLUTUS_ROUTE_MODE__", "hash");
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/remote/dashboard?remote=connected&locale=ko");
+
+  const localeSelect = page.locator(".locale-switcher select");
+  await expect(localeSelect).toHaveValue("ko");
+
+  await localeSelect.selectOption("en");
+
+  await expect(localeSelect).toHaveValue("en");
+  await expect(page).toHaveURL(
+    /\/#\/remote\/dashboard\?remote=connected&locale=en$/u,
+  );
+
+  await page.getByRole("link", { name: "Settings" }).click();
+
+  await expect(page).toHaveURL(
+    /\/#\/remote\/settings\?remote=connected&locale=en$/u,
+  );
+
+  await page.reload();
+
+  await expect(page.locator(".locale-switcher select")).toHaveValue("en");
+});
+
 const mobileRoutes = [
   ["/pair", "Pair With Mac"],
   ["/connection", "Connection"],

@@ -52,11 +52,23 @@ function initialLocale(): AppLocale {
   });
 }
 
+function hrefWithPersistedLocale(href: string, locale: AppLocale): URL {
+  const url = new URL(href);
+  if (!url.hash.startsWith("#/")) {
+    url.searchParams.set("locale", locale);
+    return url;
+  }
+  const hashRoute = new URL(url.hash.slice(1), "https://plutus.local");
+  hashRoute.searchParams.set("locale", locale);
+  url.searchParams.delete("locale");
+  url.hash = `#${hashRoute.pathname}${hashRoute.search}${hashRoute.hash}`;
+  return url;
+}
+
 function persistLocale(locale: AppLocale) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(localeStorageKey, locale);
-  const url = new URL(window.location.href);
-  url.searchParams.set("locale", locale);
+  const url = hrefWithPersistedLocale(window.location.href, locale);
   window.history.replaceState(window.history.state, "", url);
 }
 
