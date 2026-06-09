@@ -36,6 +36,17 @@ function countRole(
   return objects.filter((object) => object.modelRole === modelRole).length;
 }
 
+function scaledObject(
+  objects: readonly OfficeThreeSceneObject[],
+  id: string,
+): Extract<OfficeThreeSceneObject, { readonly scale: readonly number[] }> {
+  const object = findObject(objects, id);
+  if (!("scale" in object)) {
+    throw new Error(`Expected scaled office Three scene object: ${id}`);
+  }
+  return object;
+}
+
 describe("office Three.js scene fidelity details", () => {
   it("catalogs semantic detail roles that make furniture and agents recognizable", () => {
     const contract = createOfficeThreeSceneCatalog({
@@ -188,6 +199,42 @@ describe("office Three.js scene fidelity details", () => {
     expect(new Set(armRotations).size).toBeGreaterThanOrEqual(4);
     expect(new Set(bodyPositions).size).toBe(5);
     expect(bodyPositions).toHaveLength(5);
+  });
+
+  it("orients desk lips on the edge that matches station facing", () => {
+    const contract = createOfficeThreeSceneCatalog({
+      locale: "en",
+      stage: "Executing",
+      teamId: "portfolio_review_committee",
+    });
+    const objects = contract.scene.objects;
+    const marketDesk = scaledObject(objects, "desk:market_desk");
+    const marketFrontLip = scaledObject(
+      objects,
+      "desk-detail:market_desk:front-lip",
+    );
+    const marketRearLip = scaledObject(
+      objects,
+      "desk-detail:market_desk:rear-lip",
+    );
+    const reportDesk = scaledObject(objects, "desk:report_bay");
+    const reportFrontLip = scaledObject(
+      objects,
+      "desk-detail:report_bay:front-lip",
+    );
+    const reportRearLip = scaledObject(
+      objects,
+      "desk-detail:report_bay:rear-lip",
+    );
+
+    expect(marketFrontLip.position[0]).toBeGreaterThan(marketDesk.position[0]);
+    expect(marketRearLip.position[0]).toBeLessThan(marketDesk.position[0]);
+    expect(marketFrontLip.scale[0]).toBeLessThan(marketFrontLip.scale[2]);
+    expect(marketRearLip.scale[0]).toBeLessThan(marketRearLip.scale[2]);
+    expect(reportFrontLip.position[2]).toBeLessThan(reportDesk.position[2]);
+    expect(reportRearLip.position[2]).toBeGreaterThan(reportDesk.position[2]);
+    expect(reportFrontLip.scale[2]).toBeLessThan(reportFrontLip.scale[0]);
+    expect(reportRearLip.scale[2]).toBeLessThan(reportRearLip.scale[0]);
   });
 
   it("keeps planter foliage attached to its spaced 3D planter base", () => {
