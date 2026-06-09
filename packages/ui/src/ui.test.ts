@@ -104,7 +104,7 @@ describe("ui helpers", () => {
     ).toBe("/settings/providers");
   });
 
-  it("keeps hash-routed remote state in mobile tab links", () => {
+  it("keeps hash-routed remote state and locale in mobile tabs", () => {
     vi.stubGlobal("window", {
       __PLUTUS_ROUTE_MODE__: "hash",
       history: {
@@ -140,6 +140,8 @@ describe("ui helpers", () => {
       expect(markup).toContain(
         'href="/#/remote/settings?remote=revoked&amp;locale=ko"',
       );
+      expect(markup).toContain('aria-label="원격 탐색"');
+      expect(markup).toContain("<span>언어</span>");
     } finally {
       vi.unstubAllGlobals();
     }

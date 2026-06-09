@@ -12,6 +12,7 @@ import {
   type AppLocale,
 } from "./core";
 import { messages } from "./i18n-messages";
+import { currentRouteSearchParams } from "./plutus-command";
 
 const localeStorageKey = "plutus.locale";
 
@@ -43,9 +44,9 @@ export function translate(
 
 function initialLocale(): AppLocale {
   if (typeof window === "undefined") return defaultLocale;
-  const url = new URL(window.location.href);
+  const routeSearch = currentRouteSearchParams(window.location.href);
   return resolveLocale({
-    requested: url.searchParams.get("locale"),
+    requested: routeSearch.get("locale"),
     stored: window.localStorage.getItem(localeStorageKey),
     browserLocales: navigator.languages,
   });
