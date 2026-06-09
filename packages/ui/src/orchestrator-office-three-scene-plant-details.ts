@@ -1,4 +1,4 @@
-import { planterLocations } from "./orchestrator-office-canvas-amenities-data";
+import { officeThreePlanterLocations } from "./orchestrator-office-three-scene-data";
 import type { OfficeThreeAmenityObject } from "./orchestrator-office-three-types";
 import {
   pointPosition,
@@ -7,7 +7,7 @@ import {
 import { detailObject } from "./orchestrator-office-three-scene-detail-utils";
 
 export function plantLeafObjects(): readonly OfficeThreeAmenityObject[] {
-  return planterLocations.flatMap((location, index) => {
+  return officeThreePlanterLocations.flatMap((location, index) => {
     const base = pointPosition(location, 0.68);
     return [
       detailObject({

@@ -1,11 +1,16 @@
 import type { OfficeStationLabels } from "./orchestrator-office-copy";
-import { slotFor } from "./orchestrator-office-scene-data";
 import type { SpecialistId } from "./orchestrator-office-teams";
 import type { OfficeThreeAmenityObject } from "./orchestrator-office-three-types";
 import {
   commandTable,
+  officeThreeStationRect,
+  type OfficeStationId,
   stationIdFor,
 } from "./orchestrator-office-three-scene-data";
+import {
+  deskFidelityDetailObjects,
+  type DeskFacing,
+} from "./orchestrator-office-three-scene-desk-fidelity-details";
 import {
   rectPosition,
   rectScale,
@@ -13,6 +18,15 @@ import {
   type OfficeThreeSceneRect,
 } from "./orchestrator-office-three-scene-geometry";
 import { detailObject } from "./orchestrator-office-three-scene-detail-utils";
+
+const deskFacingByStation = {
+  command_table: "south",
+  market_desk: "east",
+  report_bay: "north",
+  risk_table: "north",
+  signal_booth: "south",
+  strategy_board: "west",
+} satisfies Record<OfficeStationId, DeskFacing>;
 
 function detailPosition(
   rect: OfficeThreeSceneRect,
@@ -24,17 +38,70 @@ function detailPosition(
   return vector3(position[0] + xOffset, y, position[2] + zOffset);
 }
 
+function furnitureSideOffset(
+  facing: DeskFacing,
+  sideDistance: number,
+): readonly [number, number] {
+  switch (facing) {
+    case "east":
+      return [sideDistance, 0];
+    case "north":
+      return [0, -sideDistance];
+    case "south":
+      return [0, sideDistance];
+    case "west":
+      return [-sideDistance, 0];
+  }
+}
+
+function sideRotation(facing: DeskFacing): ReturnType<typeof vector3> {
+  switch (facing) {
+    case "east":
+      return vector3(0, -Math.PI / 2, 0);
+    case "north":
+      return vector3(0, Math.PI, 0);
+    case "south":
+      return vector3(0, 0, 0);
+    case "west":
+      return vector3(0, Math.PI / 2, 0);
+  }
+}
+
 function deskDetailObjects(
   id: string,
   label: string,
   rect: OfficeThreeSceneRect,
+  facing: DeskFacing,
 ): readonly OfficeThreeAmenityObject[] {
   const scale = rectScale(rect);
   const surfaceTop = rect.height + 0.02;
   const legX = scale[0] / 2 - 0.12;
   const legZ = scale[2] / 2 - 0.12;
-  const chairZ = scale[2] / 2 + 0.24;
-  const monitorZ = -scale[2] / 2 + 0.18;
+  const chairDistance =
+    facing === "east" || facing === "west"
+      ? scale[0] / 2 + 0.28
+      : scale[2] / 2 + 0.26;
+  const monitorDistance =
+    facing === "east" || facing === "west"
+      ? scale[0] / 2 - 0.18
+      : scale[2] / 2 - 0.18;
+  const [chairX, chairZ] = furnitureSideOffset(facing, chairDistance);
+  const [monitorX, monitorZ] = furnitureSideOffset(facing, -monitorDistance);
+  const rotated = facing === "east" || facing === "west";
+  const chairScale = rotated
+    ? vector3(0.34, 0.16, 0.42)
+    : vector3(0.42, 0.16, 0.34);
+  const chairBackScale = rotated
+    ? vector3(0.08, 0.48, 0.44)
+    : vector3(0.44, 0.48, 0.08);
+  const monitorScale = rotated
+    ? vector3(0.04, 0.28, Math.min(0.48, scale[0] * 0.34))
+    : vector3(Math.min(0.48, scale[0] * 0.34), 0.28, 0.04);
+  const chairBackDistance = chairDistance + 0.17;
+  const [chairBackX, chairBackZ] = furnitureSideOffset(
+    facing,
+    chairBackDistance,
+  );
   const deskLegs = [
     [-legX, -legZ],
     [legX, -legZ],
@@ -53,12 +120,13 @@ function deskDetailObjects(
         scale: vector3(0.08, rect.height, 0.08),
       }),
     ),
+    ...deskFidelityDetailObjects(id, label, rect, facing),
     detailObject({
       color: "#344256",
       id: `desk-detail:${id}:monitor-stand`,
       label: `${label} monitor stand`,
       modelRole: "monitor-stand",
-      position: detailPosition(rect, 0, surfaceTop + 0.12, monitorZ),
+      position: detailPosition(rect, monitorX, surfaceTop + 0.12, monitorZ),
       scale: vector3(0.08, 0.24, 0.08),
       shape: "cylinder",
     }),
@@ -67,37 +135,32 @@ function deskDetailObjects(
       id: `desk-detail:${id}:monitor-screen`,
       label: `${label} monitor screen`,
       modelRole: "monitor-screen",
-      position: detailPosition(rect, 0, surfaceTop + 0.28, monitorZ - 0.03),
-      scale: vector3(Math.min(0.48, scale[0] * 0.34), 0.28, 0.04),
+      position: detailPosition(rect, monitorX, surfaceTop + 0.28, monitorZ),
+      rotation: sideRotation(facing),
+      scale: monitorScale,
     }),
     detailObject({
       color: "#566171",
       id: `desk-detail:${id}:chair-seat`,
       label: `${label} chair seat`,
       modelRole: "chair-seat",
-      position: detailPosition(rect, 0, 0.24, chairZ),
-      scale: vector3(0.42, 0.16, 0.34),
+      position: detailPosition(rect, chairX, 0.24, chairZ),
+      scale: chairScale,
     }),
     detailObject({
       color: "#46515f",
       id: `desk-detail:${id}:chair-back`,
       label: `${label} chair back`,
       modelRole: "chair-back",
-      position: detailPosition(rect, 0, 0.5, chairZ + 0.16),
-      scale: vector3(0.44, 0.48, 0.08),
+      position: detailPosition(rect, chairBackX, 0.5, chairBackZ),
+      rotation: sideRotation(facing),
+      scale: chairBackScale,
     }),
   ];
 }
 
-function specialistDeskRect(index: number, stationLabels: OfficeStationLabels) {
-  const slot = slotFor(index, stationLabels);
-  return {
-    depth: slot.deskDepth,
-    height: 0.48,
-    width: slot.deskWidth,
-    x: slot.deskTile.x,
-    y: slot.deskTile.y,
-  } satisfies OfficeThreeSceneRect;
+function specialistDeskRect(index: number): OfficeThreeSceneRect {
+  return officeThreeStationRect(index);
 }
 
 export function deskDetailObjectsFor(
@@ -109,13 +172,15 @@ export function deskDetailObjectsFor(
       "command_table",
       stationLabels.command_table,
       commandTable,
+      deskFacingByStation.command_table,
     ),
     ...specialists.flatMap((_, index) => {
       const stationId = stationIdFor(index);
       return deskDetailObjects(
         stationId,
         stationLabels[stationId],
-        specialistDeskRect(index, stationLabels),
+        specialistDeskRect(index),
+        deskFacingByStation[stationId],
       );
     }),
   ];
