@@ -201,6 +201,7 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
           <OrchestratorOfficeScene
             angle={angle}
             canvasChromeLabels={text.canvasChrome}
+            locale={locale}
             orchestratorLabel={text.orchestrator}
             onAngleDrag={dragOfficeAngle}
             pitch={pitch}
@@ -209,6 +210,7 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
             stationLabels={text.station}
             specialistLabels={text.specialist}
             specialists={specialists}
+            teamId={activeTeam}
             teamLabel={activeTeamLabel}
           />
         </div>

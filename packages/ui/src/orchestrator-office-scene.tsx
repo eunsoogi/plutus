@@ -1,9 +1,9 @@
 import { useMemo } from "react";
+import type { AppLocale } from "./core";
 import type {
   OfficeCanvasChromeLabels,
   OfficeStationLabels,
 } from "./orchestrator-office-copy";
-import { OrchestratorOfficeCanvas } from "./orchestrator-office-canvas";
 import { DEFAULT_OFFICE_PITCH } from "./orchestrator-office-canvas-geometry";
 import type { OfficeRotation } from "./orchestrator-office-canvas-types";
 import {
@@ -11,23 +11,27 @@ import {
   specialistAgent,
   type OfficeAgent,
 } from "./orchestrator-office-scene-data";
-import type { SpecialistId } from "./orchestrator-office-teams";
+import type { SpecialistId, TeamId } from "./orchestrator-office-teams";
+import { OrchestratorOfficeThreeView } from "./orchestrator-office-three-view";
 
 export function OrchestratorOfficeScene({
   angle,
   canvasChromeLabels,
   onAngleDrag,
   orchestratorLabel,
+  locale = "en",
   stationLabels,
   specialistLabels,
   specialists,
   stage,
+  teamId,
   teamLabel,
   pitch = DEFAULT_OFFICE_PITCH,
   rotation,
 }: {
   readonly angle: number;
   readonly canvasChromeLabels: OfficeCanvasChromeLabels;
+  readonly locale?: AppLocale;
   readonly onAngleDrag: (deltaX: number, deltaY: number) => void;
   readonly orchestratorLabel: string;
   readonly pitch?: number;
@@ -36,6 +40,7 @@ export function OrchestratorOfficeScene({
   readonly specialistLabels: Record<SpecialistId, string>;
   readonly specialists: readonly SpecialistId[];
   readonly stage: string;
+  readonly teamId?: TeamId;
   readonly teamLabel: string;
 }) {
   const agents: readonly OfficeAgent[] = useMemo(
@@ -107,7 +112,14 @@ export function OrchestratorOfficeScene({
         <span>{canvasChromeLabels.market}</span>
         <span>{canvasChromeLabels.analytics}</span>
       </div>
-      <OrchestratorOfficeCanvas onAngleDrag={onAngleDrag} scene={canvasScene} />
+      <OrchestratorOfficeThreeView
+        locale={locale}
+        onAngleDrag={onAngleDrag}
+        rotation={rotation}
+        scene={canvasScene}
+        stage={stage}
+        teamId={teamId}
+      />
       <ul
         className="orchestrator-office__scene-mirror"
         data-testid="orchestrator-office-canvas-mirror"
