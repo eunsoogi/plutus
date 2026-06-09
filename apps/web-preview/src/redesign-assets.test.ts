@@ -169,4 +169,14 @@ describe("redesign asset and style constraints", () => {
     // Then: production HTML references assets relative to the root bundle.
     expect(viteConfig).toMatch(/\bbase:\s*["']\.\/["']/u);
   });
+
+  it("keeps the WebKit bootstrap in the packaged startup HTML", () => {
+    // Given: packaged macOS WKWebView startup depends on a classic script
+    // running on the same page as the Vite module entry.
+    const indexHtml = readWorkspaceFile("apps/web-preview/index.html");
+
+    // Then: future HTML edits preserve the startup bootstrap and app entry.
+    expect(indexHtml).toContain("__PLUTUS_WEBKIT_BOOTSTRAP__");
+    expect(indexHtml).toContain('type="module" src="/src/main.tsx"');
+  });
 });
