@@ -6,7 +6,9 @@ test("host dashboard fits the first screen at 1440x960 without clipping the Kore
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.goto("/dashboard?runtime=local&locale=ko");
 
-  await expect(page.getByRole("heading", { name: "호스트 대시보드" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "호스트 대시보드" }),
+  ).toBeVisible();
   await expect(page.getByText("포트폴리오 검토")).toBeVisible();
   await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
 
@@ -133,7 +135,7 @@ test("host dashboard keeps the side stack in the desktop side area with internal
   expect(metrics.mainSurfaceOverflows).toBe(false);
 });
 
-test("host dashboard keeps vertical recovery scroll when header pills wrap beyond the desktop fixture", async ({
+test("host dashboard keeps dashboard-grid recovery scroll when header pills wrap beyond the desktop fixture", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
@@ -141,12 +143,17 @@ test("host dashboard keeps vertical recovery scroll when header pills wrap beyon
 
   const metrics = await page.evaluate(() => {
     const mainSurface = document.querySelector<HTMLElement>(".main-surface");
+    const dashboardGrid =
+      document.querySelector<HTMLElement>(".dashboard-grid");
     const header = document.querySelector<HTMLElement>(".page-header");
-    const pillRow = document.querySelector<HTMLElement>(".page-header .pill-row");
+    const pillRow = document.querySelector<HTMLElement>(
+      ".page-header .pill-row",
+    );
     const runPanel = document.querySelector<HTMLElement>(".run-panel");
 
     if (
       mainSurface === null ||
+      dashboardGrid === null ||
       header === null ||
       pillRow === null ||
       runPanel === null
@@ -164,17 +171,18 @@ test("host dashboard keeps vertical recovery scroll when header pills wrap beyon
 
     header.style.minHeight = "30rem";
 
-    const overflowY = window.getComputedStyle(mainSurface).overflowY;
-    const scrollHeight = mainSurface.scrollHeight;
-    const clientHeight = mainSurface.clientHeight;
+    const overflowY = window.getComputedStyle(dashboardGrid).overflowY;
+    const scrollHeight = dashboardGrid.scrollHeight;
+    const clientHeight = dashboardGrid.clientHeight;
     const runPanelBottomBeforeScroll = runPanel.getBoundingClientRect().bottom;
 
-    mainSurface.scrollTop = scrollHeight;
+    dashboardGrid.scrollTop = scrollHeight;
 
     return {
       overflowY,
-      scrolled: mainSurface.scrollTop > 0,
+      scrolled: dashboardGrid.scrollTop > 0,
       hasVerticalOverflow: scrollHeight > clientHeight + 1,
+      mainSurfaceScrolled: mainSurface.scrollTop > 0,
       runPanelBottomAfterScroll: runPanel.getBoundingClientRect().bottom,
       runPanelBottomBeforeScroll,
       viewportHeight: window.innerHeight,
@@ -184,6 +192,7 @@ test("host dashboard keeps vertical recovery scroll when header pills wrap beyon
   expect(["auto", "scroll"]).toContain(metrics.overflowY);
   expect(metrics.hasVerticalOverflow).toBe(true);
   expect(metrics.scrolled).toBe(true);
+  expect(metrics.mainSurfaceScrolled).toBe(false);
   expect(metrics.runPanelBottomBeforeScroll).toBeGreaterThan(
     metrics.viewportHeight,
   );
@@ -211,13 +220,13 @@ test("host dashboard recovers clipped office content at 1280x800 with internal p
       throw new Error("Office recovery metrics were unavailable");
     }
 
-    for (let index = 0; index < 6; index += 1) {
+    for (let index = 0; index < 12; index += 1) {
       const signal = document.createElement("div");
       const label = document.createElement("span");
       const detail = document.createElement("strong");
       label.textContent = `recovery signal ${index + 1}`;
       detail.textContent = `office overflow ${index + 1}`;
-      signal.style.minHeight = "6rem";
+      signal.style.minHeight = "8rem";
       signal.append(label, detail);
       officeSignals.append(signal);
     }
@@ -228,7 +237,8 @@ test("host dashboard recovers clipped office content at 1280x800 with internal p
       throw new Error("Office recovery signal was unavailable");
     }
 
-    const lastSignalBottomBeforeScroll = lastSignal.getBoundingClientRect().bottom;
+    const lastSignalBottomBeforeScroll =
+      lastSignal.getBoundingClientRect().bottom;
     const officeOverflowY = window.getComputedStyle(office).overflowY;
     office.scrollTop = office.scrollHeight;
 
@@ -250,7 +260,9 @@ test("host dashboard recovers clipped office content at 1280x800 with internal p
   expect(metrics.mainSurfaceOverflows).toBe(false);
   expect(["auto", "scroll"]).toContain(metrics.officeOverflowY);
   expect(metrics.officeHasOverflow).toBe(true);
-  expect(metrics.lastSignalBottomBeforeScroll).toBeGreaterThan(metrics.officeBottom);
+  expect(metrics.lastSignalBottomBeforeScroll).toBeGreaterThan(
+    metrics.officeBottom,
+  );
   expect(metrics.officeScrolled).toBe(true);
   expect(metrics.lastSignalBottomAfterScroll).toBeLessThanOrEqual(
     metrics.officeBottom - 8,
