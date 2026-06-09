@@ -31,17 +31,23 @@ export type OfficeThreeModelRole =
   | "cabinet-panel"
   | "cabinet-shelf"
   | "chair-back"
+  | "chair-leg"
   | "chair-seat"
   | "contact-pad"
   | "coffee-table-leg"
   | "coffee-table-top"
   | "desk-drawer"
   | "desk-edge"
+  | "desk-equipment-cluster"
+  | "desk-inset-panel"
   | "desk-leg"
+  | "desk-lip"
   | "desk-surface"
   | "fixture-body"
+  | "partition-panel"
   | "report-bench-leg"
   | "report-bench-seat"
+  | "rug-zone"
   | "sofa-arm"
   | "sofa-back"
   | "sofa-cushion"
@@ -52,6 +58,7 @@ export type OfficeThreeModelRole =
   | "monitor-stand"
   | "plant-leaf"
   | "planter-pot"
+  | "wall-base-rail"
   | "wall-panel"
   | "wall-trim";
 
@@ -164,8 +171,8 @@ export const officeThreeCameraDefaults = {
   fov: 45,
   kind: "perspective",
   near: 0.1,
-  position: [6.1, 5.05, 7.1],
-  target: [0, 0.42, 0],
+  position: [4.41, 6.27, 5.13],
+  target: [0, 0.18, 0],
 } satisfies OfficeThreeCameraState;
 
 export const officeThreeInteractionDefaults = {

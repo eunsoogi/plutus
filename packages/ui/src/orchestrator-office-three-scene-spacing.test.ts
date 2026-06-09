@@ -58,6 +58,12 @@ function hasCheckedFootprint(object: OfficeThreeSceneObject): boolean {
 
 function footprintFor(object: OfficeThreeSceneObject): Footprint | undefined {
   if (!hasCheckedFootprint(object) || !("scale" in object)) return undefined;
+  return scaledFootprintFor(object);
+}
+
+function scaledFootprintFor(
+  object: Extract<OfficeThreeSceneObject, { readonly scale: readonly number[] }>,
+): Footprint {
   const halfX = object.scale[0] / 2;
   const halfZ = object.scale[2] / 2;
   return {
@@ -94,6 +100,35 @@ function overlapArea(first: Footprint, second: Footprint): number {
   return Math.max(0, x) * Math.max(0, z);
 }
 
+function checkedFootprints(
+  objects: readonly OfficeThreeSceneObject[],
+): readonly Footprint[] {
+  return objects.flatMap((object) => {
+    const footprint = footprintFor(object);
+    return footprint === undefined ? [] : [footprint];
+  });
+}
+
+function findScaledObject(
+  objects: readonly OfficeThreeSceneObject[],
+  id: string,
+): Extract<OfficeThreeSceneObject, { readonly scale: readonly number[] }> {
+  const object = objects.find((candidate) => candidate.id === id);
+  if (object === undefined || !("scale" in object)) {
+    throw new Error(`Missing scaled office Three scene object: ${id}`);
+  }
+  return object;
+}
+
+function isInsideFloorEnvelope(object: Footprint, floor: Footprint): boolean {
+  return (
+    object.minX >= floor.minX &&
+    object.maxX <= floor.maxX &&
+    object.minZ >= floor.minZ &&
+    object.maxZ <= floor.maxZ
+  );
+}
+
 describe("office Three.js scene spacing", () => {
   it("keeps unrelated occupied floor-space footprints from overlapping", () => {
     const contract = createOfficeThreeSceneCatalog({
@@ -102,10 +137,7 @@ describe("office Three.js scene spacing", () => {
       teamId: "portfolio_review_committee",
     });
 
-    const footprints = contract.scene.objects.flatMap((object) => {
-      const footprint = footprintFor(object);
-      return footprint === undefined ? [] : [footprint];
-    });
+    const footprints = checkedFootprints(contract.scene.objects);
     const collisions: readonly string[] = footprints.flatMap((first, index) =>
       footprints.slice(index + 1).flatMap((second) => {
         const area = overlapArea(first, second);
@@ -135,5 +167,95 @@ describe("office Three.js scene spacing", () => {
           .map((footprint) => footprint.assemblyKey),
       ).size,
     ).toBeGreaterThan(1);
+  });
+
+  it("keeps reference family anchors inside the readable office floor", () => {
+    const contract = createOfficeThreeSceneCatalog({
+      locale: "en",
+      stage: "Executing",
+      teamId: "portfolio_review_committee",
+    });
+    const objects = contract.scene.objects;
+    const floor = findScaledObject(objects, "room:floor");
+    const floorHalfX = floor.scale[0] / 2;
+    const floorHalfZ = floor.scale[2] / 2;
+    const floorEnvelope = {
+      assemblyKey: floor.id,
+      id: floor.id,
+      maxX: floor.position[0] + floorHalfX,
+      maxZ: floor.position[2] + floorHalfZ,
+      minX: floor.position[0] - floorHalfX,
+      minZ: floor.position[2] - floorHalfZ,
+    } satisfies Footprint;
+    const footprints = checkedFootprints(objects);
+    const outOfBounds = footprints.flatMap((footprint) => {
+      if (isInsideFloorEnvelope(footprint, floorEnvelope)) {
+        return [];
+      }
+      return [`${footprint.id} leaves the floor envelope`];
+    });
+
+    expect(outOfBounds).toEqual([]);
+    expect(footprints.map((footprint) => footprint.id)).toEqual(
+      expect.arrayContaining([
+        "desk:command_table",
+        "desk-detail:command_table:chair-seat",
+        "agent-detail:orchestrator:body",
+        "furniture:sofa",
+        "furniture:risk-cabinet",
+        "plant:0",
+      ]),
+    );
+    const renderedStationCount = footprints.filter(
+      (footprint) => footprint.modelRole === "desk-surface",
+    ).length;
+
+    expect(renderedStationCount).toBe(5);
+    expect(
+      footprints.filter((footprint) => footprint.modelRole === "chair-seat"),
+    ).toHaveLength(renderedStationCount);
+    expect(
+      footprints.filter((footprint) => footprint.modelRole === "agent-body"),
+    ).toHaveLength(renderedStationCount);
+  });
+
+  it("keeps room zoning anchors readable without leaving the cutaway floor", () => {
+    const contract = createOfficeThreeSceneCatalog({
+      locale: "en",
+      stage: "Executing",
+      teamId: "portfolio_review_committee",
+    });
+    const objects = contract.scene.objects;
+    const floor = findScaledObject(objects, "room:floor");
+    const floorTop = floor.position[1] + floor.scale[1] / 2;
+    const floorEnvelope = {
+      assemblyKey: floor.id,
+      id: floor.id,
+      maxX: floor.position[0] + floor.scale[0] / 2,
+      maxZ: floor.position[2] + floor.scale[2] / 2,
+      minX: floor.position[0] - floor.scale[0] / 2,
+      minZ: floor.position[2] - floor.scale[2] / 2,
+    } satisfies Footprint;
+    const anchorIds = [
+      "room-detail:zone:command-rug",
+      "room-detail:zone:lounge-rug",
+      "room-detail:partition:market",
+      "room-detail:partition:risk",
+      "room-detail:boundary-wall-0:base-rail",
+      "room-detail:boundary-wall-1:base-rail",
+    ] as const;
+
+    for (const id of anchorIds) {
+      const anchor = findScaledObject(objects, id);
+      const footprint = scaledFootprintFor(anchor);
+
+      expect(anchor.scale.every((value) => value > 0)).toBe(true);
+      expect(isInsideFloorEnvelope(footprint, floorEnvelope)).toBe(true);
+      if (anchor.modelRole === "rug-zone") {
+        expect(anchor.position[1] - anchor.scale[1] / 2).toBeGreaterThan(
+          floorTop,
+        );
+      }
+    }
   });
 });

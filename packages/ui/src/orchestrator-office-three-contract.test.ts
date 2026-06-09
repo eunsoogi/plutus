@@ -2,6 +2,10 @@ import { Mesh, PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { describe, expect, it } from "vitest";
 import {
+  officeThreeCameraPosition,
+  serializeOfficeVector,
+} from "./orchestrator-office-three-camera";
+import {
   createOfficeThreeRendererContract,
   officeThreeCameraDefaults,
   officeThreeInteractionDefaults,
@@ -65,5 +69,20 @@ describe("office Three.js renderer contract", () => {
     expect(contract.camera.target).toEqual([0, 0.4, 0]);
     expect(contract.interaction.controls.enableDamping).toBe(true);
     expect(contract.interaction.selectedObjectId).toBe("agent:orchestrator");
+  });
+
+  it("keeps the default camera aligned to the fuller live office framing", () => {
+    const defaultCameraPosition = officeThreeCameraPosition(undefined, undefined);
+    const horizontalDistance = Math.hypot(
+      defaultCameraPosition[0],
+      defaultCameraPosition[2],
+    );
+
+    expect(serializeOfficeVector(officeThreeCameraDefaults.position)).toBe(
+      serializeOfficeVector(defaultCameraPosition),
+    );
+    expect(officeThreeCameraDefaults.target).toEqual([0, 0.18, 0]);
+    expect(defaultCameraPosition[1]).toBeLessThan(6.5);
+    expect(horizontalDistance).toBeGreaterThan(6.6);
   });
 });

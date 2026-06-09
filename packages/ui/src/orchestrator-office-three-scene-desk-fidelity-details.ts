@@ -46,6 +46,23 @@ function drawerScale(
   return vector3(width * 0.46, 0.16, 0.04);
 }
 
+function lipOffset(
+  facing: DeskFacing,
+  distance: number,
+): readonly [number, number] {
+  return drawerOffset(facing, distance);
+}
+
+function lipScale(
+  facing: DeskFacing,
+  length: number,
+): ReturnType<typeof vector3> {
+  if (facing === "east" || facing === "west") {
+    return vector3(0.08, 0.045, length);
+  }
+  return vector3(length, 0.045, 0.08);
+}
+
 export function deskFidelityDetailObjects(
   id: string,
   label: string,
@@ -56,9 +73,15 @@ export function deskFidelityDetailObjects(
   const halfX = scale[0] / 2;
   const halfZ = scale[2] / 2;
   const surfaceY = rect.height + 0.065;
+  const lipY = rect.height + 0.11;
   const drawerDistance =
     facing === "east" || facing === "west" ? halfX + 0.025 : halfZ + 0.025;
   const [drawerX, drawerZ] = drawerOffset(facing, drawerDistance);
+  const lipDistance =
+    facing === "east" || facing === "west" ? halfX - 0.08 : halfZ - 0.08;
+  const [frontLipX, frontLipZ] = lipOffset(facing, lipDistance);
+  const [rearLipX, rearLipZ] = lipOffset(facing, -lipDistance);
+  const lipLength = facing === "east" || facing === "west" ? scale[2] : scale[0];
   return [
     detailObject({
       color: "#f7dfb9",
@@ -83,6 +106,31 @@ export function deskFidelityDetailObjects(
       modelRole: "desk-edge",
       position: detailPosition(rect, halfX - 0.02, surfaceY, 0),
       scale: vector3(0.05, 0.05, scale[2] * 0.9),
+    }),
+    detailObject({
+      color: "#f4d09a",
+      id: `desk-detail:${id}:front-lip`,
+      label: `${label} front lip`,
+      modelRole: "desk-lip",
+      position: detailPosition(rect, frontLipX, lipY, frontLipZ),
+      scale: lipScale(facing, lipLength * 0.7),
+    }),
+    detailObject({
+      color: "#c77f48",
+      id: `desk-detail:${id}:rear-lip`,
+      label: `${label} rear lip`,
+      modelRole: "desk-lip",
+      position: detailPosition(rect, rearLipX, lipY, rearLipZ),
+      scale: lipScale(facing, lipLength * 0.64),
+    }),
+    detailObject({
+      color: "#e7bd82",
+      id: `desk-detail:${id}:inset-panel`,
+      label: `${label} inset panel`,
+      modelRole: "desk-inset-panel",
+      opacity: 0.82,
+      position: detailPosition(rect, 0, lipY + 0.02, 0),
+      scale: vector3(scale[0] * 0.48, 0.025, scale[2] * 0.36),
     }),
     detailObject({
       color: "#9b7045",

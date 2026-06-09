@@ -22,6 +22,31 @@ function horizontalDistance(
   return Math.hypot(x, z);
 }
 
+function objectsWithPrefix(
+  objects: readonly OfficeThreeSceneObject[],
+  prefix: string,
+): readonly OfficeThreeSceneObject[] {
+  return objects.filter((object) => object.id.startsWith(prefix));
+}
+
+function countRole(
+  objects: readonly OfficeThreeSceneObject[],
+  modelRole: OfficeThreeSceneObject["modelRole"],
+): number {
+  return objects.filter((object) => object.modelRole === modelRole).length;
+}
+
+function scaledObject(
+  objects: readonly OfficeThreeSceneObject[],
+  id: string,
+): Extract<OfficeThreeSceneObject, { readonly scale: readonly number[] }> {
+  const object = findObject(objects, id);
+  if (!("scale" in object)) {
+    throw new Error(`Expected scaled office Three scene object: ${id}`);
+  }
+  return object;
+}
+
 describe("office Three.js scene fidelity details", () => {
   it("catalogs semantic detail roles that make furniture and agents recognizable", () => {
     const contract = createOfficeThreeSceneCatalog({
@@ -37,10 +62,27 @@ describe("office Three.js scene fidelity details", () => {
         "agent-arm",
         "agent-foot",
         "contact-pad",
+        "chair-leg",
         "desk-drawer",
         "desk-edge",
+        "desk-equipment-cluster",
+        "desk-inset-panel",
+        "desk-leg",
+        "desk-lip",
+        "desk-surface",
+        "chair-back",
+        "chair-seat",
         "sofa-cushion",
+        "sofa-seat",
         "cabinet-handle",
+        "cabinet-shelf",
+        "plant-leaf",
+        "planter-pot",
+        "partition-panel",
+        "rug-zone",
+        "wall-base-rail",
+        "wall-panel",
+        "wall-trim",
       ]),
     );
     expect(
@@ -55,6 +97,149 @@ describe("office Three.js scene fidelity details", () => {
     ).toBeGreaterThanOrEqual(6);
   });
 
+  it("keeps every reference object family identifiable from semantic parts", () => {
+    const contract = createOfficeThreeSceneCatalog({
+      locale: "en",
+      stage: "Executing",
+      teamId: "portfolio_review_committee",
+    });
+    const objects = contract.scene.objects;
+    const stationIds = objects
+      .filter((object) => object.id.startsWith("desk:"))
+      .map((object) => object.id.replace("desk:", ""));
+    const agentIds = objectsWithPrefix(objects, "agent:").map((object) =>
+      object.id.replace("agent:", ""),
+    );
+    const sofaIds = ["sofa", "strategy-sofa"] as const;
+
+    expect(stationIds).toHaveLength(5);
+
+    for (const stationId of stationIds) {
+      const stationObjects = objects.filter(
+        (object) =>
+          object.id === `desk:${stationId}` ||
+          object.id.startsWith(`desk-detail:${stationId}:`),
+      );
+
+      expect(countRole(stationObjects, "desk-surface")).toBe(1);
+      expect(countRole(stationObjects, "desk-leg")).toBe(4);
+      expect(countRole(stationObjects, "desk-edge")).toBeGreaterThanOrEqual(3);
+      expect(countRole(stationObjects, "desk-lip")).toBeGreaterThanOrEqual(2);
+      expect(countRole(stationObjects, "desk-inset-panel")).toBe(1);
+      expect(countRole(stationObjects, "desk-drawer")).toBe(1);
+      expect(countRole(stationObjects, "monitor-screen")).toBe(1);
+      expect(countRole(stationObjects, "monitor-stand")).toBe(1);
+      expect(countRole(stationObjects, "desk-equipment-cluster")).toBe(2);
+      expect(countRole(stationObjects, "chair-seat")).toBe(1);
+      expect(countRole(stationObjects, "chair-back")).toBe(1);
+      expect(countRole(stationObjects, "chair-leg")).toBe(4);
+    }
+
+    for (const agentId of agentIds) {
+      const agentObjects = objects.filter(
+        (object) =>
+          object.id === `agent:${agentId}` ||
+          object.id.startsWith(`agent-detail:${agentId}:`),
+      );
+
+      expect(countRole(agentObjects, "agent-head")).toBe(1);
+      expect(countRole(agentObjects, "agent-body")).toBe(1);
+      expect(countRole(agentObjects, "agent-arm")).toBe(2);
+      expect(countRole(agentObjects, "agent-foot")).toBe(2);
+      expect(countRole(agentObjects, "agent-leg")).toBe(2);
+      expect(countRole(agentObjects, "contact-pad")).toBe(1);
+    }
+
+    for (const sofaId of sofaIds) {
+      const sofaObjects = objects.filter(
+        (object) =>
+          object.id === `furniture:${sofaId}` ||
+          object.id.startsWith(`furniture-detail:${sofaId}:`),
+      );
+
+      expect(countRole(sofaObjects, "sofa-seat")).toBe(1);
+      expect(countRole(sofaObjects, "sofa-back")).toBe(1);
+      expect(countRole(sofaObjects, "sofa-arm")).toBe(2);
+      expect(countRole(sofaObjects, "sofa-cushion")).toBe(2);
+    }
+
+    const cabinetObjects = objects.filter(
+      (object) =>
+        object.id === "furniture:risk-cabinet" ||
+        object.id.startsWith("furniture-detail:risk-cabinet:"),
+    );
+
+    expect(countRole(cabinetObjects, "cabinet-door")).toBe(2);
+    expect(countRole(cabinetObjects, "cabinet-handle")).toBe(2);
+    expect(countRole(cabinetObjects, "cabinet-shelf")).toBe(1);
+    expect(countRole(objects, "plant-leaf")).toBe(
+      countRole(objects, "planter-pot") * 3,
+    );
+    expect(countRole(objects, "rug-zone")).toBeGreaterThanOrEqual(2);
+    expect(countRole(objects, "partition-panel")).toBeGreaterThanOrEqual(2);
+    expect(countRole(objects, "wall-base-rail")).toBeGreaterThanOrEqual(2);
+    expect(countRole(objects, "wall-panel")).toBeGreaterThanOrEqual(4);
+    expect(countRole(objects, "wall-trim")).toBeGreaterThanOrEqual(4);
+  });
+
+  it("varies agent activity poses without moving agents off their stations", () => {
+    const contract = createOfficeThreeSceneCatalog({
+      locale: "en",
+      stage: "Executing",
+      teamId: "portfolio_review_committee",
+    });
+    const objects = contract.scene.objects;
+    const armRotations = objectsWithPrefix(objects, "agent-detail:")
+      .filter((object) => object.modelRole === "agent-arm")
+      .map((object) => object.rotation?.join(",") ?? "no-rotation");
+    const bodyPositions = objectsWithPrefix(objects, "agent-detail:")
+      .filter((object) => object.modelRole === "agent-body")
+      .map((object) => object.position.join(","));
+
+    expect(new Set(armRotations).size).toBeGreaterThanOrEqual(4);
+    expect(new Set(bodyPositions).size).toBe(5);
+    expect(bodyPositions).toHaveLength(5);
+  });
+
+  it("orients desk lips on the edge that matches station facing", () => {
+    const contract = createOfficeThreeSceneCatalog({
+      locale: "en",
+      stage: "Executing",
+      teamId: "portfolio_review_committee",
+    });
+    const objects = contract.scene.objects;
+    const lipCases = [
+      { axis: 0, frontDirection: 1, stationId: "market_desk" },
+      { axis: 0, frontDirection: -1, stationId: "strategy_board" },
+      { axis: 2, frontDirection: -1, stationId: "report_bay" },
+      { axis: 2, frontDirection: 1, stationId: "command_table" },
+    ] as const;
+
+    for (const lipCase of lipCases) {
+      const desk = scaledObject(objects, `desk:${lipCase.stationId}`);
+      const frontLip = scaledObject(
+        objects,
+        `desk-detail:${lipCase.stationId}:front-lip`,
+      );
+      const rearLip = scaledObject(
+        objects,
+        `desk-detail:${lipCase.stationId}:rear-lip`,
+      );
+      const longAxis = lipCase.axis === 0 ? 2 : 0;
+      const frontOffset =
+        frontLip.position[lipCase.axis] - desk.position[lipCase.axis];
+      const rearOffset =
+        rearLip.position[lipCase.axis] - desk.position[lipCase.axis];
+
+      expect(frontOffset * lipCase.frontDirection).toBeGreaterThan(0);
+      expect(rearOffset * lipCase.frontDirection).toBeLessThan(0);
+      expect(frontLip.scale[lipCase.axis]).toBeLessThan(
+        frontLip.scale[longAxis],
+      );
+      expect(rearLip.scale[lipCase.axis]).toBeLessThan(rearLip.scale[longAxis]);
+    }
+  });
+
   it("keeps planter foliage attached to its spaced 3D planter base", () => {
     const contract = createOfficeThreeSceneCatalog({
       locale: "en",
@@ -67,9 +252,17 @@ describe("office Three.js scene fidelity details", () => {
       const pot = findObject(objects, `plant:${index}`);
       const leafA = findObject(objects, `plant-detail:${index}:leaf-a`);
       const leafB = findObject(objects, `plant-detail:${index}:leaf-b`);
+      const leafC = findObject(objects, `plant-detail:${index}:leaf-c`);
+      const leafHeights = new Set([
+        leafA.position[1],
+        leafB.position[1],
+        leafC.position[1],
+      ]);
 
       expect(horizontalDistance(pot, leafA)).toBeLessThan(0.18);
       expect(horizontalDistance(pot, leafB)).toBeLessThan(0.18);
+      expect(horizontalDistance(pot, leafC)).toBeLessThan(0.18);
+      expect(leafHeights.size).toBeGreaterThanOrEqual(2);
     }
   });
 });
