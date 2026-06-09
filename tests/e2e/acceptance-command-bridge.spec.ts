@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { commandNames, installCommandBridge } from "./orchestrator-office-fixtures";
+import {
+  commandNames,
+  installCommandBridge,
+} from "./orchestrator-office-fixtures";
 import { captureUnexpectedPageErrors } from "./acceptance-helpers";
 
 test("MVP command bridge backs host start, artifact fetch, and remote start", async ({
@@ -42,7 +45,9 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
     await expect(
       page.getByTestId("orchestrator-office-top-controls"),
     ).toBeHidden();
-    await expect(page.getByTestId("orchestrator-office-side-tabs")).toBeHidden();
+    await expect(
+      page.getByTestId("orchestrator-office-side-tabs"),
+    ).toBeHidden();
   } else {
     await expect(
       page.getByTestId("orchestrator-office-top-controls"),
@@ -72,32 +77,41 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
   await expect(
     page.getByTestId("orchestrator-office-canvas-mirror"),
   ).toContainText("Report Writer");
-  const canvasSignature = async () =>
+  const canvasDiagnostics = async () =>
     page.getByTestId("orchestrator-office-canvas").evaluate((node) => {
-      if (!(node instanceof HTMLCanvasElement)) return "";
+      if (!(node instanceof HTMLCanvasElement)) {
+        return {
+          camera: null,
+          meshCount: 0,
+          pitch: null,
+          renderer: null,
+          webgl: false,
+          yaw: null,
+        };
+      }
 
-      const context = node.getContext("2d");
-      if (!context) return "";
+      const context = node.getContext("webgl2") ?? node.getContext("webgl");
 
-      const samples = [
-        { x: 0.32, y: 0.4 },
-        { x: 0.5, y: 0.5 },
-        { x: 0.68, y: 0.55 },
-        { x: 0.42, y: 0.72 },
-      ];
-      return samples
-        .map((sample) => {
-          const pixel = context.getImageData(
-            Math.floor(node.width * sample.x),
-            Math.floor(node.height * sample.y),
-            1,
-            1,
-          ).data;
-          return `${pixel[0]}.${pixel[1]}.${pixel[2]}.${pixel[3]}`;
-        })
-        .join("|");
+      return {
+        camera: node.getAttribute("data-office-camera"),
+        meshCount: Number(node.getAttribute("data-office-mesh-count") ?? "0"),
+        pitch: node.getAttribute("data-office-pitch"),
+        renderer: node.getAttribute("data-office-renderer"),
+        webgl: context !== null,
+        yaw: node.getAttribute("data-office-yaw"),
+      };
     });
-  const initialCanvasSignature = await canvasSignature();
+  const initialCanvasDiagnostics = await canvasDiagnostics();
+  expect(["three", "canvas"]).toContain(initialCanvasDiagnostics.renderer);
+  if (initialCanvasDiagnostics.renderer === "three") {
+    expect(initialCanvasDiagnostics.webgl).toBe(true);
+    expect(initialCanvasDiagnostics.meshCount).toBeGreaterThan(20);
+    expect(initialCanvasDiagnostics.camera).toMatch(/^-?\d/);
+  } else {
+    expect(initialCanvasDiagnostics.camera).toBeNull();
+  }
+  expect(initialCanvasDiagnostics.yaw).toBe("0");
+  expect(initialCanvasDiagnostics.pitch).toBe("42");
   const canvasBounds = await page
     .getByTestId("orchestrator-office-canvas")
     .boundingBox();
@@ -109,31 +123,31 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
   const dragStartX = canvasBounds.x + canvasBounds.width * 0.35;
   const dragStartY = canvasBounds.y + canvasBounds.height * 0.5;
   const dragEndX = dragStartX + dragDistance;
+  const dragEndY = dragStartY - Math.max(canvasBounds.height * 0.16, 72);
   await page.mouse.move(dragStartX, dragStartY);
   await page.mouse.down();
-  await page.mouse.move(dragEndX, dragStartY, { steps: 16 });
+  await page.mouse.move(dragEndX, dragEndY, { steps: 16 });
   await page.mouse.up();
-  await expect.poll(canvasSignature).not.toBe(initialCanvasSignature);
   const postDragCanvas = page.getByTestId("orchestrator-office-canvas");
-  const postDragState = await postDragCanvas.evaluate((node) => {
-    if (!(node instanceof HTMLCanvasElement)) {
-      return { rotation: null, yaw: null };
-    }
-
-    return {
-      rotation: node.getAttribute("data-office-rotation"),
-      yaw: node.getAttribute("data-office-yaw"),
-    };
-  });
+  if (initialCanvasDiagnostics.renderer === "three") {
+    await expect
+      .poll(async () => (await canvasDiagnostics()).camera)
+      .not.toBe(initialCanvasDiagnostics.camera);
+  } else {
+    await expect
+      .poll(async () => (await canvasDiagnostics()).yaw)
+      .not.toBe(initialCanvasDiagnostics.yaw);
+  }
+  const postDragState = await canvasDiagnostics();
+  expect(postDragState.pitch).not.toBe(initialCanvasDiagnostics.pitch);
+  expect(postDragState.yaw).not.toBe(initialCanvasDiagnostics.yaw);
   if (postDragState.yaw !== null) {
     await expect(postDragCanvas).not.toHaveAttribute("data-office-yaw", "0");
   }
-  if (postDragState.rotation !== null) {
-    await expect(postDragCanvas).not.toHaveAttribute(
-      "data-office-rotation",
-      "south-east",
-    );
-  }
+  await expect(postDragCanvas).not.toHaveAttribute(
+    "data-office-rotation",
+    "south-east",
+  );
   await expect(
     page.getByTestId("orchestrator-office-rotation-label"),
   ).toHaveText("South West");
@@ -217,7 +231,12 @@ test("MVP command bridge backs host start, artifact fetch, and remote start", as
       const artifact = names.indexOf("artifacts.get");
       const unlock = names.indexOf("remote.prepareUnlock");
       const remoteExecute = names.indexOf("remote.executeCommand");
-      return start > -1 && start < artifact && artifact < unlock && unlock < remoteExecute;
+      return (
+        start > -1 &&
+        start < artifact &&
+        artifact < unlock &&
+        unlock < remoteExecute
+      );
     })
     .toBe(true);
 

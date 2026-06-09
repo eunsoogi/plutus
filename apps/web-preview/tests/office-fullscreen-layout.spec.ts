@@ -100,3 +100,43 @@ test("host dashboard keeps the full-screen office usable at short desktop height
   expect(metrics.officeBandFill).toBeGreaterThanOrEqual(0.9);
   expect(metrics.sceneHeight).toBeGreaterThanOrEqual(300);
 });
+
+test("host dashboard keeps Korean office roster labels on natural lines", async ({
+  page,
+}) => {
+  // Given: the Korean desktop host dashboard renders the office roster.
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/dashboard?runtime=local&locale=ko");
+  await expect(page.getByTestId("orchestrator-office-roster")).toBeVisible();
+
+  // When: the longest visible Korean roster label is measured.
+  const lineMetrics = await page.evaluate(() => {
+    const title = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        ".orchestrator-office__roster-item strong",
+      ),
+    ).find((element) => element.textContent?.trim() === "포트폴리오 매니저");
+
+    if (!title?.firstChild) {
+      throw new Error("Korean portfolio manager roster label was unavailable");
+    }
+
+    const range = document.createRange();
+    range.selectNodeContents(title);
+    const lineRects = Array.from(range.getClientRects()).filter(
+      (rect) => rect.width > 0 && rect.height > 0,
+    );
+    range.detach();
+
+    return {
+      lineCount: lineRects.length,
+      text: title.textContent?.trim(),
+    };
+  });
+
+  // Then: the label avoids orphaning the final Korean syllable.
+  expect(lineMetrics).toEqual({
+    lineCount: 1,
+    text: "포트폴리오 매니저",
+  });
+});

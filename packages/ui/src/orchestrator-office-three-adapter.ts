@@ -53,6 +53,7 @@ export const officeThreeRendererAdapter = {
     new WebGLRenderer({
       antialias: input.antialias,
       canvas: input.canvas,
+      preserveDrawingBuffer: true,
     }),
   createRoot: () => new Object3D(),
   createScene: () => new Scene(),

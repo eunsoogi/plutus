@@ -8,6 +8,8 @@ import {
   translate,
 } from "./index";
 import "./ui-office.test";
+import "./ui-office-three.test";
+import "./orchestrator-office-three-view.test";
 
 describe("ui helpers", () => {
   it("formats compact financial values and risk states used by the preview", () => {

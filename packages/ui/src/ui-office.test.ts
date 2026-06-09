@@ -62,31 +62,6 @@ describe("ui office rendering", () => {
     expect(markup).not.toContain("Command table");
   });
 
-  it("renders the office scene through an accessible canvas shell", () => {
-    const englishOffice = officeCopy.en;
-    const markup = renderToStaticMarkup(
-      createElement(OrchestratorOfficeScene, {
-        angle: 0,
-        canvasChromeLabels: englishOffice.canvasChrome,
-        onAngleDrag: () => {},
-        orchestratorLabel: englishOffice.orchestrator,
-        rotation: "south-east",
-        specialistLabels: englishOffice.specialist,
-        specialists: teamSpecialists.quant_strategy_desk,
-        stage: englishOffice.stage.executing,
-        stationLabels: englishOffice.station,
-        teamLabel: "Quant Strategy Desk",
-      }),
-    );
-
-    expect(markup).toContain('data-testid="orchestrator-office-canvas"');
-    expect(markup).toContain('aria-hidden="true"');
-    expect(markup).toContain('data-office-rotation="south-east"');
-    expect(markup).toContain("Market Data Researcher");
-    expect(markup).toContain("Research Orchestrator");
-    expect(markup).not.toContain("<svg");
-  });
-
   it("keeps the canvas office richly staged with furniture and nameplate layers", () => {
     const englishOffice = officeCopy.en;
     const specialists = teamSpecialists.quant_strategy_desk;

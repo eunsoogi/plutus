@@ -89,6 +89,7 @@ export function OrchestratorOfficeCanvas({
       aria-hidden="true"
       className="orchestrator-office__canvas"
       data-office-pitch={pitch}
+      data-office-renderer="canvas"
       data-office-rotation={scene.rotation}
       data-office-yaw={yaw}
       data-dragging={isDragging ? "true" : "false"}
