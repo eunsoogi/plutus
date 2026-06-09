@@ -30,6 +30,9 @@ const zoneRugs = [
   readonly rect: OfficeThreeSceneRect;
 }[];
 
+const officeFloorTopY = 0.04;
+const rugSurfaceGap = 0.002;
+
 const partitionPanels = [
   {
     color: "#74889d",
@@ -73,6 +76,15 @@ function wallBaseRailScale(
   return vector3(0.06, 0.08, scale[2] * 0.98);
 }
 
+function rugPosition(rect: OfficeThreeSceneRect): ReturnType<typeof vector3> {
+  const position = rectPosition(rect);
+  return vector3(
+    position[0],
+    officeFloorTopY + rugSurfaceGap + rect.height / 2,
+    position[2],
+  );
+}
+
 export function roomTrimObjects(): readonly OfficeThreeAmenityObject[] {
   const wallDetails = boundaryWalls.flatMap((wall, index) => {
     const position = wallPosition(wall);
@@ -112,7 +124,7 @@ export function roomTrimObjects(): readonly OfficeThreeAmenityObject[] {
       label: rug.label,
       modelRole: "rug-zone",
       opacity: 0.5,
-      position: rectPosition(rug.rect),
+      position: rugPosition(rug.rect),
       scale: rectScale(rug.rect),
     }),
   );

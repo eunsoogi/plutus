@@ -227,6 +227,7 @@ describe("office Three.js scene spacing", () => {
     });
     const objects = contract.scene.objects;
     const floor = findScaledObject(objects, "room:floor");
+    const floorTop = floor.position[1] + floor.scale[1] / 2;
     const floorEnvelope = {
       assemblyKey: floor.id,
       id: floor.id,
@@ -250,6 +251,11 @@ describe("office Three.js scene spacing", () => {
 
       expect(anchor.scale.every((value) => value > 0)).toBe(true);
       expect(isInsideFloorEnvelope(footprint, floorEnvelope)).toBe(true);
+      if (anchor.modelRole === "rug-zone") {
+        expect(anchor.position[1] - anchor.scale[1] / 2).toBeGreaterThan(
+          floorTop,
+        );
+      }
     }
   });
 });
