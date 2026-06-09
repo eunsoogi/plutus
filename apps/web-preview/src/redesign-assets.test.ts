@@ -1,6 +1,15 @@
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { build as viteBuild } from "vite";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
@@ -168,5 +177,42 @@ describe("redesign asset and style constraints", () => {
 
     // Then: production HTML references assets relative to the root bundle.
     expect(viteConfig).toMatch(/\bbase:\s*["']\.\/["']/u);
+  });
+
+  it("emits the WebKit bootstrap before the packaged module entry", async () => {
+    // Given: packaged macOS WKWebView startup depends on a classic script
+    // running before the Vite module entry in the generated HTML.
+    const outDir = mkdtempSync(join(tmpdir(), "plutus-web-preview-"));
+
+    try {
+      await viteBuild({
+        configFile: join(repoRoot, "apps/web-preview/vite.config.ts"),
+        build: {
+          emptyOutDir: true,
+          outDir,
+        },
+        logLevel: "silent",
+      });
+
+      const indexHtml = readFileSync(join(outDir, "index.html"), "utf8");
+      const bootstrapMatch = indexHtml.match(
+        /<script>\s*([\s\S]*?window\.__PLUTUS_WEBKIT_BOOTSTRAP__\s*=\s*true;\s*[\s\S]*?)<\/script>/u,
+      );
+      const moduleEntryMatch = indexHtml.match(
+        /<script\s+type="module"[^>]*\bsrc="\.\/assets\/index-[^"]+\.js"[^>]*><\/script>/u,
+      );
+
+      // Then: future HTML edits preserve the executable startup order.
+      expect(bootstrapMatch?.[0]).toBeDefined();
+      expect(moduleEntryMatch?.[0]).toBeDefined();
+      expect(indexHtml.indexOf(bootstrapMatch?.[0] ?? "")).toBeLessThan(
+        indexHtml.indexOf(moduleEntryMatch?.[0] ?? ""),
+      );
+    } finally {
+      rmSync(outDir, {
+        force: true,
+        recursive: true,
+      });
+    }
   });
 });

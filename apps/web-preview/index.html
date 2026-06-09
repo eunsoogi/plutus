@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Plutus</title>
+    <script>
+      // WKWebView can leave the Vite module entry idle unless the packaged
+      // tauri:// page also runs a classic script during startup.
+      window.__PLUTUS_WEBKIT_BOOTSTRAP__ = true;
+    </script>
   </head>
   <body>
     <div id="root"></div>

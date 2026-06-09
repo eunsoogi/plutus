@@ -6,10 +6,43 @@ pub mod secure_store;
 pub mod security;
 pub mod storage;
 
-use tauri::{utils::config::WindowConfig, Manager, WebviewWindowBuilder};
+use std::{thread, time::Duration};
+
+use tauri::{utils::config::WindowConfig, webview::PageLoadEvent, Manager, WebviewWindowBuilder};
 
 use crate::commands::AppState;
 use crate::storage::{AppDataPaths, PlutusDatabase};
+
+const BOOT_DIAGNOSTICS_ENV: &str = "PLUTUS_BOOT_DIAGNOSTICS";
+const BOOT_DIAGNOSTICS_DELAY: Duration = Duration::from_secs(2);
+const BOOT_DIAGNOSTICS_SCRIPT: &str = r#"
+(() => {
+  const root = document.getElementById("root");
+  const bodyText = document.body?.innerText ?? "";
+  const rootText = root?.innerText ?? "";
+
+  return {
+    href: window.location.href,
+    readyState: document.readyState,
+    title: document.title,
+    bootstrap: Boolean(window.__PLUTUS_WEBKIT_BOOTSTRAP__),
+    sampleDelayMs: 2000,
+    bodyTextLength: bodyText.length,
+    rootChildCount: root?.childElementCount ?? null,
+    rootTextLength: rootText.length,
+    knownStaticLabels: {
+      plutus: bodyText.includes("Plutus"),
+      dashboard: bodyText.includes("대시보드"),
+      office: bodyText.includes("오케스트레이터 오피스") || bodyText.includes("PLUTUS OFFICE")
+    },
+    scripts: Array.from(document.scripts).map((script) => ({
+      src: script.src || "inline",
+      type: script.type,
+      noModule: script.noModule
+    })).slice(0, 10)
+  };
+})()
+"#;
 
 pub fn registered_command_names() -> &'static [&'static str] {
     &[
@@ -58,8 +91,30 @@ fn startup_window_config(windows: &[WindowConfig]) -> Option<&WindowConfig> {
         .or_else(|| windows.iter().find(|window| window.create))
 }
 
+fn emit_boot_diagnostics(webview: &tauri::Webview) {
+    if let Err(error) = webview.eval_with_callback(BOOT_DIAGNOSTICS_SCRIPT, |value| {
+        eprintln!("plutus-boot-diagnostics {value}");
+    }) {
+        eprintln!("plutus-boot-diagnostics-error {error}");
+    }
+}
+
 pub fn run() {
     tauri::Builder::default()
+        .on_page_load(|webview, payload| {
+            if std::env::var_os(BOOT_DIAGNOSTICS_ENV).is_none()
+                || !matches!(payload.event(), PageLoadEvent::Finished)
+            {
+                return;
+            }
+
+            let webview = webview.clone();
+            let diagnostics_task = tauri::async_runtime::spawn_blocking(move || {
+                thread::sleep(BOOT_DIAGNOSTICS_DELAY);
+                emit_boot_diagnostics(&webview);
+            });
+            drop(diagnostics_task);
+        })
         .setup(|app| {
             let app_data_dir = app.path().app_data_dir()?;
             let paths = AppDataPaths::create(app_data_dir)?;
