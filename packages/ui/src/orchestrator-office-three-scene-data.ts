@@ -104,14 +104,14 @@ export const boundaryWalls = [
   {
     end: { x: OFFICE_GRID.columns, y: 0 },
     fill: "#a36f6b",
-    height: 156,
+    height: 112,
     start: { x: 0, y: 0 },
     stroke: "#6d4b4d",
   },
   {
     end: { x: OFFICE_GRID.columns, y: OFFICE_GRID.rows },
     fill: "#8b8f98",
-    height: 126,
+    height: 104,
     start: { x: OFFICE_GRID.columns, y: 0 },
     stroke: "#5e626b",
   },

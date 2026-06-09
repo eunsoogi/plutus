@@ -87,6 +87,10 @@ function deskDetailObjects(
       : scale[2] / 2 - 0.18;
   const [chairX, chairZ] = furnitureSideOffset(facing, chairDistance);
   const [monitorX, monitorZ] = furnitureSideOffset(facing, -monitorDistance);
+  const [keyboardX, keyboardZ] = furnitureSideOffset(
+    facing,
+    monitorDistance * 0.08,
+  );
   const rotated = facing === "east" || facing === "west";
   const chairScale = rotated
     ? vector3(0.34, 0.16, 0.42)
@@ -97,6 +101,9 @@ function deskDetailObjects(
   const monitorScale = rotated
     ? vector3(0.04, 0.28, Math.min(0.48, scale[0] * 0.34))
     : vector3(Math.min(0.48, scale[0] * 0.34), 0.28, 0.04);
+  const equipmentClusterScale = rotated
+    ? vector3(0.15, 0.045, 0.26)
+    : vector3(0.26, 0.045, 0.15);
   const chairBackDistance = chairDistance + 0.17;
   const [chairBackX, chairBackZ] = furnitureSideOffset(
     facing,
@@ -108,6 +115,16 @@ function deskDetailObjects(
     [-legX, legZ],
     [legX, legZ],
   ] as const;
+  const chairLegX = chairScale[0] / 2 - 0.045;
+  const chairLegZ = chairScale[2] / 2 - 0.045;
+  const chairLegs = [
+    [-chairLegX, -chairLegZ],
+    [chairLegX, -chairLegZ],
+    [-chairLegX, chairLegZ],
+    [chairLegX, chairLegZ],
+  ] as const;
+  const sideClusterX = keyboardX + (rotated ? 0 : scale[0] * 0.2);
+  const sideClusterZ = keyboardZ + (rotated ? scale[2] * 0.2 : 0);
 
   return [
     ...deskLegs.map(([xOffset, zOffset], index) =>
@@ -140,6 +157,29 @@ function deskDetailObjects(
       scale: monitorScale,
     }),
     detailObject({
+      color: "#223047",
+      id: `desk-detail:${id}:keyboard-cluster`,
+      label: `${label} keyboard cluster`,
+      modelRole: "desk-equipment-cluster",
+      position: detailPosition(rect, keyboardX, surfaceTop + 0.04, keyboardZ),
+      rotation: sideRotation(facing),
+      scale: equipmentClusterScale,
+    }),
+    detailObject({
+      color: "#8fb8cb",
+      id: `desk-detail:${id}:notebook-cluster`,
+      label: `${label} notebook cluster`,
+      modelRole: "desk-equipment-cluster",
+      opacity: 0.9,
+      position: detailPosition(
+        rect,
+        sideClusterX,
+        surfaceTop + 0.045,
+        sideClusterZ,
+      ),
+      scale: vector3(0.16, 0.05, 0.12),
+    }),
+    detailObject({
       color: "#566171",
       id: `desk-detail:${id}:chair-seat`,
       label: `${label} chair seat`,
@@ -156,6 +196,16 @@ function deskDetailObjects(
       rotation: sideRotation(facing),
       scale: chairBackScale,
     }),
+    ...chairLegs.map(([xOffset, zOffset], index) =>
+      detailObject({
+        color: "#2f3844",
+        id: `desk-detail:${id}:chair-leg-${index + 1}`,
+        label: `${label} chair leg ${index + 1}`,
+        modelRole: "chair-leg",
+        position: detailPosition(rect, chairX + xOffset, 0.13, chairZ + zOffset),
+        scale: vector3(0.045, 0.26, 0.045),
+      }),
+    ),
   ];
 }
 

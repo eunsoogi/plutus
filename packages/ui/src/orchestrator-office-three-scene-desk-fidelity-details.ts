@@ -56,6 +56,7 @@ export function deskFidelityDetailObjects(
   const halfX = scale[0] / 2;
   const halfZ = scale[2] / 2;
   const surfaceY = rect.height + 0.065;
+  const lipY = rect.height + 0.11;
   const drawerDistance =
     facing === "east" || facing === "west" ? halfX + 0.025 : halfZ + 0.025;
   const [drawerX, drawerZ] = drawerOffset(facing, drawerDistance);
@@ -83,6 +84,31 @@ export function deskFidelityDetailObjects(
       modelRole: "desk-edge",
       position: detailPosition(rect, halfX - 0.02, surfaceY, 0),
       scale: vector3(0.05, 0.05, scale[2] * 0.9),
+    }),
+    detailObject({
+      color: "#f4d09a",
+      id: `desk-detail:${id}:front-lip`,
+      label: `${label} front lip`,
+      modelRole: "desk-lip",
+      position: detailPosition(rect, 0, lipY, halfZ - 0.08),
+      scale: vector3(scale[0] * 0.7, 0.045, 0.08),
+    }),
+    detailObject({
+      color: "#c77f48",
+      id: `desk-detail:${id}:rear-lip`,
+      label: `${label} rear lip`,
+      modelRole: "desk-lip",
+      position: detailPosition(rect, 0, lipY, -halfZ + 0.08),
+      scale: vector3(scale[0] * 0.64, 0.045, 0.08),
+    }),
+    detailObject({
+      color: "#e7bd82",
+      id: `desk-detail:${id}:inset-panel`,
+      label: `${label} inset panel`,
+      modelRole: "desk-inset-panel",
+      opacity: 0.82,
+      position: detailPosition(rect, 0, lipY + 0.02, 0),
+      scale: vector3(scale[0] * 0.48, 0.025, scale[2] * 0.36),
     }),
     detailObject({
       color: "#9b7045",

@@ -28,6 +28,15 @@ export function plantLeafObjects(): readonly OfficeThreeAmenityObject[] {
         rotation: vector3(0, -0.42, -0.18),
         scale: vector3(0.1, 0.38, 0.16),
       }),
+      detailObject({
+        color: "#2f805f",
+        id: `plant-detail:${index}:leaf-c`,
+        label: `Planter ${index + 1} leaves`,
+        modelRole: "plant-leaf",
+        position: vector3(base[0], base[1] + 0.08, base[2] - 0.07),
+        rotation: vector3(0.12, 0.08, 0.34),
+        scale: vector3(0.12, 0.42, 0.14),
+      }),
     ];
   });
 }

@@ -23,6 +23,13 @@ const specialistAgentBodyRadius = 0.3;
 const agentBodyCenterY = 0.24;
 const leadAgentBodyHeight = 0.44;
 const specialistAgentBodyHeight = 0.38;
+const agentPoseProfiles = [
+  { armForward: 0.05, leftArmTilt: -0.28, rightArmTilt: 0.28 },
+  { armForward: -0.02, leftArmTilt: -0.18, rightArmTilt: 0.38 },
+  { armForward: 0.09, leftArmTilt: -0.42, rightArmTilt: 0.18 },
+  { armForward: 0.02, leftArmTilt: -0.34, rightArmTilt: 0.34 },
+  { armForward: -0.06, leftArmTilt: -0.22, rightArmTilt: 0.44 },
+] as const;
 
 function agentColor(tone: AgentTone): string {
   switch (tone) {
@@ -116,10 +123,13 @@ export function agentObjects(
 export function agentDetailObjects(
   agents: readonly OfficeAgent[],
 ): readonly OfficeThreeAmenityObject[] {
-  return agents.flatMap((agent) => {
+  return agents.flatMap((agent, index) => {
     const bodyRadius = agentBodyRadius(agent);
     const bodyHeight = agentBodyHeight(agent);
     const center = pointPosition(agent.tile, agentBodyCenterY);
+    const pose =
+      agentPoseProfiles[index % agentPoseProfiles.length] ??
+      agentPoseProfiles[0];
     return [
       {
         color: agentColor(agent.tone),
@@ -185,9 +195,9 @@ export function agentDetailObjects(
         position: vector3(
           center[0] - bodyRadius * 0.48,
           center[1] + bodyHeight * 0.08,
-          center[2] + bodyRadius * 0.05,
+          center[2] + bodyRadius * pose.armForward,
         ),
-        rotation: vector3(0, 0, -0.28),
+        rotation: vector3(0.08, 0, pose.leftArmTilt),
         scale: vector3(bodyRadius * 0.16, bodyHeight * 0.58, bodyRadius * 0.16),
       },
       {
@@ -199,9 +209,9 @@ export function agentDetailObjects(
         position: vector3(
           center[0] + bodyRadius * 0.48,
           center[1] + bodyHeight * 0.08,
-          center[2] + bodyRadius * 0.05,
+          center[2] - bodyRadius * pose.armForward,
         ),
-        rotation: vector3(0, 0, 0.28),
+        rotation: vector3(-0.08, 0, pose.rightArmTilt),
         scale: vector3(bodyRadius * 0.16, bodyHeight * 0.58, bodyRadius * 0.16),
       },
       {

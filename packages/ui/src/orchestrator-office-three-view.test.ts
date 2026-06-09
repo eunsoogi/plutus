@@ -29,7 +29,25 @@ describe("office Three.js view camera sync", () => {
     applyOfficeThreeLifecycleCamera(lifecycle, draggedCameraPosition);
 
     expect(positionCalls).toEqual([draggedCameraPosition]);
-    expect(lookAtCalls).toEqual([[0, 0.42, 0]]);
+    expect(lookAtCalls).toEqual([[0, 0.18, 0]]);
+  });
+
+  it("uses a closer default camera while keeping dragged framing outside the model", () => {
+    const defaultCameraPosition = officeThreeCameraPosition(undefined, undefined);
+    const draggedCameraPosition = officeThreeCameraPosition(71.48, 53.24);
+    const defaultHorizontalDistance = Math.hypot(
+      defaultCameraPosition[0],
+      defaultCameraPosition[2],
+    );
+    const draggedHorizontalDistance = Math.hypot(
+      draggedCameraPosition[0],
+      draggedCameraPosition[2],
+    );
+
+    expect(defaultCameraPosition[1]).toBeLessThan(6.5);
+    expect(defaultHorizontalDistance).toBeGreaterThan(6.6);
+    expect(draggedCameraPosition[1]).toBeLessThan(7.5);
+    expect(draggedHorizontalDistance).toBeGreaterThan(5.3);
   });
 
   it("reports renderer creation failure without throwing from the view guard", () => {

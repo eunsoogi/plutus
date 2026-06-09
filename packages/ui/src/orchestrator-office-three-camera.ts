@@ -4,8 +4,8 @@ import {
 } from "./orchestrator-office-canvas-geometry";
 import type { OfficeThreeVector3 } from "./orchestrator-office-three-types";
 
-const officeThreeCameraTarget = [0, 0.42, 0] satisfies OfficeThreeVector3;
-const officeThreeCameraRadius = 9.7;
+const officeThreeCameraTarget = [0, 0.18, 0] satisfies OfficeThreeVector3;
+const officeThreeCameraRadius = 9.1;
 const officeThreeInitialYawRadians = Math.atan2(6.1, 7.1);
 
 function roundedOfficeNumber(value: number): number {
