@@ -224,6 +224,11 @@ describe("office Three.js scene catalog", () => {
     expect(orchestratorBody.modelRole).toBe("agent-body");
     expect(orchestratorBody.shape).toBe("cylinder");
     expectScaledMesh(orchestratorBody);
+    expect(orchestrator.color).not.toBe(orchestratorBody.color);
+    expect(orchestrator.radius).toBeLessThan(orchestratorBody.scale[1]);
+    expect(orchestratorBody.scale[0]).toBeGreaterThan(
+      orchestrator.radius * 1.8,
+    );
 
     const orchestratorBadge = findObject(
       objects,
@@ -233,6 +238,21 @@ describe("office Three.js scene catalog", () => {
     if (orchestratorBadge.kind !== "amenity") return;
     expect(orchestratorBadge.modelRole).toBe("agent-badge");
     expectScaledMesh(orchestratorBadge);
+
+    const orchestratorLeftLeg = findObject(
+      objects,
+      "agent-detail:orchestrator:left-leg",
+    );
+    expect(orchestratorLeftLeg.kind).toBe("amenity");
+    if (orchestratorLeftLeg.kind !== "amenity") return;
+    expect(orchestratorLeftLeg.modelRole).toBe("agent-leg");
+    expectScaledMesh(orchestratorLeftLeg);
+    expect(orchestratorLeftLeg.position[1]).toBeLessThan(
+      orchestratorBody.position[1],
+    );
+    expect(orchestratorLeftLeg.scale[1]).toBeGreaterThan(
+      orchestrator.radius * 0.6,
+    );
   });
 
   it("localizes active team labels while keeping stable semantic ids", async () => {
