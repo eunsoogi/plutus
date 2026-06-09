@@ -8,6 +8,7 @@ import {
   type PlutusCommandClient,
   type PlutusScenario,
 } from "./plutus-app";
+import { preserveRuntimeSearch, routeHref } from "./plutus-command";
 import type { TradingProviderConfig } from "./provider-settings-types";
 
 export function PortfoliosPage({
@@ -169,8 +170,7 @@ function providerBaseCurrency(provider: TradingProviderConfig): string {
 }
 
 function providerSettingsHref(): string {
-  if (typeof window === "undefined") return "/settings/providers";
-  return `/settings/providers${window.location.search}`;
+  return routeHref("/settings/providers", preserveRuntimeSearch());
 }
 
 function commandErrorMessage(error: unknown) {

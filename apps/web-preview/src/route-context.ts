@@ -9,12 +9,22 @@ export function routeContextFromLocation(
   location: Pick<Location, "href">,
 ): RouteContext {
   const url = new URL(location.href);
+  const hashRoute = routeUrlFromHash(url.hash);
+  const routeSearch = hashRoute?.searchParams ?? url.searchParams;
   return {
-    path: normalizedPathname(url.pathname),
+    path: normalizedPathname(hashRoute?.pathname ?? url.pathname),
     remote: remoteVisualStateFromValue(
-      url.searchParams.get("remote") ?? url.searchParams.get("state"),
+      routeSearch.get("remote") ??
+        routeSearch.get("state") ??
+        url.searchParams.get("remote") ??
+        url.searchParams.get("state"),
     ),
   };
+}
+
+function routeUrlFromHash(hash: string): URL | undefined {
+  if (!hash.startsWith("#/")) return undefined;
+  return new URL(hash.slice(1), "https://plutus.local");
 }
 
 function normalizedPathname(pathname: string): string {

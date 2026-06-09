@@ -12,6 +12,7 @@ import {
   type AppLocale,
 } from "./core";
 import { messages } from "./i18n-messages";
+import { currentRouteSearchParams } from "./plutus-command";
 
 const localeStorageKey = "plutus.locale";
 
@@ -43,19 +44,31 @@ export function translate(
 
 function initialLocale(): AppLocale {
   if (typeof window === "undefined") return defaultLocale;
-  const url = new URL(window.location.href);
+  const routeSearch = currentRouteSearchParams(window.location.href);
   return resolveLocale({
-    requested: url.searchParams.get("locale"),
+    requested: routeSearch.get("locale"),
     stored: window.localStorage.getItem(localeStorageKey),
     browserLocales: navigator.languages,
   });
 }
 
+function hrefWithPersistedLocale(href: string, locale: AppLocale): URL {
+  const url = new URL(href);
+  if (!url.hash.startsWith("#/")) {
+    url.searchParams.set("locale", locale);
+    return url;
+  }
+  const hashRoute = new URL(url.hash.slice(1), "https://plutus.local");
+  hashRoute.searchParams.set("locale", locale);
+  url.searchParams.delete("locale");
+  url.hash = `#${hashRoute.pathname}${hashRoute.search}${hashRoute.hash}`;
+  return url;
+}
+
 function persistLocale(locale: AppLocale) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(localeStorageKey, locale);
-  const url = new URL(window.location.href);
-  url.searchParams.set("locale", locale);
+  const url = hrefWithPersistedLocale(window.location.href, locale);
   window.history.replaceState(window.history.state, "", url);
 }
 
