@@ -208,33 +208,36 @@ describe("office Three.js scene fidelity details", () => {
       teamId: "portfolio_review_committee",
     });
     const objects = contract.scene.objects;
-    const marketDesk = scaledObject(objects, "desk:market_desk");
-    const marketFrontLip = scaledObject(
-      objects,
-      "desk-detail:market_desk:front-lip",
-    );
-    const marketRearLip = scaledObject(
-      objects,
-      "desk-detail:market_desk:rear-lip",
-    );
-    const reportDesk = scaledObject(objects, "desk:report_bay");
-    const reportFrontLip = scaledObject(
-      objects,
-      "desk-detail:report_bay:front-lip",
-    );
-    const reportRearLip = scaledObject(
-      objects,
-      "desk-detail:report_bay:rear-lip",
-    );
+    const lipCases = [
+      { axis: 0, frontDirection: 1, stationId: "market_desk" },
+      { axis: 0, frontDirection: -1, stationId: "strategy_board" },
+      { axis: 2, frontDirection: -1, stationId: "report_bay" },
+      { axis: 2, frontDirection: 1, stationId: "command_table" },
+    ] as const;
 
-    expect(marketFrontLip.position[0]).toBeGreaterThan(marketDesk.position[0]);
-    expect(marketRearLip.position[0]).toBeLessThan(marketDesk.position[0]);
-    expect(marketFrontLip.scale[0]).toBeLessThan(marketFrontLip.scale[2]);
-    expect(marketRearLip.scale[0]).toBeLessThan(marketRearLip.scale[2]);
-    expect(reportFrontLip.position[2]).toBeLessThan(reportDesk.position[2]);
-    expect(reportRearLip.position[2]).toBeGreaterThan(reportDesk.position[2]);
-    expect(reportFrontLip.scale[2]).toBeLessThan(reportFrontLip.scale[0]);
-    expect(reportRearLip.scale[2]).toBeLessThan(reportRearLip.scale[0]);
+    for (const lipCase of lipCases) {
+      const desk = scaledObject(objects, `desk:${lipCase.stationId}`);
+      const frontLip = scaledObject(
+        objects,
+        `desk-detail:${lipCase.stationId}:front-lip`,
+      );
+      const rearLip = scaledObject(
+        objects,
+        `desk-detail:${lipCase.stationId}:rear-lip`,
+      );
+      const longAxis = lipCase.axis === 0 ? 2 : 0;
+      const frontOffset =
+        frontLip.position[lipCase.axis] - desk.position[lipCase.axis];
+      const rearOffset =
+        rearLip.position[lipCase.axis] - desk.position[lipCase.axis];
+
+      expect(frontOffset * lipCase.frontDirection).toBeGreaterThan(0);
+      expect(rearOffset * lipCase.frontDirection).toBeLessThan(0);
+      expect(frontLip.scale[lipCase.axis]).toBeLessThan(
+        frontLip.scale[longAxis],
+      );
+      expect(rearLip.scale[lipCase.axis]).toBeLessThan(rearLip.scale[longAxis]);
+    }
   });
 
   it("keeps planter foliage attached to its spaced 3D planter base", () => {
