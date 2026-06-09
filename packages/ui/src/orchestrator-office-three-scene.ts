@@ -41,10 +41,16 @@ import {
   wallScale,
   type OfficeThreeSceneRect,
 } from "./orchestrator-office-three-scene-geometry";
+import { furnitureDetailObjects } from "./orchestrator-office-three-scene-amenity-details";
 import {
+  agentDetailObjects,
   agentObjects,
   officeAgents,
 } from "./orchestrator-office-three-scene-agents";
+import { deskDetailObjectsFor } from "./orchestrator-office-three-scene-desk-details";
+import { fixtureDetailObjects } from "./orchestrator-office-three-scene-fixture-details";
+import { plantLeafObjects } from "./orchestrator-office-three-scene-plant-details";
+import { roomTrimObjects } from "./orchestrator-office-three-scene-room-details";
 
 export type OfficeThreeSceneCatalogInput = {
   readonly locale?: AppLocale;
@@ -59,6 +65,7 @@ function boundaryWallObject(index: number): OfficeThreeRoomObject {
     id: `room:boundary-wall-${index}`,
     kind: "room",
     label: `Boundary wall ${index + 1}`,
+    modelRole: "wall-panel",
     position: wallPosition(wall),
     scale: wallScale(wall),
   };
@@ -71,6 +78,7 @@ function glassWallObject(index: number): OfficeThreeRoomObject {
     id: `room:glass-wall-${index}`,
     kind: "room",
     label: `Glass wall ${index + 1}`,
+    modelRole: "wall-panel",
     opacity: 0.72,
     position: wallPosition(wall),
     scale: wallScale(wall),
@@ -106,6 +114,7 @@ function commandDeskObject(
     id: "desk:command_table",
     kind: "desk",
     label: stationLabels.command_table,
+    modelRole: "desk-surface",
     position: rectPosition(commandTable),
     scale: rectScale(commandTable),
     stationId: "command_table",
@@ -123,6 +132,7 @@ function specialistDeskObject(
     id: `desk:${stationId}`,
     kind: "desk",
     label: stationLabels[stationId],
+    modelRole: "desk-surface",
     position: rectPosition({
       depth: slot.deskDepth,
       height: 0.48,
@@ -177,6 +187,7 @@ function fixtureCuboidObject(index: number): OfficeThreeAmenityObject {
     id: `fixture:cuboid-${index}`,
     kind: "amenity",
     label: `Equipment fixture ${index + 1}`,
+    modelRole: "fixture-body",
     position: rectPosition(rect),
     scale: rectScale(rect),
   };
@@ -189,16 +200,26 @@ function planterObject(index: number): OfficeThreeAmenityObject {
     id: `plant:${index}`,
     kind: "amenity",
     label: `Planter ${index + 1}`,
+    modelRole: "planter-pot",
     position: pointPosition(location, 0.28),
     scale: vector3(0.34, 0.56, 0.34),
+    shape: "cylinder",
   };
 }
 
-function amenityObjects(): readonly OfficeThreeAmenityObject[] {
+function amenityObjects(
+  specialists: readonly SpecialistId[],
+  stationLabels: OfficeStationLabels,
+): readonly OfficeThreeAmenityObject[] {
   return [
+    ...roomTrimObjects(),
+    ...deskDetailObjectsFor(specialists, stationLabels),
     ...officeFurnitureRects.map((_, index) => furnitureObject(index)),
+    ...furnitureDetailObjects(),
     ...officeCuboids.map((_, index) => fixtureCuboidObject(index)),
+    ...fixtureDetailObjects(),
     ...planterLocations.map((_, index) => planterObject(index)),
+    ...plantLeafObjects(),
   ];
 }
 
@@ -213,7 +234,8 @@ export function createOfficeThreeSceneCatalog(
   const objects: readonly OfficeThreeSceneObject[] = [
     ...roomObjects(),
     ...deskObjects(specialists, labels.station),
-    ...amenityObjects(),
+    ...amenityObjects(specialists, labels.station),
+    ...agentDetailObjects(agents),
     ...agentObjects(agents),
   ];
 

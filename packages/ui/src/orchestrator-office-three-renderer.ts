@@ -72,6 +72,22 @@ function geometryForObject<
   >,
   object: OfficeThreeSceneObject,
 ): TGeometry {
+  switch (object.shape) {
+    case "box":
+      return adapter.createBoxGeometry();
+    case "cylinder":
+      return adapter.createCylinderGeometry();
+    case "sphere":
+      if (object.kind === "agent") {
+        return adapter.createSphereGeometry(object.radius);
+      }
+      return adapter.createSphereGeometry(0.5);
+    case undefined:
+      break;
+    default:
+      return assertNever(object.shape);
+  }
+
   switch (object.kind) {
     case "agent":
       return adapter.createSphereGeometry(object.radius);

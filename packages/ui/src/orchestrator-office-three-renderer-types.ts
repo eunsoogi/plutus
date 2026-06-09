@@ -37,6 +37,7 @@ export type OfficeThreeRendererAdapter<
   readonly createAmbientLight: (color: string, intensity: number) => TNode;
   readonly createBoxGeometry: () => TGeometry;
   readonly createColor: (color: string) => TBackground;
+  readonly createCylinderGeometry: () => TGeometry;
   readonly createDirectionalLight: (color: string, intensity: number) => TNode;
   readonly createMaterial: (input: OfficeThreeMaterialInput) => TMaterial;
   readonly createMesh: (geometry: TGeometry, material: TMaterial) => TMesh;

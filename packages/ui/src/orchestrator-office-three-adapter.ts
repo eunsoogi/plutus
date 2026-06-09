@@ -2,6 +2,7 @@ import {
   AmbientLight,
   BoxGeometry,
   Color,
+  CylinderGeometry,
   DirectionalLight,
   Mesh,
   MeshStandardMaterial,
@@ -30,6 +31,7 @@ export const officeThreeRendererAdapter = {
     new AmbientLight(color, intensity),
   createBoxGeometry: () => new BoxGeometry(1, 1, 1),
   createColor: (color: string) => new Color(color),
+  createCylinderGeometry: () => new CylinderGeometry(0.5, 0.5, 1, 12),
   createDirectionalLight: (color: string, intensity: number) =>
     new DirectionalLight(color, intensity),
   createMaterial: (input: OfficeThreeMaterialInput) =>
