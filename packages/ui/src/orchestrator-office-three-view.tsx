@@ -23,6 +23,7 @@ import {
   reduceOfficeCanvasPointerDrag,
   type OfficeCanvasDrag,
 } from "./orchestrator-office-canvas-drag";
+import { OrchestratorOfficeCanvas } from "./orchestrator-office-canvas";
 import type {
   OfficeCanvasScene,
   OfficeRotation,
@@ -32,7 +33,9 @@ import {
   createOfficeThreeRendererLifecycle,
   officeThreeRendererAdapter,
   type OfficeThreeAnimationFrameScheduler,
+  type OfficeThreeRendererCanvas,
   type OfficeThreeRendererLifecycle,
+  type OfficeThreeRendererLifecycleInput,
 } from "./orchestrator-office-three-renderer";
 import { createOfficeThreeSceneCatalog } from "./orchestrator-office-three-scene";
 import type { OfficeThreeVector3 } from "./orchestrator-office-three-types";
@@ -45,6 +48,16 @@ type OfficeThreeViewLifecycle = OfficeThreeRendererLifecycle<
   Mesh<BufferGeometry, Material>
 >;
 
+export type OfficeThreeLifecycleCreationResult<TLifecycle> =
+  | {
+      readonly kind: "ready";
+      readonly lifecycle: TLifecycle;
+    }
+  | {
+      readonly error: unknown;
+      readonly kind: "unavailable";
+    };
+
 export type OfficeThreeCameraLifecycle = {
   readonly camera: {
     readonly lookAt: (x: number, y: number, z: number) => void;
@@ -53,6 +66,63 @@ export type OfficeThreeCameraLifecycle = {
     };
   };
 };
+
+export function createOfficeThreeViewLifecycle<
+  TCanvas extends OfficeThreeRendererCanvas,
+  TRenderer,
+  TScene,
+  TCamera,
+  TNode,
+  TMesh extends TNode,
+  TGeometry,
+  TMaterial,
+  TBackground,
+>(
+  input: OfficeThreeRendererLifecycleInput<
+    TCanvas,
+    TRenderer,
+    TScene,
+    TCamera,
+    TNode,
+    TMesh,
+    TGeometry,
+    TMaterial,
+    TBackground
+  >,
+  createLifecycle: (
+    lifecycleInput: OfficeThreeRendererLifecycleInput<
+      TCanvas,
+      TRenderer,
+      TScene,
+      TCamera,
+      TNode,
+      TMesh,
+      TGeometry,
+      TMaterial,
+      TBackground
+    >,
+  ) => OfficeThreeRendererLifecycle<
+    TRenderer,
+    TScene,
+    TCamera,
+    TNode,
+    TMesh
+  > = createOfficeThreeRendererLifecycle,
+): OfficeThreeLifecycleCreationResult<
+  OfficeThreeRendererLifecycle<TRenderer, TScene, TCamera, TNode, TMesh>
+> {
+  try {
+    return {
+      kind: "ready",
+      lifecycle: createLifecycle(input),
+    };
+  } catch (error) {
+    return {
+      error,
+      kind: "unavailable",
+    };
+  }
+}
 
 export function applyOfficeThreeLifecycleCamera(
   lifecycle: OfficeThreeCameraLifecycle,
@@ -86,6 +156,22 @@ function releasePointerCapture(
   }
 }
 
+function canCreateOfficeThreeWebGLContext(canvas: HTMLCanvasElement): boolean {
+  const contextAttributes = {
+    antialias: true,
+    preserveDrawingBuffer: true,
+  } satisfies WebGLContextAttributes;
+
+  try {
+    return (
+      canvas.getContext("webgl2", contextAttributes) !== null ||
+      canvas.getContext("webgl", contextAttributes) !== null
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function OrchestratorOfficeThreeView({
   locale = "en",
   onAngleDrag,
@@ -106,6 +192,7 @@ export function OrchestratorOfficeThreeView({
   const lifecycleRef = useRef<OfficeThreeViewLifecycle | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [renderCount, setRenderCount] = useState(0);
+  const [rendererMode, setRendererMode] = useState<"canvas" | "three">("three");
   const contract = useMemo(
     () => createOfficeThreeSceneCatalog({ locale, stage, teamId }),
     [locale, stage, teamId],
@@ -133,13 +220,27 @@ export function OrchestratorOfficeThreeView({
     const canvas = canvasRef.current;
     if (canvas === null) return;
 
-    const lifecycle = createOfficeThreeRendererLifecycle({
+    if (!canCreateOfficeThreeWebGLContext(canvas)) {
+      lifecycleRef.current = null;
+      setRendererMode("canvas");
+      return;
+    }
+
+    const lifecycleResult = createOfficeThreeViewLifecycle({
       adapter: officeThreeRendererAdapter,
       animationFrame,
       canvas,
       contract,
       pixelRatio: Math.max(1, window.devicePixelRatio),
     });
+    if (lifecycleResult.kind === "unavailable") {
+      lifecycleRef.current = null;
+      setRendererMode("canvas");
+      return;
+    }
+
+    const lifecycle = lifecycleResult.lifecycle;
+    setRendererMode("three");
     lifecycleRef.current = lifecycle;
     applyOfficeThreeLifecycleCamera(lifecycle, cameraPositionRef.current);
 
@@ -182,6 +283,10 @@ export function OrchestratorOfficeThreeView({
     lifecycle.render();
     setRenderCount((currentCount) => currentCount + 1);
   }, [cameraPosition]);
+
+  if (rendererMode === "canvas") {
+    return <OrchestratorOfficeCanvas onAngleDrag={onAngleDrag} scene={scene} />;
+  }
 
   return (
     <canvas
