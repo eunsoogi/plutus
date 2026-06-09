@@ -16,21 +16,32 @@ use crate::storage::{AppDataPaths, PlutusDatabase};
 const BOOT_DIAGNOSTICS_ENV: &str = "PLUTUS_BOOT_DIAGNOSTICS";
 const BOOT_DIAGNOSTICS_DELAY: Duration = Duration::from_secs(2);
 const BOOT_DIAGNOSTICS_SCRIPT: &str = r#"
-(() => ({
-  href: window.location.href,
-  readyState: document.readyState,
-  title: document.title,
-  bootstrap: Boolean(window.__PLUTUS_WEBKIT_BOOTSTRAP__),
-  sampleDelayMs: 2000,
-  bodyText: document.body?.innerText?.slice(0, 500) ?? null,
-  rootChildCount: document.getElementById("root")?.childElementCount ?? null,
-  rootText: document.getElementById("root")?.innerText?.slice(0, 500) ?? null,
-  scripts: Array.from(document.scripts).map((script) => ({
-    src: script.src || "inline",
-    type: script.type,
-    noModule: script.noModule
-  })).slice(0, 10)
-}))()
+(() => {
+  const root = document.getElementById("root");
+  const bodyText = document.body?.innerText ?? "";
+  const rootText = root?.innerText ?? "";
+
+  return {
+    href: window.location.href,
+    readyState: document.readyState,
+    title: document.title,
+    bootstrap: Boolean(window.__PLUTUS_WEBKIT_BOOTSTRAP__),
+    sampleDelayMs: 2000,
+    bodyTextLength: bodyText.length,
+    rootChildCount: root?.childElementCount ?? null,
+    rootTextLength: rootText.length,
+    knownStaticLabels: {
+      plutus: bodyText.includes("Plutus"),
+      dashboard: bodyText.includes("대시보드"),
+      office: bodyText.includes("오케스트레이터 오피스") || bodyText.includes("PLUTUS OFFICE")
+    },
+    scripts: Array.from(document.scripts).map((script) => ({
+      src: script.src || "inline",
+      type: script.type,
+      noModule: script.noModule
+    })).slice(0, 10)
+  };
+})()
 "#;
 
 pub fn registered_command_names() -> &'static [&'static str] {
