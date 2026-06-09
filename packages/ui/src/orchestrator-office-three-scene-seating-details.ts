@@ -60,11 +60,29 @@ export function sofaDetailObjects(
     }),
     detailObject({
       color: "#d4a8c6",
-      id: `furniture-detail:${semantic.id}:cushion`,
-      label: `${semantic.label} cushion`,
+      id: `furniture-detail:${semantic.id}:left-cushion`,
+      label: `${semantic.label} left cushion`,
       modelRole: "sofa-cushion",
-      position: rectDetailPosition(rect, 0, rect.height + 0.2, zSeat + 0.08),
-      scale: vector3(scale[0] * 0.34, 0.14, scale[2] * 0.34),
+      position: rectDetailPosition(
+        rect,
+        -scale[0] * 0.2,
+        rect.height + 0.2,
+        zSeat + 0.08,
+      ),
+      scale: vector3(scale[0] * 0.28, 0.14, scale[2] * 0.34),
+    }),
+    detailObject({
+      color: "#c895b9",
+      id: `furniture-detail:${semantic.id}:right-cushion`,
+      label: `${semantic.label} right cushion`,
+      modelRole: "sofa-cushion",
+      position: rectDetailPosition(
+        rect,
+        scale[0] * 0.2,
+        rect.height + 0.2,
+        zSeat + 0.08,
+      ),
+      scale: vector3(scale[0] * 0.28, 0.14, scale[2] * 0.34),
     }),
   ];
 }

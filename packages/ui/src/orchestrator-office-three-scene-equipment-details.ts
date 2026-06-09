@@ -127,5 +127,31 @@ export function riskCabinetDetailObjects(
       ),
       scale: vector3(scale[0] * 0.72, 0.04, 0.06),
     }),
+    detailObject({
+      color: "#d7e0ea",
+      id: `furniture-detail:${semantic.id}:left-handle`,
+      label: `${semantic.label} left handle`,
+      modelRole: "cabinet-handle",
+      position: rectDetailPosition(
+        rect,
+        -scale[0] * 0.08,
+        rect.height * 0.58,
+        scale[2] / 2 + 0.075,
+      ),
+      scale: vector3(0.035, rect.height * 0.28, 0.035),
+    }),
+    detailObject({
+      color: "#d7e0ea",
+      id: `furniture-detail:${semantic.id}:right-handle`,
+      label: `${semantic.label} right handle`,
+      modelRole: "cabinet-handle",
+      position: rectDetailPosition(
+        rect,
+        scale[0] * 0.08,
+        rect.height * 0.58,
+        scale[2] / 2 + 0.075,
+      ),
+      scale: vector3(0.035, rect.height * 0.28, 0.035),
+    }),
   ];
 }

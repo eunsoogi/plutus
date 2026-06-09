@@ -1,8 +1,5 @@
 import type { AppLocale } from "./core";
-import {
-  glassWalls,
-  planterLocations,
-} from "./orchestrator-office-canvas-amenities-data";
+import { glassWalls } from "./orchestrator-office-canvas-amenities-data";
 import { officeCuboids } from "./orchestrator-office-canvas-furnishings";
 import { officeFurnitureRects } from "./orchestrator-office-canvas-furniture";
 import { OFFICE_GRID } from "./orchestrator-office-canvas-geometry";
@@ -10,7 +7,6 @@ import {
   officeCopy,
   type OfficeStationLabels,
 } from "./orchestrator-office-copy";
-import { slotFor } from "./orchestrator-office-scene-data";
 import {
   defaultTeam,
   teamSpecialists,
@@ -29,6 +25,10 @@ import {
   boundaryWalls,
   commandTable,
   furnitureSemantic,
+  officeThreeFurnitureRect,
+  officeThreePlanterLocation,
+  officeThreePlanterLocations,
+  officeThreeStationRect,
   stationIdFor,
 } from "./orchestrator-office-three-scene-data";
 import {
@@ -66,6 +66,7 @@ function boundaryWallObject(index: number): OfficeThreeRoomObject {
     kind: "room",
     label: `Boundary wall ${index + 1}`,
     modelRole: "wall-panel",
+    opacity: 0.62,
     position: wallPosition(wall),
     scale: wallScale(wall),
   };
@@ -88,7 +89,7 @@ function glassWallObject(index: number): OfficeThreeRoomObject {
 function roomObjects(): readonly OfficeThreeRoomObject[] {
   return [
     {
-      color: "#ead3b2",
+      color: "#d6bd98",
       id: "room:floor",
       kind: "room",
       label: "Office floor",
@@ -125,28 +126,16 @@ function specialistDeskObject(
   index: number,
   stationLabels: OfficeStationLabels,
 ): OfficeThreeDeskObject {
-  const slot = slotFor(index, stationLabels);
   const stationId = stationIdFor(index);
+  const rect = officeThreeStationRect(index);
   return {
     color: "#f2d0a0",
     id: `desk:${stationId}`,
     kind: "desk",
     label: stationLabels[stationId],
     modelRole: "desk-surface",
-    position: rectPosition({
-      depth: slot.deskDepth,
-      height: 0.48,
-      width: slot.deskWidth,
-      x: slot.deskTile.x,
-      y: slot.deskTile.y,
-    }),
-    scale: rectScale({
-      depth: slot.deskDepth,
-      height: 0.48,
-      width: slot.deskWidth,
-      x: slot.deskTile.x,
-      y: slot.deskTile.y,
-    }),
+    position: rectPosition(rect),
+    scale: rectScale(rect),
     stationId,
   };
 }
@@ -166,8 +155,7 @@ function deskObjects(
 function furnitureObject(index: number): OfficeThreeAmenityObject {
   const furniture = officeFurnitureRects[index] ?? officeFurnitureRects[0];
   const semantic = furnitureSemantic(index);
-  const height = Math.max(0.22, furniture.lift * canvasLiftUnit);
-  const rect = { ...furniture, height } satisfies OfficeThreeSceneRect;
+  const rect = officeThreeFurnitureRect(index);
   return {
     color: furniture.fill,
     id: `furniture:${semantic.id}`,
@@ -194,7 +182,7 @@ function fixtureCuboidObject(index: number): OfficeThreeAmenityObject {
 }
 
 function planterObject(index: number): OfficeThreeAmenityObject {
-  const location = planterLocations[index] ?? planterLocations[0];
+  const location = officeThreePlanterLocation(index);
   return {
     color: "#70c9aa",
     id: `plant:${index}`,
@@ -218,7 +206,7 @@ function amenityObjects(
     ...furnitureDetailObjects(),
     ...officeCuboids.map((_, index) => fixtureCuboidObject(index)),
     ...fixtureDetailObjects(),
-    ...planterLocations.map((_, index) => planterObject(index)),
+    ...officeThreePlanterLocations.map((_, index) => planterObject(index)),
     ...plantLeafObjects(),
   ];
 }

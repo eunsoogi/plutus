@@ -9,6 +9,7 @@ import {
   pointPosition,
   vector3,
 } from "./orchestrator-office-three-scene-geometry";
+import { officeThreeAgentTile } from "./orchestrator-office-three-scene-data";
 import type {
   OfficeThreeAgentObject,
   OfficeThreeAmenityObject,
@@ -77,17 +78,18 @@ export function officeAgents(
       shortLabel: "O",
       station: labels.station.command_table,
       testId: "orchestrator-node",
-      tile: { x: 5.22, y: 4.5 },
+      tile: { x: 4.78, y: 5.08 },
       tone: "lead",
     },
-    ...specialists.map((specialist, index) =>
-      specialistAgent(
+    ...specialists.map((specialist, index) => ({
+      ...specialistAgent(
         specialist,
         index,
         labels.specialist[specialist],
         labels.station,
       ),
-    ),
+      tile: officeThreeAgentTile(index),
+    })),
   ];
 }
 
@@ -140,6 +142,19 @@ export function agentDetailObjects(
         scale: vector3(bodyRadius * 0.2, 0.14, bodyRadius * 0.2),
       },
       {
+        color: "#111827",
+        id: `agent-detail:${agent.id}:left-foot`,
+        kind: "amenity",
+        label: `${agent.label} left foot`,
+        modelRole: "agent-foot",
+        position: vector3(
+          center[0] - bodyRadius * 0.28,
+          0.035,
+          center[2] + bodyRadius * 0.12,
+        ),
+        scale: vector3(bodyRadius * 0.24, 0.07, bodyRadius * 0.36),
+      },
+      {
         color: "#1f2937",
         id: `agent-detail:${agent.id}:right-leg`,
         kind: "amenity",
@@ -147,6 +162,47 @@ export function agentDetailObjects(
         modelRole: "agent-leg",
         position: vector3(center[0] + bodyRadius * 0.26, 0.08, center[2]),
         scale: vector3(bodyRadius * 0.2, 0.14, bodyRadius * 0.2),
+      },
+      {
+        color: "#111827",
+        id: `agent-detail:${agent.id}:right-foot`,
+        kind: "amenity",
+        label: `${agent.label} right foot`,
+        modelRole: "agent-foot",
+        position: vector3(
+          center[0] + bodyRadius * 0.28,
+          0.035,
+          center[2] + bodyRadius * 0.12,
+        ),
+        scale: vector3(bodyRadius * 0.24, 0.07, bodyRadius * 0.36),
+      },
+      {
+        color: agentColor(agent.tone),
+        id: `agent-detail:${agent.id}:left-arm`,
+        kind: "amenity",
+        label: `${agent.label} left arm`,
+        modelRole: "agent-arm",
+        position: vector3(
+          center[0] - bodyRadius * 0.48,
+          center[1] + bodyHeight * 0.08,
+          center[2] + bodyRadius * 0.05,
+        ),
+        rotation: vector3(0, 0, -0.28),
+        scale: vector3(bodyRadius * 0.16, bodyHeight * 0.58, bodyRadius * 0.16),
+      },
+      {
+        color: agentColor(agent.tone),
+        id: `agent-detail:${agent.id}:right-arm`,
+        kind: "amenity",
+        label: `${agent.label} right arm`,
+        modelRole: "agent-arm",
+        position: vector3(
+          center[0] + bodyRadius * 0.48,
+          center[1] + bodyHeight * 0.08,
+          center[2] + bodyRadius * 0.05,
+        ),
+        rotation: vector3(0, 0, 0.28),
+        scale: vector3(bodyRadius * 0.16, bodyHeight * 0.58, bodyRadius * 0.16),
       },
       {
         color: "#f8fafc",
@@ -160,6 +216,17 @@ export function agentDetailObjects(
           center[2] + bodyRadius * 0.36,
         ),
         scale: vector3(bodyRadius * 0.36, bodyHeight * 0.28, 0.02),
+      },
+      {
+        color: "#0b0f19",
+        id: `agent-detail:${agent.id}:contact-pad`,
+        kind: "amenity",
+        label: `${agent.label} contact pad`,
+        modelRole: "contact-pad",
+        opacity: 0.22,
+        position: vector3(center[0], 0.011, center[2]),
+        scale: vector3(bodyRadius * 1.2, 0.022, bodyRadius * 0.86),
+        shape: "cylinder",
       },
     ] satisfies readonly OfficeThreeAmenityObject[];
   });

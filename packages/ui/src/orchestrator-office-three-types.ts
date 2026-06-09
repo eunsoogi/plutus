@@ -21,16 +21,22 @@ export type OfficeThreeGeometryShape = "box" | "cylinder" | "sphere";
 export type OfficeThreeModelRole =
   | "agent-body"
   | "agent-badge"
+  | "agent-arm"
+  | "agent-foot"
   | "agent-head"
   | "agent-leg"
   | "cabinet-body"
   | "cabinet-door"
+  | "cabinet-handle"
   | "cabinet-panel"
   | "cabinet-shelf"
   | "chair-back"
   | "chair-seat"
+  | "contact-pad"
   | "coffee-table-leg"
   | "coffee-table-top"
+  | "desk-drawer"
+  | "desk-edge"
   | "desk-leg"
   | "desk-surface"
   | "fixture-body"
@@ -158,7 +164,7 @@ export const officeThreeCameraDefaults = {
   fov: 45,
   kind: "perspective",
   near: 0.1,
-  position: [5.6, 4.8, 6.4],
+  position: [6.1, 5.05, 7.1],
   target: [0, 0.42, 0],
 } satisfies OfficeThreeCameraState;
 
@@ -169,7 +175,7 @@ export const officeThreeInteractionDefaults = {
     enableRotate: true,
     enableZoom: true,
     enabled: true,
-    maxDistance: 12,
+    maxDistance: 13,
     maxPolarAngle: 1.31,
     minDistance: 3.2,
     minPolarAngle: 0.48,

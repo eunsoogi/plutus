@@ -1,10 +1,9 @@
-import { officeFurnitureRects } from "./orchestrator-office-canvas-furniture";
 import {
-  canvasLiftUnit,
   rectPosition,
   vector3,
   type OfficeThreeSceneRect,
 } from "./orchestrator-office-three-scene-geometry";
+import { officeThreeFurnitureRect } from "./orchestrator-office-three-scene-data";
 
 export type FurnitureSemantic = {
   readonly id: string;
@@ -12,14 +11,7 @@ export type FurnitureSemantic = {
 };
 
 export function furnitureRect(index: number): OfficeThreeSceneRect {
-  const furniture = officeFurnitureRects[index] ?? officeFurnitureRects[0];
-  return {
-    depth: furniture.depth,
-    height: Math.max(0.22, furniture.lift * canvasLiftUnit),
-    width: furniture.width,
-    x: furniture.x,
-    y: furniture.y,
-  };
+  return officeThreeFurnitureRect(index);
 }
 
 export function rectDetailPosition(
