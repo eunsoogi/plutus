@@ -86,10 +86,21 @@ export const sceneObjects = [
     id: "desk:command",
     kind: "desk",
     label: "Command desk",
+    modelRole: "desk-surface",
     opacity: 0.88,
     position: [0.4, 0.2, 0.6],
     rotation: [0, 0.2, 0],
     scale: [1.8, 0.4, 0.9],
+  },
+  {
+    color: "#334155",
+    id: "detail:monitor-stand",
+    kind: "amenity",
+    label: "Monitor stand",
+    modelRole: "monitor-stand",
+    position: [0.4, 0.58, 0.36],
+    scale: [0.08, 0.24, 0.08],
+    shape: "cylinder",
   },
 ] satisfies readonly OfficeThreeSceneObject[];
 
@@ -145,6 +156,11 @@ export function fakeOfficeThreeAdapter() {
       fakeNode("ambientLight", `${color}:${intensity}`),
     createBoxGeometry: () => {
       const geometry: FakeGeometry = { disposed: [], kind: "box" };
+      geometries.push(geometry);
+      return geometry;
+    },
+    createCylinderGeometry: () => {
+      const geometry: FakeGeometry = { disposed: [], kind: "cylinder" };
       geometries.push(geometry);
       return geometry;
     },

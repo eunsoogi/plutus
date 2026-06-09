@@ -88,6 +88,9 @@ describe("office Three.js scene catalog", () => {
         object.kind === "amenity" && object.id.startsWith("fixture:cuboid"),
     );
     const agents = objects.filter((object) => object.kind === "agent");
+    const detailRoles = objects
+      .map((object) => object.modelRole)
+      .filter((modelRole) => modelRole !== undefined);
 
     expect(contract.version).toBe(officeThreeRendererContractVersion);
     expect(desks).toHaveLength(
@@ -99,12 +102,44 @@ describe("office Three.js scene catalog", () => {
     expect(agents).toHaveLength(
       teamSpecialists.portfolio_review_committee.length + 1,
     );
+    expect(detailRoles).toEqual(
+      expect.arrayContaining([
+        "agent-badge",
+        "agent-body",
+        "agent-head",
+        "agent-leg",
+        "cabinet-body",
+        "cabinet-door",
+        "cabinet-panel",
+        "cabinet-shelf",
+        "chair-back",
+        "chair-seat",
+        "coffee-table-leg",
+        "coffee-table-top",
+        "desk-leg",
+        "desk-surface",
+        "monitor-screen",
+        "monitor-stand",
+        "plant-leaf",
+        "planter-pot",
+        "report-bench-leg",
+        "report-bench-seat",
+        "sofa-arm",
+        "sofa-back",
+        "sofa-cushion",
+        "sofa-seat",
+        "terminal-panel",
+        "terminal-screen",
+        "wall-trim",
+      ]),
+    );
 
     const commandDesk = findObject(objects, "desk:command_table");
     expect(commandDesk.kind).toBe("desk");
     if (commandDesk.kind !== "desk") return;
     expect(commandDesk.label).toBe(officeCopy.en.station.command_table);
     expect(commandDesk.stationId).toBe("command_table");
+    expect(commandDesk.modelRole).toBe("desk-surface");
     expectScaledMesh(commandDesk);
 
     const glassWall = findObject(objects, "room:glass-wall-0");
@@ -119,14 +154,105 @@ describe("office Three.js scene catalog", () => {
     expect(sofa.label).toBe("Sofa");
     expectScaledMesh(sofa);
 
+    const sofaBack = findObject(objects, "furniture-detail:sofa:back");
+    expect(sofaBack.kind).toBe("amenity");
+    if (sofaBack.kind !== "amenity") return;
+    expect(sofaBack.modelRole).toBe("sofa-back");
+    expectScaledMesh(sofaBack);
+
+    const coffeeTableLeg = findObject(
+      objects,
+      "furniture-detail:coffee-table:leg-1",
+    );
+    expect(coffeeTableLeg.kind).toBe("amenity");
+    if (coffeeTableLeg.kind !== "amenity") return;
+    expect(coffeeTableLeg.modelRole).toBe("coffee-table-leg");
+    expectScaledMesh(coffeeTableLeg);
+
+    const marketTerminalScreen = findObject(
+      objects,
+      "furniture-detail:market-terminal:screen",
+    );
+    expect(marketTerminalScreen.kind).toBe("amenity");
+    if (marketTerminalScreen.kind !== "amenity") return;
+    expect(marketTerminalScreen.modelRole).toBe("terminal-screen");
+    expectScaledMesh(marketTerminalScreen);
+
+    const reportBenchSeat = findObject(
+      objects,
+      "furniture-detail:report-bench:seat",
+    );
+    expect(reportBenchSeat.kind).toBe("amenity");
+    if (reportBenchSeat.kind !== "amenity") return;
+    expect(reportBenchSeat.modelRole).toBe("report-bench-seat");
+    expectScaledMesh(reportBenchSeat);
+
+    const riskCabinetDoor = findObject(
+      objects,
+      "furniture-detail:risk-cabinet:left-door",
+    );
+    expect(riskCabinetDoor.kind).toBe("amenity");
+    if (riskCabinetDoor.kind !== "amenity") return;
+    expect(riskCabinetDoor.modelRole).toBe("cabinet-door");
+    expectScaledMesh(riskCabinetDoor);
+
+    const equipmentPanel = findObject(
+      objects,
+      "fixture-detail:cabinet-0:panel",
+    );
+    expect(equipmentPanel.kind).toBe("amenity");
+    if (equipmentPanel.kind !== "amenity") return;
+    expect(equipmentPanel.modelRole).toBe("cabinet-panel");
+    expectScaledMesh(equipmentPanel);
+
     const orchestrator = findObject(objects, "agent:orchestrator");
     expect(orchestrator.kind).toBe("agent");
     if (orchestrator.kind !== "agent") return;
     expect(orchestrator.label).toBe(officeCopy.en.orchestrator);
+    expect(orchestrator.modelRole).toBe("agent-head");
     expect(orchestrator.role).toBe("Executing");
     expect(orchestrator.radius).toBeGreaterThan(0);
     expectVector3(orchestrator.position);
     expect(orchestrator.color).toMatch(/^#/);
+
+    const orchestratorBody = findObject(
+      objects,
+      "agent-detail:orchestrator:body",
+    );
+    expect(orchestratorBody.kind).toBe("amenity");
+    if (orchestratorBody.kind !== "amenity") return;
+    expect(orchestratorBody.modelRole).toBe("agent-body");
+    expect(orchestratorBody.shape).toBe("cylinder");
+    expectScaledMesh(orchestratorBody);
+    expect(orchestrator.color).not.toBe(orchestratorBody.color);
+    expect(orchestrator.radius).toBeLessThan(orchestratorBody.scale[1]);
+    expect(orchestratorBody.scale[0]).toBeGreaterThan(
+      orchestrator.radius * 1.8,
+    );
+
+    const orchestratorBadge = findObject(
+      objects,
+      "agent-detail:orchestrator:badge",
+    );
+    expect(orchestratorBadge.kind).toBe("amenity");
+    if (orchestratorBadge.kind !== "amenity") return;
+    expect(orchestratorBadge.modelRole).toBe("agent-badge");
+    expectScaledMesh(orchestratorBadge);
+
+    const orchestratorLeftLeg = findObject(
+      objects,
+      "agent-detail:orchestrator:left-leg",
+    );
+    expect(orchestratorLeftLeg.kind).toBe("amenity");
+    if (orchestratorLeftLeg.kind !== "amenity") return;
+    expect(orchestratorLeftLeg.modelRole).toBe("agent-leg");
+    expectScaledMesh(orchestratorLeftLeg);
+    expect(orchestratorLeftLeg.position[1]).toBeLessThan(
+      orchestratorBody.position[1],
+    );
+    expect(orchestratorLeftLeg.scale[1]).toBeGreaterThan(
+      orchestrator.radius * 0.6,
+    );
   });
 
   it("localizes active team labels while keeping stable semantic ids", async () => {

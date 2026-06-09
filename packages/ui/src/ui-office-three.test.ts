@@ -26,7 +26,10 @@ describe("ui office Three renderer", () => {
     expect(markup).toContain('data-testid="orchestrator-office-canvas"');
     expect(markup).toContain('aria-hidden="true"');
     expect(markup).toContain('data-office-renderer="three"');
-    expect(markup).toMatch(/data-office-mesh-count="[2-9]\d*"/);
+    const meshCount = markup.match(/data-office-mesh-count="(?<meshCount>\d+)"/)
+      ?.groups?.meshCount;
+    expect(meshCount).toBeDefined();
+    expect(Number(meshCount)).toBeGreaterThanOrEqual(20);
     expect(markup).toContain("data-office-camera=");
     expect(markup).toContain('data-office-rotation="south-east"');
     expect(markup).toContain("Market Data Researcher");

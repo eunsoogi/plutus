@@ -5,8 +5,23 @@ import {
   type OfficeAgent,
 } from "./orchestrator-office-scene-data";
 import type { SpecialistId } from "./orchestrator-office-teams";
-import { pointPosition } from "./orchestrator-office-three-scene-geometry";
-import type { OfficeThreeAgentObject } from "./orchestrator-office-three-types";
+import {
+  pointPosition,
+  vector3,
+} from "./orchestrator-office-three-scene-geometry";
+import type {
+  OfficeThreeAgentObject,
+  OfficeThreeAmenityObject,
+} from "./orchestrator-office-three-types";
+
+const agentHeadColor = "#f2c9a7";
+const leadAgentHeadRadius = 0.15;
+const specialistAgentHeadRadius = 0.13;
+const leadAgentBodyRadius = 0.36;
+const specialistAgentBodyRadius = 0.3;
+const agentBodyCenterY = 0.24;
+const leadAgentBodyHeight = 0.44;
+const specialistAgentBodyHeight = 0.38;
 
 function agentColor(tone: AgentTone): string {
   switch (tone) {
@@ -28,6 +43,24 @@ function agentColor(tone: AgentTone): string {
     case "rose":
       return "#d98a99";
   }
+}
+
+function agentHeadRadius(agent: OfficeAgent): number {
+  return agent.isLead === true
+    ? leadAgentHeadRadius
+    : specialistAgentHeadRadius;
+}
+
+function agentBodyRadius(agent: OfficeAgent): number {
+  return agent.isLead === true
+    ? leadAgentBodyRadius
+    : specialistAgentBodyRadius;
+}
+
+function agentBodyHeight(agent: OfficeAgent): number {
+  return agent.isLead === true
+    ? leadAgentBodyHeight
+    : specialistAgentBodyHeight;
 }
 
 export function officeAgents(
@@ -61,13 +94,73 @@ export function officeAgents(
 export function agentObjects(
   agents: readonly OfficeAgent[],
 ): readonly OfficeThreeAgentObject[] {
-  return agents.map((agent) => ({
-    color: agentColor(agent.tone),
-    id: `agent:${agent.id}`,
-    kind: "agent",
-    label: agent.label,
-    position: pointPosition(agent.tile, agent.isLead === true ? 0.34 : 0.28),
-    radius: agent.isLead === true ? 0.34 : 0.28,
-    role: agent.isLead === true ? agent.role : agent.station,
-  }));
+  return agents.map((agent) => {
+    const radius = agentHeadRadius(agent);
+    const bodyHeight = agentBodyHeight(agent);
+    return {
+      color: agentHeadColor,
+      id: `agent:${agent.id}`,
+      kind: "agent",
+      label: agent.label,
+      modelRole: "agent-head",
+      position: pointPosition(agent.tile, agentBodyCenterY + bodyHeight / 2),
+      radius,
+      role: agent.isLead === true ? agent.role : agent.station,
+      shape: "sphere",
+    };
+  });
+}
+
+export function agentDetailObjects(
+  agents: readonly OfficeAgent[],
+): readonly OfficeThreeAmenityObject[] {
+  return agents.flatMap((agent) => {
+    const bodyRadius = agentBodyRadius(agent);
+    const bodyHeight = agentBodyHeight(agent);
+    const center = pointPosition(agent.tile, agentBodyCenterY);
+    return [
+      {
+        color: agentColor(agent.tone),
+        id: `agent-detail:${agent.id}:body`,
+        kind: "amenity",
+        label: `${agent.label} body`,
+        modelRole: "agent-body",
+        opacity: 0.92,
+        position: center,
+        scale: vector3(bodyRadius * 1.18, bodyHeight, bodyRadius * 0.74),
+        shape: "cylinder",
+      },
+      {
+        color: "#1f2937",
+        id: `agent-detail:${agent.id}:left-leg`,
+        kind: "amenity",
+        label: `${agent.label} left leg`,
+        modelRole: "agent-leg",
+        position: vector3(center[0] - bodyRadius * 0.26, 0.08, center[2]),
+        scale: vector3(bodyRadius * 0.2, 0.14, bodyRadius * 0.2),
+      },
+      {
+        color: "#1f2937",
+        id: `agent-detail:${agent.id}:right-leg`,
+        kind: "amenity",
+        label: `${agent.label} right leg`,
+        modelRole: "agent-leg",
+        position: vector3(center[0] + bodyRadius * 0.26, 0.08, center[2]),
+        scale: vector3(bodyRadius * 0.2, 0.14, bodyRadius * 0.2),
+      },
+      {
+        color: "#f8fafc",
+        id: `agent-detail:${agent.id}:badge`,
+        kind: "amenity",
+        label: `${agent.label} badge`,
+        modelRole: "agent-badge",
+        position: vector3(
+          center[0],
+          center[1] + bodyHeight * 0.1,
+          center[2] + bodyRadius * 0.36,
+        ),
+        scale: vector3(bodyRadius * 0.36, bodyHeight * 0.28, 0.02),
+      },
+    ] satisfies readonly OfficeThreeAmenityObject[];
+  });
 }

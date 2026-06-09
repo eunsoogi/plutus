@@ -16,13 +16,48 @@ export type OfficeThreeRendererContractVersion =
 
 export type OfficeThreeVector3 = readonly [number, number, number];
 
+export type OfficeThreeGeometryShape = "box" | "cylinder" | "sphere";
+
+export type OfficeThreeModelRole =
+  | "agent-body"
+  | "agent-badge"
+  | "agent-head"
+  | "agent-leg"
+  | "cabinet-body"
+  | "cabinet-door"
+  | "cabinet-panel"
+  | "cabinet-shelf"
+  | "chair-back"
+  | "chair-seat"
+  | "coffee-table-leg"
+  | "coffee-table-top"
+  | "desk-leg"
+  | "desk-surface"
+  | "fixture-body"
+  | "report-bench-leg"
+  | "report-bench-seat"
+  | "sofa-arm"
+  | "sofa-back"
+  | "sofa-cushion"
+  | "sofa-seat"
+  | "terminal-panel"
+  | "terminal-screen"
+  | "monitor-screen"
+  | "monitor-stand"
+  | "plant-leaf"
+  | "planter-pot"
+  | "wall-panel"
+  | "wall-trim";
+
 type OfficeThreeSceneObjectBase = {
   readonly color: string;
   readonly id: string;
   readonly label: string;
+  readonly modelRole?: OfficeThreeModelRole;
   readonly opacity?: number;
   readonly position: OfficeThreeVector3;
   readonly rotation?: OfficeThreeVector3;
+  readonly shape?: OfficeThreeGeometryShape;
   readonly visible?: boolean;
 };
 

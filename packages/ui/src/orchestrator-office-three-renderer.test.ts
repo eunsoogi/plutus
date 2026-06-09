@@ -36,6 +36,7 @@ describe("office Three.js renderer lifecycle", () => {
     expect(lifecycle.root.children.map((child) => child.kind)).toEqual([
       "mesh",
       "mesh",
+      "mesh",
     ]);
     expect(lifecycle.scene.children.map((child) => child.kind)).toEqual([
       "root",
@@ -45,6 +46,23 @@ describe("office Three.js renderer lifecycle", () => {
     expect(lifecycle.meshesByObjectId.get("desk:command")?.scale.calls).toEqual(
       [[1.8, 0.4, 0.9]],
     );
+  });
+
+  it("uses shaped geometry for recognizable office detail meshes", () => {
+    const { adapter } = fakeOfficeThreeAdapter();
+    const lifecycle = createOfficeThreeRendererLifecycle({
+      adapter,
+      animationFrame: fakeScheduler(),
+      canvas: { clientHeight: 540, clientWidth: 960, height: 0, width: 0 },
+      contract: officeContract(),
+    });
+
+    expect(lifecycle.meshesByObjectId.get("desk:command")?.geometry.kind).toBe(
+      "box",
+    );
+    expect(
+      lifecycle.meshesByObjectId.get("detail:monitor-stand")?.geometry.kind,
+    ).toBe("cylinder");
   });
 
   it("resizes without mutating canvas styles and renders the current scene", () => {
@@ -104,10 +122,12 @@ describe("office Three.js renderer lifecycle", () => {
     expect(geometries.map((geometry) => geometry.disposed)).toEqual([
       ["sphere:0.32"],
       ["box"],
+      ["cylinder"],
     ]);
     expect(materials.map((material) => material.disposed)).toEqual([
       ["#2563eb"],
       ["#d6bc8b"],
+      ["#334155"],
     ]);
   });
 });
