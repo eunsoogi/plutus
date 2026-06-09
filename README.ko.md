@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img alt="Plutus product emblem icon" src="./assets/readme/plutus-emblem.png" />
+  <img alt="Plutus product emblem icon" src="./assets/readme/plutus-emblem.png" width="168" height="168" />
 </p>
 
 Plutus는 macOS를 중심으로 동작하는 로컬 우선 투자 리서치 워크스페이스입니다. Codex 기반 멀티 에이전트 팀이 시장 데이터 수집, 포트폴리오 점검, 백테스트, 리스크 리뷰, 보고서 작성을 나누어 수행하고, 사용자는 그 결과를 근거와 함께 검토합니다.
