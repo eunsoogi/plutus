@@ -161,4 +161,12 @@ describe("redesign asset and style constraints", () => {
     );
     expect(missingIconRefs).toEqual([]);
   });
+
+  it("emits relative Vite assets for packaged Tauri webviews", () => {
+    // Given: packaged Tauri webviews load frontend assets from an embedded app URL.
+    const viteConfig = readWorkspaceFile("apps/web-preview/vite.config.ts");
+
+    // Then: production HTML references assets relative to index.html.
+    expect(viteConfig).toMatch(/\bbase:\s*["']\.\/["']/u);
+  });
 });
