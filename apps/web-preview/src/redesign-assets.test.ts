@@ -166,7 +166,7 @@ describe("redesign asset and style constraints", () => {
     // Given: packaged Tauri webviews load frontend assets from an embedded app URL.
     const viteConfig = readWorkspaceFile("apps/web-preview/vite.config.ts");
 
-    // Then: production HTML references assets relative to index.html.
+    // Then: production HTML references assets relative to the root bundle.
     expect(viteConfig).toMatch(/\bbase:\s*["']\.\/["']/u);
   });
 });

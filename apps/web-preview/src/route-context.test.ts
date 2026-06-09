@@ -19,4 +19,13 @@ describe("routeContextFromLocation", () => {
     expect(context.path).toBe("/remote/dashboard");
     expect(context.remote).toBe("revoked");
   });
+
+  it("prefers packaged hash routes over the root bundle path", () => {
+    const context = routeContextFromLocation({
+      href: "tauri://localhost/#/settings/providers?state=stale",
+    });
+
+    expect(context.path).toBe("/settings/providers");
+    expect(context.remote).toBe("stale");
+  });
 });

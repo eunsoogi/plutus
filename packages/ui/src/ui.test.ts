@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { routeHrefForLocation } from "./plutus-command";
 import {
   formatCurrency,
   normalizeLocale,
@@ -46,5 +47,56 @@ describe("ui helpers", () => {
     expect(translate("ko", "remote.readOnlyMobile")).toBe(
       "이 미리보기에서는 모바일 조회만 가능합니다.",
     );
+  });
+
+  it("keeps Tauri route links on the root bundle with hash paths", () => {
+    expect(
+      routeHrefForLocation({
+        href: "tauri://localhost/",
+        path: "/settings/providers",
+        search: "?locale=ko",
+      }),
+    ).toBe("/#/settings/providers?locale=ko");
+    expect(
+      routeHrefForLocation({
+        href: "http://127.0.0.1:4173/dashboard",
+        path: "/settings/providers",
+        search: "?runtime=local",
+      }),
+    ).toBe("/settings/providers?runtime=local");
+    expect(
+      routeHrefForLocation({
+        href: "https://tauri.localhost/",
+        path: "/settings/providers",
+      }),
+    ).toBe("/#/settings/providers");
+    expect(
+      routeHrefForLocation({
+        href: "http://localhost/",
+        path: "/settings/providers",
+      }),
+    ).toBe("/#/settings/providers");
+    expect(
+      routeHrefForLocation({
+        href: "http://127.0.0.1:4173/",
+        path: "/settings/providers",
+        isTauriRuntime: true,
+      }),
+    ).toBe("/#/settings/providers");
+    expect(
+      routeHrefForLocation({
+        href: "http://127.0.0.1:4173/dashboard",
+        path: "/settings/providers",
+        search: "?runtime=local",
+        routeMode: "hash",
+      }),
+    ).toBe("/#/settings/providers?runtime=local");
+    expect(
+      routeHrefForLocation({
+        href: "tauri://localhost/",
+        path: "/settings/providers",
+        routeMode: "path",
+      }),
+    ).toBe("/settings/providers");
   });
 });

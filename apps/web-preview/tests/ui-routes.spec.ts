@@ -35,6 +35,68 @@ test("web preview covers every mac host route from spec 05", async ({
   }
 });
 
+test("sidebar navigation updates host routes without reloading the document", async ({
+  page,
+}) => {
+  await page.goto("/dashboard?runtime=local");
+  await page.evaluate(() => {
+    Reflect.set(window, "__plutusNavigationMarker", "kept");
+  });
+
+  await page.getByRole("link", { name: "Providers" }).click();
+
+  await expect(page).toHaveURL(/\/settings\/providers\?runtime=local$/u);
+  await expect(
+    page.getByRole("heading", { name: "Provider Settings" }),
+  ).toBeVisible();
+  await expect(
+    page.evaluate(() => Reflect.get(window, "__plutusNavigationMarker")),
+  ).resolves.toBe("kept");
+});
+
+test("packaged hash mode keeps sidebar host routes on the root bundle", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Reflect.set(window, "__PLUTUS_ROUTE_MODE__", "hash");
+  });
+  await page.goto("/dashboard?runtime=local");
+  await page.evaluate(() => {
+    Reflect.set(window, "__plutusNavigationMarker", "kept");
+  });
+
+  await page.getByRole("link", { name: "Providers" }).click();
+
+  await expect(page).toHaveURL(/\/#\/settings\/providers\?runtime=local$/u);
+  await expect(
+    page.getByRole("heading", { name: "Provider Settings" }),
+  ).toBeVisible();
+  await expect(
+    page.evaluate(() => Reflect.get(window, "__plutusNavigationMarker")),
+  ).resolves.toBe("kept");
+});
+
+test("packaged startup renders a route shell while the initial snapshot is pending", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Reflect.set(window, "__PLUTUS_ROUTE_MODE__", "hash");
+    Reflect.set(window, "__PLUTUS_COMMAND_BRIDGE__", async () => {
+      await new Promise(() => {});
+    });
+  });
+
+  await page.goto("/dashboard");
+
+  await expect(
+    page.getByRole("heading", { name: "Host Dashboard" }),
+  ).toBeVisible();
+  await expect(page.getByTestId("route-surface")).toHaveAttribute(
+    "data-route-kind",
+    "host",
+  );
+});
+
 const mobileRoutes = [
   ["/pair", "Pair With Mac"],
   ["/connection", "Connection"],

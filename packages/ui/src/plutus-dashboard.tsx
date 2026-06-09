@@ -6,6 +6,7 @@ import {
   localizedPortfolioHeading,
   localizedScenarioText,
   preserveRuntimeSearch,
+  routeHref,
 } from "./plutus-command";
 import { HostShell } from "./plutus-shell";
 import type { PlutusScenario } from "./plutus-types";
@@ -76,7 +77,10 @@ export function ArtifactList({ scenario }: { scenario: PlutusScenario }) {
       {scenario.run.artifacts.map((artifact) => (
         <a
           key={artifact.id}
-          href={`/runs/${scenario.run.id}/artifacts/${artifact.id}${preserveRuntimeSearch()}`}
+          href={routeHref(
+            `/runs/${scenario.run.id}/artifacts/${artifact.id}`,
+            preserveRuntimeSearch(),
+          )}
           aria-label={t("artifact.open", {
             name: localizedScenarioText(artifact.name, t),
           })}

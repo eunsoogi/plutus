@@ -3,7 +3,11 @@ import type { ReactNode } from "react";
 import { type AppLocale } from "./core";
 import { useI18n } from "./i18n";
 import type { HostShellProps } from "./plutus-types";
-import { preserveRuntimeSearch, withRemoteQuery } from "./plutus-command";
+import {
+  preserveRuntimeSearch,
+  routeHref,
+  withRemoteQuery,
+} from "./plutus-command";
 
 function LocaleSelector() {
   const { locale, setLocale, t } = useI18n();
@@ -35,16 +39,22 @@ export function HostShell({ children }: HostShellProps) {
         <strong>Plutus</strong>
         <LocaleSelector />
         <nav>
-          <a href={`/dashboard${runtimeSearch}`}>{t("nav.dashboard")}</a>
-          <a href={`/portfolios${runtimeSearch}`}>{t("nav.portfolios")}</a>
-          <a href={`/watchlists${runtimeSearch}`}>{t("nav.watchlists")}</a>
-          <a href={`/runs${runtimeSearch}`}>{t("nav.runs")}</a>
-          <a href={`/settings/providers${runtimeSearch}`}>
+          <a href={routeHref("/dashboard", runtimeSearch)}>
+            {t("nav.dashboard")}
+          </a>
+          <a href={routeHref("/portfolios", runtimeSearch)}>
+            {t("nav.portfolios")}
+          </a>
+          <a href={routeHref("/watchlists", runtimeSearch)}>
+            {t("nav.watchlists")}
+          </a>
+          <a href={routeHref("/runs", runtimeSearch)}>{t("nav.runs")}</a>
+          <a href={routeHref("/settings/providers", runtimeSearch)}>
             {t("nav.providers")}
           </a>
-          <a href={`/memory${runtimeSearch}`}>{t("nav.memory")}</a>
-          <a href={`/wiki${runtimeSearch}`}>{t("nav.wiki")}</a>
-          <a href={`/settings/remote-control${runtimeSearch}`}>
+          <a href={routeHref("/memory", runtimeSearch)}>{t("nav.memory")}</a>
+          <a href={routeHref("/wiki", runtimeSearch)}>{t("nav.wiki")}</a>
+          <a href={routeHref("/settings/remote-control", runtimeSearch)}>
             {t("nav.remote")}
           </a>
         </nav>

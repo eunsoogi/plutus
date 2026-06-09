@@ -1,6 +1,12 @@
 import type { useI18n } from "./i18n";
 import type { PlutusCommandClient, PlutusScenario } from "./plutus-types";
 
+declare global {
+  interface Window {
+    __PLUTUS_ROUTE_MODE__?: "hash" | "path";
+  }
+}
+
 export function commandStatusLabel(
   status: string | undefined,
   fallback: string,
@@ -184,7 +190,7 @@ export async function remoteCommandCredentials(
 
 export function preserveRuntimeSearch() {
   if (typeof window === "undefined") return "";
-  const search = new URLSearchParams(window.location.search);
+  const search = currentRouteSearchParams(window.location.href);
   const params = new URLSearchParams();
   for (const key of ["runtime", "locale"]) {
     const value = search.get(key);
@@ -194,9 +200,35 @@ export function preserveRuntimeSearch() {
   return query ? `?${query}` : "";
 }
 
+export function routeHrefForLocation(input: {
+  readonly href: string;
+  readonly path: string;
+  readonly search?: string;
+  readonly isTauriRuntime?: boolean;
+  readonly routeMode?: "hash" | "path";
+}) {
+  const search = input.search ?? "";
+  if (input.routeMode === "hash") return `/#${input.path}${search}`;
+  if (input.routeMode === "path") return `${input.path}${search}`;
+  return input.isTauriRuntime || isTauriWebviewHref(input.href)
+    ? `/#${input.path}${search}`
+    : `${input.path}${search}`;
+}
+
+export function routeHref(path: string, search = preserveRuntimeSearch()) {
+  if (typeof window === "undefined") return `${path}${search}`;
+  return routeHrefForLocation({
+    href: window.location.href,
+    path,
+    search,
+    isTauriRuntime: isTauriRuntimeWindow(window),
+    routeMode: window.__PLUTUS_ROUTE_MODE__,
+  });
+}
+
 function currentRuntimeParam() {
   if (typeof window === "undefined") return null;
-  return new URL(window.location.href).searchParams.get("runtime");
+  return currentRouteSearchParams(window.location.href).get("runtime");
 }
 
 export function withRemoteQuery(path: string, remote: string) {
@@ -204,8 +236,44 @@ export function withRemoteQuery(path: string, remote: string) {
   const runtime = currentRuntimeParam();
   if (runtime) params.set("runtime", runtime);
   if (typeof window !== "undefined") {
-    const locale = new URL(window.location.href).searchParams.get("locale");
+    const locale = currentRouteSearchParams(window.location.href).get("locale");
     if (locale) params.set("locale", locale);
   }
-  return `${path}?${params.toString()}`;
+  return routeHref(path, `?${params.toString()}`);
+}
+
+function currentRouteSearchParams(href: string): URLSearchParams {
+  const url = new URL(href);
+  const hashRoute = url.hash.startsWith("#/")
+    ? new URL(url.hash.slice(1), "https://plutus.local")
+    : null;
+  if (!hashRoute) return url.searchParams;
+  const routeSearch = new URLSearchParams(url.searchParams);
+  for (const [key, value] of hashRoute.searchParams) {
+    routeSearch.set(key, value);
+  }
+  return routeSearch;
+}
+
+function isTauriWebviewHref(href: string): boolean {
+  const url = new URL(href);
+  if (url.protocol === "tauri:" || url.protocol === "file:") return true;
+  if (url.hostname === "tauri.localhost") return true;
+  if (
+    (url.hostname === "localhost" || url.hostname === "127.0.0.1") &&
+    url.port !== "4173"
+  ) {
+    return true;
+  }
+  return url.protocol !== "http:" && url.protocol !== "https:";
+}
+
+function isTauriRuntimeWindow(
+  candidate: Window & {
+    readonly __TAURI_INTERNALS__?: unknown;
+    readonly __TAURI__?: unknown;
+    readonly __PLUTUS_ROUTE_MODE__?: "hash" | "path";
+  },
+): boolean {
+  return Boolean(candidate.__TAURI_INTERNALS__ || candidate.__TAURI__);
 }
