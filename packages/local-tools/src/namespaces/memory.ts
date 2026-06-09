@@ -1,24 +1,10 @@
-import {
-  CapturePolicy,
-  FakeMem0Adapter,
-  type MemoryRecord,
-  MemoryStore,
-  RecallService,
-  type MemoryKind,
-} from "@plutus/memory";
-
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { CapturePolicy, type MemoryKind } from "@plutus/memory";
 
 import type { NamespaceHandlerArgs } from "./common";
-import type { InMemoryToolRuntime } from "../audit/in-memory-audit";
-import type { LocalToolRunContext } from "../context";
 import type { LocalToolResponse } from "../schemas/envelope";
-import { ok, storagePath, warning, writeDurableJson } from "./common";
-
-interface MemoryRuntime {
-  store: MemoryStore;
-  recall: RecallService;
-}
+import { ok, warning, writeDurableJson } from "./common";
+import { recall } from "./memory-recall";
+import { memoryRuntime } from "./memory-runtime";
 
 export const handleMemory = async ({
   call,
@@ -169,115 +155,3 @@ export const handleMemory = async ({
       ]);
   }
 };
-
-async function recall(
-  auditRef: string,
-  memory: MemoryRuntime,
-  inputValue: unknown,
-  defaultQuery: string,
-) {
-  const input = inputValue as { query?: string; limit?: number };
-  const query = input.query ?? defaultQuery;
-  const limit = input.limit ?? 10;
-  const mem0Memories = await memory.recall.recall({
-    query,
-    limit,
-    actor: "agent:recall",
-  });
-  const directMemories = memory.store.recall(query).map((record) => ({
-    memoryId: record.id,
-    summary: record.summary,
-    kind: record.kind,
-    relevance: record.retentionClass === "pinned" ? 0.85 : 0.7,
-    sourceRefs: record.sourceRefs,
-    lastRecalledAt: record.lastRecalledAt,
-    warnings:
-      record.sensitivityClass === "portfolio_private"
-        ? ["Portfolio-private memory: compact summary only."]
-        : [],
-  }));
-  const byId = new Map(
-    [...mem0Memories, ...directMemories]
-      .sort((a, b) => b.relevance - a.relevance)
-      .map((record) => [record.memoryId, record]),
-  );
-  return ok(auditRef, "plutus_memory", {
-    memories: [...byId.values()].slice(0, limit),
-  });
-}
-
-function memoryRuntime(
-  runtime: InMemoryToolRuntime,
-  context: LocalToolRunContext,
-): MemoryRuntime {
-  const key = `memory_runtime_${context.profileId}`;
-  const existing = runtime.records.get(key);
-  if (isMemoryRuntime(existing)) {
-    return existing;
-  }
-  const store = new MemoryStore({
-    adapter: new FakeMem0Adapter(),
-    profileId: context.profileId,
-  });
-  store.importRecords(loadPersistedMemoryRecords(runtime, context));
-  const created = { store, recall: new RecallService(store) };
-  runtime.records.set(key, created);
-  return created;
-}
-
-function loadPersistedMemoryRecords(
-  runtime: InMemoryToolRuntime,
-  context: LocalToolRunContext,
-): MemoryRecord[] {
-  const dir = storagePath(runtime, context, "memory");
-  if (!existsSync(dir)) return [];
-  const records: MemoryRecord[] = [];
-  for (const file of readdirSync(dir)) {
-    if (!file.endsWith(".json")) continue;
-    try {
-      const parsed = JSON.parse(readFileSync(`${dir}/${file}`, "utf8")) as {
-        id?: unknown;
-        profileId?: unknown;
-        kind?: unknown;
-        summary?: unknown;
-        semanticText?: unknown;
-        tags?: unknown;
-        sourceRefs?: unknown;
-        sensitivityClass?: unknown;
-        retentionClass?: unknown;
-        status?: unknown;
-        body?: unknown;
-        capturePolicy?: unknown;
-        createdAt?: unknown;
-        updatedAt?: unknown;
-      };
-      if (
-        typeof parsed.id === "string" &&
-        parsed.profileId === context.profileId &&
-        typeof parsed.kind === "string" &&
-        typeof parsed.summary === "string" &&
-        typeof parsed.semanticText === "string" &&
-        Array.isArray(parsed.tags) &&
-        Array.isArray(parsed.sourceRefs) &&
-        typeof parsed.sensitivityClass === "string" &&
-        typeof parsed.retentionClass === "string" &&
-        typeof parsed.status === "string" &&
-        typeof parsed.body === "string" &&
-        typeof parsed.capturePolicy === "string" &&
-        typeof parsed.createdAt === "string" &&
-        typeof parsed.updatedAt === "string"
-      ) {
-        records.push(parsed as MemoryRecord);
-      }
-    } catch {
-      continue;
-    }
-  }
-  return records;
-}
-
-function isMemoryRuntime(value: unknown): value is MemoryRuntime {
-  return Boolean(
-    value && typeof value === "object" && "store" in value && "recall" in value,
-  );
-}

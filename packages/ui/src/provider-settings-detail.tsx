@@ -44,7 +44,11 @@ export function ProviderDetail({
       <div className="provider-detail-heading">
         <span>{text.selected}</span>
         <strong data-testid="selected-provider-name">
-          {providerDisplayName(provider.providerId, provider.displayName, locale)}
+          {providerDisplayName(
+            provider.providerId,
+            provider.displayName,
+            locale,
+          )}
         </strong>
       </div>
       <ProviderSetupGuide text={text} />
@@ -90,7 +94,10 @@ export function ProviderDetail({
 
 function ProviderSetupGuide({ text }: { text: Record<string, string> }) {
   return (
-    <section className="provider-setup-guide" data-testid="provider-setup-guide">
+    <section
+      className="provider-setup-guide"
+      data-testid="provider-setup-guide"
+    >
       <h2>{text.setupTitle}</h2>
       <ol>
         <li>{text.setupExchange}</li>
@@ -115,7 +122,9 @@ function CredentialControl({
   text: Record<string, string>;
 }) {
   const apiLabel =
-    provider.providerId === "kiwoom" ? text.credentialAppKey : text.credentialApiKey;
+    provider.providerId === "kiwoom"
+      ? text.credentialAppKey
+      : text.credentialApiKey;
   return (
     <section className="provider-credential-control">
       <div className="provider-credential-heading">
@@ -182,7 +191,9 @@ function CredentialField({
       <input
         autoComplete="off"
         data-testid={testId}
-        onChange={(event) => onCredentialDraft(field, event.currentTarget.value)}
+        onChange={(event) =>
+          onCredentialDraft(field, event.currentTarget.value)
+        }
         type={type}
         value={value}
       />

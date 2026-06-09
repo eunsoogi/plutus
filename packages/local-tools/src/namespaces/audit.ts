@@ -87,7 +87,12 @@ const getRunAuditTrailInputSchema = z.object({
 type AuditRecord = z.infer<typeof auditRecordSchema>;
 type AuditSourceRefInput = z.infer<typeof sourceRefInputSchema>;
 
-export const handleAudit: NamespaceHandler = ({ call, context, runtime, auditRef }) => {
+export const handleAudit: NamespaceHandler = ({
+  call,
+  context,
+  runtime,
+  auditRef,
+}) => {
   switch (call.tool) {
     case "log_agent_event": {
       const input = logAgentEventInputSchema.parse(call.input);
@@ -124,7 +129,12 @@ export const handleAudit: NamespaceHandler = ({ call, context, runtime, auditRef
         evidenceRefs: input.evidenceRefs,
       });
       return ok(auditRef, "plutus_audit", { warning: record }, [
-        warning(input.warningType, input.severity, input.message, input.evidenceRefs),
+        warning(
+          input.warningType,
+          input.severity,
+          input.message,
+          input.evidenceRefs,
+        ),
       ]);
     }
     case "get_run_audit_trail": {
@@ -157,9 +167,18 @@ function appendAuditRecord(
   runtime: InMemoryToolRuntime,
   context: LocalToolRunContext,
   input:
-    | Omit<z.infer<typeof agentEventRecordSchema>, "id" | "profileId" | "recordedBy" | "at">
-    | Omit<z.infer<typeof toolProvenanceRecordSchema>, "id" | "profileId" | "recordedBy" | "at">
-    | Omit<z.infer<typeof warningRecordSchema>, "id" | "profileId" | "recordedBy" | "at">,
+    | Omit<
+        z.infer<typeof agentEventRecordSchema>,
+        "id" | "profileId" | "recordedBy" | "at"
+      >
+    | Omit<
+        z.infer<typeof toolProvenanceRecordSchema>,
+        "id" | "profileId" | "recordedBy" | "at"
+      >
+    | Omit<
+        z.infer<typeof warningRecordSchema>,
+        "id" | "profileId" | "recordedBy" | "at"
+      >,
 ): AuditRecord {
   const existing = auditRecords(runtime);
   const record = auditRecordSchema.parse({
@@ -174,7 +193,9 @@ function appendAuditRecord(
 }
 
 function auditRecords(runtime: InMemoryToolRuntime): AuditRecord[] {
-  const parsed = auditRecordsSchema.safeParse(runtime.records.get(AUDIT_RECORDS_KEY));
+  const parsed = auditRecordsSchema.safeParse(
+    runtime.records.get(AUDIT_RECORDS_KEY),
+  );
   return parsed.success ? parsed.data : [];
 }
 

@@ -13,10 +13,12 @@ import { ProviderDetail } from "./provider-settings-detail";
 import { ProviderWorkbench } from "./provider-settings-composer";
 import { ProviderList } from "./provider-settings-provider-list";
 import { providerSettingsCopy } from "./provider-settings-copy";
+import { ProviderSettingsHeader } from "./provider-settings-header";
 import { createTradingOrderIntent } from "./provider-settings-order";
 import {
   editProvider,
   fallbackProviders,
+  type DryRunOrderResult,
   type OrderSide,
   type OrderType,
   type ProviderCommandClient,
@@ -25,16 +27,13 @@ import {
   type TradingDecision,
   type TradingOrderIntent,
   type TradingProviderConfig,
-  type DryRunOrderResult,
 } from "./provider-settings-types";
-
-type ProviderSettingsPageProps = {
-  commandClient?: ProviderCommandClient;
-};
 
 export function ProviderSettingsPage({
   commandClient,
-}: ProviderSettingsPageProps) {
+}: {
+  commandClient?: ProviderCommandClient;
+}) {
   const { locale } = useI18n();
   const text = providerSettingsCopy[locale];
   const [providers, setProviders] =
@@ -192,15 +191,7 @@ export function ProviderSettingsPage({
   return (
     <HostShell>
       <div className="provider-page">
-        <header className="page-header provider-header">
-          <h1>{text.title}</h1>
-          <p>{text.subtitle}</p>
-          <div className="pill-row" aria-label={text.safety}>
-            <span className="pill">{text.readOnly}</span>
-            <span className="pill">{text.dryRunOnly}</span>
-            <span className="pill">{text.killSwitch}</span>
-          </div>
-        </header>
+        <ProviderSettingsHeader text={text} />
 
         <section className="provider-layout">
           <ProviderList

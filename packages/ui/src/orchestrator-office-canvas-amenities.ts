@@ -32,7 +32,9 @@ function wallPanel(
 function volumeMeta(
   volumeId: string | undefined,
   surface: OfficeVolumeSurface,
-): Record<string, never> | { readonly surface: OfficeVolumeSurface; readonly volumeId: string } {
+):
+  | Record<string, never>
+  | { readonly surface: OfficeVolumeSurface; readonly volumeId: string } {
   return volumeId === undefined ? {} : { surface, volumeId };
 }
 

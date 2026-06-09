@@ -1,4 +1,7 @@
-import { defaultCredentialRef, fallbackProviders } from "./provider-settings-types";
+import {
+  defaultCredentialRef,
+  fallbackProviders,
+} from "./provider-settings-types";
 import type {
   ProviderId,
   TradingProviderConfig,

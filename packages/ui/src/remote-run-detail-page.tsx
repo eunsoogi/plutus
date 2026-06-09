@@ -134,9 +134,7 @@ export function RemoteRunDetailPage({
         <button className="secondary" disabled={disabled} onClick={cancelRun}>
           {t("remote.cancelRun")}
         </button>
-        {status ? (
-          <p data-testid="remote-run-cancel-status">{status}</p>
-        ) : null}
+        {status ? <p data-testid="remote-run-cancel-status">{status}</p> : null}
       </section>
     </MobileShell>
   );

@@ -70,26 +70,10 @@ const defaultSpecialistSlot = slot(
 
 const specialistSlots = [
   defaultSpecialistSlot,
-  slot(
-    "strategy_board",
-    point(6.45, 1.1),
-    point(7.75, 2.45),
-  ),
-  slot(
-    "risk_table",
-    point(7.55, 4.55),
-    point(8.45, 5.85),
-  ),
-  slot(
-    "report_bay",
-    point(1.05, 5.15),
-    point(3.1, 6.05),
-  ),
-  slot(
-    "signal_booth",
-    point(2.55, 0.8),
-    point(3.6, 2.0),
-  ),
+  slot("strategy_board", point(6.45, 1.1), point(7.75, 2.45)),
+  slot("risk_table", point(7.55, 4.55), point(8.45, 5.85)),
+  slot("report_bay", point(1.05, 5.15), point(3.1, 6.05)),
+  slot("signal_booth", point(2.55, 0.8), point(3.6, 2.0)),
 ] satisfies readonly AgentSlotLayout[];
 
 const specialistTones = {

@@ -32,7 +32,10 @@ export function reportLocaleValue(locale: string | undefined) {
 }
 
 export function renderReportContent(input: {
-  readonly sections: readonly { readonly title: string; readonly body: string }[];
+  readonly sections: readonly {
+    readonly title: string;
+    readonly body: string;
+  }[];
   readonly format: ReportFormat;
   readonly locale: string;
 }) {

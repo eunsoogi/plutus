@@ -107,7 +107,9 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
     setAngle((currentAngle) => nextOfficeYaw(currentAngle, direction));
   }, []);
   const dragOfficeAngle = useCallback((deltaX: number, deltaY: number) => {
-    setAngle((currentAngle) => normalizeOfficeYaw(currentAngle + deltaX * 0.35));
+    setAngle((currentAngle) =>
+      normalizeOfficeYaw(currentAngle + deltaX * 0.35),
+    );
     setPitch((currentPitch) =>
       normalizeOfficePitch(currentPitch - deltaY * 0.12),
     );
