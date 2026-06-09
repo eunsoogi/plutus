@@ -35,6 +35,7 @@ import {
   type OfficeThreeRendererLifecycle,
 } from "./orchestrator-office-three-renderer";
 import { createOfficeThreeSceneCatalog } from "./orchestrator-office-three-scene";
+import type { OfficeThreeVector3 } from "./orchestrator-office-three-types";
 
 type OfficeThreeViewLifecycle = OfficeThreeRendererLifecycle<
   WebGLRenderer,
@@ -43,6 +44,27 @@ type OfficeThreeViewLifecycle = OfficeThreeRendererLifecycle<
   Object3D,
   Mesh<BufferGeometry, Material>
 >;
+
+export type OfficeThreeCameraLifecycle = {
+  readonly camera: {
+    readonly lookAt: (x: number, y: number, z: number) => void;
+    readonly position: {
+      readonly set: (x: number, y: number, z: number) => void;
+    };
+  };
+};
+
+export function applyOfficeThreeLifecycleCamera(
+  lifecycle: OfficeThreeCameraLifecycle,
+  cameraPosition: OfficeThreeVector3,
+): void {
+  lifecycle.camera.position.set(
+    cameraPosition[0],
+    cameraPosition[1],
+    cameraPosition[2],
+  );
+  pointOfficeThreeCameraAtTarget(lifecycle.camera);
+}
 
 function officeThreeCanvasSize(canvas: HTMLCanvasElement): {
   readonly height: number;
@@ -100,6 +122,8 @@ export function OrchestratorOfficeThreeView({
     () => officeThreeCameraPosition(scene.angle, scene.pitch),
     [scene.angle, scene.pitch],
   );
+  const cameraPositionRef = useRef(cameraPosition);
+  cameraPositionRef.current = cameraPosition;
   const pitch = serializeOfficeNumber(normalizeOfficePitch(scene.pitch));
   const yaw = serializeOfficeNumber(normalizeOfficeYaw(scene.angle ?? 0));
   const camera = serializeOfficeVector(cameraPosition);
@@ -117,6 +141,7 @@ export function OrchestratorOfficeThreeView({
       pixelRatio: Math.max(1, window.devicePixelRatio),
     });
     lifecycleRef.current = lifecycle;
+    applyOfficeThreeLifecycleCamera(lifecycle, cameraPositionRef.current);
 
     const resizeAndRender = () => {
       lifecycle.resize(officeThreeCanvasSize(canvas));
@@ -153,12 +178,7 @@ export function OrchestratorOfficeThreeView({
     const lifecycle = lifecycleRef.current;
     if (lifecycle === null) return;
 
-    lifecycle.camera.position.set(
-      cameraPosition[0],
-      cameraPosition[1],
-      cameraPosition[2],
-    );
-    pointOfficeThreeCameraAtTarget(lifecycle.camera);
+    applyOfficeThreeLifecycleCamera(lifecycle, cameraPosition);
     lifecycle.render();
     setRenderCount((currentCount) => currentCount + 1);
   }, [cameraPosition]);

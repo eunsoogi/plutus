@@ -129,7 +129,7 @@
 .orchestrator-office__experience {
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(0, 3.6fr) minmax(190px, 0.54fr);
+  grid-template-columns: minmax(0, 3.6fr) minmax(210px, 0.6fr);
 }
 
 .orchestrator-office__scene-shell,
@@ -177,7 +177,15 @@
   padding: 9px 10px;
 }
 
-.orchestrator-office__roster-item strong,
+.orchestrator-office__roster-item strong {
+  color: #f8fafc;
+  display: block;
+  font-size: 0.9rem;
+  line-height: 1.25;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
 .orchestrator-office__signals strong {
   color: #f8fafc;
   display: block;
