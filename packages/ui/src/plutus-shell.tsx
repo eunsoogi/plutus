@@ -4,6 +4,7 @@ import { type AppLocale } from "./core";
 import { useI18n } from "./i18n";
 import type { HostShellProps } from "./plutus-types";
 import {
+  currentRouteSearchParams,
   preserveRuntimeSearch,
   routeHref,
   withRemoteQuery,
@@ -66,12 +67,12 @@ export function HostShell({ children }: HostShellProps) {
 
 export function MobileShell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
-  const remote =
+  const routeSearch =
     typeof window === "undefined"
-      ? "connected"
-      : (new URL(window.location.href).searchParams.get("remote") ??
-        new URL(window.location.href).searchParams.get("state") ??
-        "connected");
+      ? null
+      : currentRouteSearchParams(window.location.href);
+  const remote =
+    routeSearch?.get("remote") ?? routeSearch?.get("state") ?? "connected";
   return (
     <main
       className="mobile-shell"

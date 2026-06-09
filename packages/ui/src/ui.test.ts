@@ -1,5 +1,9 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { I18nProvider } from "./i18n";
 import { routeHrefForLocation } from "./plutus-command";
+import { MobileShell } from "./plutus-shell";
 import {
   formatCurrency,
   normalizeLocale,
@@ -98,5 +102,46 @@ describe("ui helpers", () => {
         routeMode: "path",
       }),
     ).toBe("/settings/providers");
+  });
+
+  it("keeps hash-routed remote state in mobile tab links", () => {
+    vi.stubGlobal("window", {
+      __PLUTUS_ROUTE_MODE__: "hash",
+      history: {
+        replaceState: vi.fn(),
+        state: null,
+      },
+      localStorage: {
+        getItem: () => null,
+        setItem: vi.fn(),
+      },
+      location: {
+        href: "tauri://localhost/#/remote/dashboard?state=revoked&locale=ko",
+      },
+    });
+    vi.stubGlobal("navigator", { languages: ["en-US"] });
+
+    try {
+      const markup = renderToStaticMarkup(
+        createElement(
+          I18nProvider,
+          null,
+          createElement(
+            MobileShell,
+            null,
+            createElement("section", null, "Remote body"),
+          ),
+        ),
+      );
+
+      expect(markup).toContain(
+        'href="/#/remote/runs?remote=revoked&amp;locale=ko"',
+      );
+      expect(markup).toContain(
+        'href="/#/remote/settings?remote=revoked&amp;locale=ko"',
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

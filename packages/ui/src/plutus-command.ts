@@ -242,7 +242,7 @@ export function withRemoteQuery(path: string, remote: string) {
   return routeHref(path, `?${params.toString()}`);
 }
 
-function currentRouteSearchParams(href: string): URLSearchParams {
+export function currentRouteSearchParams(href: string): URLSearchParams {
   const url = new URL(href);
   const hashRoute = url.hash.startsWith("#/")
     ? new URL(url.hash.slice(1), "https://plutus.local")
