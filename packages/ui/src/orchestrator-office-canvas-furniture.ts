@@ -31,9 +31,7 @@ function shadeHexColor(hex: string, amount: number): string {
       Math.min(
         255,
         Math.round(
-          amount >= 0
-            ? channel + (255 - channel) * amount
-            : channel * scale,
+          amount >= 0 ? channel + (255 - channel) * amount : channel * scale,
         ),
       ),
     );
@@ -120,11 +118,13 @@ const officeFurnitureBaseRects = [
   },
 ] satisfies readonly OfficeFurnitureRectBase[];
 
-export const officeFurnitureRects = officeFurnitureBaseRects.map((furniture) => ({
-  ...furniture,
-  frontFill: shadeHexColor(furniture.fill, -0.12),
-  sideFill: shadeHexColor(furniture.fill, -0.22),
-})) satisfies readonly OfficeFurnitureRect[];
+export const officeFurnitureRects = officeFurnitureBaseRects.map(
+  (furniture) => ({
+    ...furniture,
+    frontFill: shadeHexColor(furniture.fill, -0.12),
+    sideFill: shadeHexColor(furniture.fill, -0.22),
+  }),
+) satisfies readonly OfficeFurnitureRect[];
 
 export function pushFurniture(
   commands: OfficeDrawCommand[],

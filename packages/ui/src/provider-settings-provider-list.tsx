@@ -135,7 +135,11 @@ function ProviderCard({
     >
       <span>
         <strong>
-          {providerDisplayName(provider.providerId, provider.displayName, locale)}
+          {providerDisplayName(
+            provider.providerId,
+            provider.displayName,
+            locale,
+          )}
         </strong>
         <small>
           {providerMarketLabel(provider.providerId, provider.market, locale)}

@@ -65,7 +65,8 @@ export const providerSettingsCopy = {
     rationale: "Rationale",
     rationalePlaceholder: "Why should the agent committee review this order?",
     idle: "No decision generated yet.",
-    saved: "Provider settings saved locally and credential fields were cleared.",
+    saved:
+      "Provider settings saved locally and credential fields were cleared.",
     previewReady: "Decision ready.",
     previewLive:
       "Live candidate needs explicit user approval and remains blocked here.",
@@ -110,7 +111,8 @@ export const providerSettingsCopy = {
     setupExchange: "키움증권 또는 CCXT 지원 거래소를 선택합니다.",
     setupCredential:
       "API 키, 시크릿 키, 선택 패스프레이즈, 계좌 또는 라벨을 입력합니다.",
-    setupMode: "먼저 드라이런으로 저장합니다. 실거래는 사용자 승인 전까지 차단됩니다.",
+    setupMode:
+      "먼저 드라이런으로 저장합니다. 실거래는 사용자 승인 전까지 차단됩니다.",
     exchangeSearch: "거래소 검색",
     exchangeSearchPlaceholder: "크라켄, 업비트, 바이낸스...",
     exchangeSelect: "거래소",

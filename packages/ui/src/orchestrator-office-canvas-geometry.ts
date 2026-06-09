@@ -112,7 +112,8 @@ function officePitchForProjection(projection: OfficeProjection): number {
 }
 
 function officePitchScaleFor(projection: OfficeProjection): number {
-  const pitchDelta = officePitchForProjection(projection) - DEFAULT_OFFICE_PITCH;
+  const pitchDelta =
+    officePitchForProjection(projection) - DEFAULT_OFFICE_PITCH;
 
   return 1 + (pitchDelta / DEFAULT_OFFICE_PITCH) * PITCH_VERTICAL_RESPONSE;
 }

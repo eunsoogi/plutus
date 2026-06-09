@@ -1,7 +1,4 @@
-import {
-  CCXT_EXCHANGE_IDS,
-  ccxtExchangeDisplayName,
-} from "@plutus/domain";
+import { CCXT_EXCHANGE_IDS, ccxtExchangeDisplayName } from "@plutus/domain";
 
 export type ProviderId = string;
 export type ProviderMode =

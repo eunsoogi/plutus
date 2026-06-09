@@ -1,0 +1,16 @@
+export const remoteEventNames = [
+  "run.status_changed",
+  "run.stage_started",
+  "run.stage_completed",
+  "agent.message",
+  "tool.call_started",
+  "tool.call_completed",
+  "warning.registered",
+  "artifact.created",
+  "notification.created",
+  "run.completed",
+  "run.failed",
+  "remote.device_connected",
+  "remote.device_disconnected",
+  "remote.permission_denied",
+] as const;

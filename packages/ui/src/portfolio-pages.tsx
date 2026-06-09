@@ -24,8 +24,9 @@ export function PortfoliosPage({
   const [loadingProviders, setLoadingProviders] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [providers, setProviders] =
-    useState<readonly TradingProviderConfig[] | null>(null);
+  const [providers, setProviders] = useState<
+    readonly TradingProviderConfig[] | null
+  >(null);
 
   useEffect(() => {
     setCurrentScenario(scenario);
@@ -78,7 +79,8 @@ export function PortfoliosPage({
 
     setSyncing(true);
     try {
-      const providerConfigs = providers ?? (await commandClient.providers.list());
+      const providerConfigs =
+        providers ?? (await commandClient.providers.list());
       setProviders(providerConfigs);
       const provider = providerConfigs.find(isConfiguredProvider);
       if (!provider) {
@@ -135,7 +137,10 @@ export function PortfoliosPage({
         <p>
           {configuredProvider
             ? t("portfolio.syncReady", {
-                provider: localizedScenarioText(configuredProvider.displayName, t),
+                provider: localizedScenarioText(
+                  configuredProvider.displayName,
+                  t,
+                ),
               })
             : t("portfolio.syncConfigureFirst")}
         </p>

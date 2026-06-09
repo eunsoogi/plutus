@@ -81,8 +81,14 @@ function boundsFor(points: readonly OfficeCanvasPoint[]): Bounds {
 }
 
 function boundsGap(left: Bounds, right: Bounds): number {
-  const dx = Math.max(0, Math.max(left.left - right.right, right.left - left.right));
-  const dy = Math.max(0, Math.max(left.top - right.bottom, right.top - left.bottom));
+  const dx = Math.max(
+    0,
+    Math.max(left.left - right.right, right.left - left.right),
+  );
+  const dy = Math.max(
+    0,
+    Math.max(left.top - right.bottom, right.top - left.bottom),
+  );
 
   return Math.hypot(dx, dy);
 }
@@ -92,7 +98,10 @@ function expectDepthOrderMatchesProjectedScreenY(
   points: readonly OfficeCanvasPoint[],
 ): void {
   const sortedByDepth = [...points]
-    .sort((left, right) => officeDepth(left, projection) - officeDepth(right, projection))
+    .sort(
+      (left, right) =>
+        officeDepth(left, projection) - officeDepth(right, projection),
+    )
     .map((point) => `${point.x}:${point.y}`);
   const sortedByScreenY = [...points]
     .sort(
