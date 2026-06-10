@@ -74,6 +74,12 @@ export function applyOfficeThreeLifecycleCamera(
   pointOfficeThreeCameraAtTarget(lifecycle.camera);
 }
 
+export function shouldStartOfficeThreeAnimationLoop(
+  motionMode: OfficeThreeMotionMode,
+): boolean {
+  return motionMode === "active";
+}
+
 export function OrchestratorOfficeThreeView({
   locale = "en",
   motionMode,
@@ -155,7 +161,9 @@ export function OrchestratorOfficeThreeView({
     };
 
     resizeAndRender();
-    lifecycle.start();
+    if (shouldStartOfficeThreeAnimationLoop(contract.scene.motion.mode)) {
+      lifecycle.start();
+    }
 
     if (typeof ResizeObserver === "undefined") {
       window.addEventListener("resize", resizeAndRender);

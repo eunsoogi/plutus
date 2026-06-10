@@ -9,10 +9,16 @@ import {
 import {
   applyOfficeThreeLifecycleCamera,
   createOfficeThreeViewLifecycle,
+  shouldStartOfficeThreeAnimationLoop,
   type OfficeThreeCameraLifecycle,
 } from "./orchestrator-office-three-view";
 
 describe("office Three.js view camera sync", () => {
+  it("starts the continuous animation loop only for active motion", () => {
+    expect(shouldStartOfficeThreeAnimationLoop("active")).toBe(true);
+    expect(shouldStartOfficeThreeAnimationLoop("idle")).toBe(false);
+  });
+
   it("applies the current dragged camera position to a recreated lifecycle", () => {
     const positionCalls: [number, number, number][] = [];
     const lookAtCalls: [number, number, number][] = [];

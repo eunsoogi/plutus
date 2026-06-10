@@ -2,7 +2,6 @@ import type { OfficeThreeMotionMode } from "./orchestrator-office-three-types";
 
 const idleRunStatuses: ReadonlySet<string> = new Set([
   "completed",
-  "planning",
   "queued",
   "ready",
 ]);
@@ -11,6 +10,7 @@ const activeRunStatuses: ReadonlySet<string> = new Set([
   "debating",
   "executing",
   "grounding",
+  "planning",
   "reporting",
   "running",
   "validating",

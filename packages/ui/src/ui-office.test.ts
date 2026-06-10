@@ -42,7 +42,7 @@ describe("ui office rendering", () => {
     expect(officeMotionModeForRunStatus("active")).toBe("active");
     expect(officeMotionModeForRunStatus("queued")).toBe("idle");
     expect(officeMotionModeForRunStatus("ready")).toBe("idle");
-    expect(officeMotionModeForRunStatus("planning")).toBe("idle");
+    expect(officeMotionModeForRunStatus("planning")).toBe("active");
     expect(officeMotionModeForRunStatus("completed")).toBe("idle");
   });
 

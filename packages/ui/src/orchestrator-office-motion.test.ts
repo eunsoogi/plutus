@@ -5,6 +5,7 @@ describe("officeMotionModeForRunStatus", () => {
   it("keeps all in-flight research statuses active", () => {
     const activeStatuses = [
       "active",
+      "planning",
       "executing",
       "running",
       "grounding",
@@ -19,7 +20,7 @@ describe("officeMotionModeForRunStatus", () => {
   });
 
   it("keeps queued and terminal statuses idle", () => {
-    const idleStatuses = ["completed", "planning", "queued", "ready"] as const;
+    const idleStatuses = ["completed", "queued", "ready"] as const;
 
     for (const status of idleStatuses) {
       expect(officeMotionModeForRunStatus(status)).toBe("idle");
