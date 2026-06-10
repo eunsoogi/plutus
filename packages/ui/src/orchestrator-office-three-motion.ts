@@ -93,6 +93,24 @@ function phaseForId(id: string): number {
   );
 }
 
+function phaseIdForObject(object: OfficeThreeSceneObject): string {
+  if (object.kind === "agent") {
+    return object.id;
+  }
+
+  if (!roleCanMove(object.modelRole)) {
+    return object.id;
+  }
+
+  const idParts = object.id.split(":");
+  const agentId = idParts[1];
+  if (idParts[0] === "agent-detail" && agentId !== undefined) {
+    return `agent:${agentId}`;
+  }
+
+  return object.id;
+}
+
 function motionAmplitude(object: OfficeThreeSceneObject): number {
   switch (object.modelRole) {
     case "agent-arm":
@@ -120,7 +138,7 @@ export function officeThreeMotionUpdateFor(
   object: OfficeThreeSceneObject,
   time: number,
 ): OfficeThreeMotionUpdate {
-  const phase = phaseForId(object.id) * 0.017;
+  const phase = phaseForId(phaseIdForObject(object)) * 0.017;
   const wave = Math.sin(time * 0.006 + phase);
   const sway = Math.cos(time * 0.004 + phase);
   const amplitude = motionAmplitude(object);

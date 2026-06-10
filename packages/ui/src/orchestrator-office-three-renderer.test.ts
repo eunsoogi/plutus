@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createOfficeThreeRendererContract } from "./orchestrator-office-three-types";
+import type { OfficeThreeSceneObject } from "./orchestrator-office-three-types";
+import { officeThreeMotionUpdateFor } from "./orchestrator-office-three-motion";
 import { createOfficeThreeRendererLifecycle } from "./orchestrator-office-three-renderer";
 import {
   fakeOfficeThreeAdapter,
@@ -24,6 +26,18 @@ function officeContractWithMotion(mode: "active" | "idle") {
       objects: sceneObjects,
     },
   });
+}
+
+function normalizedBob(
+  object: OfficeThreeSceneObject,
+  time: number,
+  amplitude: number,
+): number {
+  return (
+    (officeThreeMotionUpdateFor(object, time).position[1] -
+      object.position[1]) /
+    amplitude
+  );
 }
 
 describe("office Three.js renderer lifecycle", () => {
@@ -146,6 +160,44 @@ describe("office Three.js renderer lifecycle", () => {
         motionMode: "active",
       }),
     );
+  });
+
+  it("keeps composite agent parts on one shared motion phase", () => {
+    const time = 640;
+    const agentHead = {
+      color: "#f2c9a7",
+      id: "agent:orchestrator",
+      kind: "agent",
+      label: "Research Orchestrator",
+      modelRole: "agent-head",
+      position: [0, 0.8, 0],
+      radius: 0.32,
+      shape: "sphere",
+    } satisfies OfficeThreeSceneObject;
+    const agentBody = {
+      color: "#64d1c8",
+      id: "agent-detail:orchestrator:body",
+      kind: "amenity",
+      label: "Research Orchestrator body",
+      modelRole: "agent-body",
+      position: [0, 0.24, 0],
+      scale: [0.42, 0.44, 0.27],
+      shape: "cylinder",
+    } satisfies OfficeThreeSceneObject;
+    const agentBadge = {
+      color: "#f8fafc",
+      id: "agent-detail:orchestrator:badge",
+      kind: "amenity",
+      label: "Research Orchestrator badge",
+      modelRole: "agent-badge",
+      position: [0, 0.28, 0.13],
+      scale: [0.13, 0.12, 0.02],
+    } satisfies OfficeThreeSceneObject;
+
+    const headBob = normalizedBob(agentHead, time, 0.035);
+
+    expect(normalizedBob(agentBody, time, 0.018)).toBeCloseTo(headBob);
+    expect(normalizedBob(agentBadge, time, 0.018)).toBeCloseTo(headBob);
   });
 
   it("keeps agent mesh transforms stable during idle motion frames", () => {
