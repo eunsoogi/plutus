@@ -2,6 +2,11 @@ import type {
   OfficeThreeSceneObject,
   OfficeThreeVector3,
 } from "./orchestrator-office-three-types";
+import {
+  createOfficeThreeMotionRuntime,
+  officeThreeObjectCanMove,
+  type OfficeThreeMotionRuntimeTarget,
+} from "./orchestrator-office-three-motion";
 import type {
   OfficeThreeCanvasSize,
   OfficeThreeRendererAdapter,
@@ -150,6 +155,7 @@ export function createOfficeThreeRendererLifecycle<
     contract.camera.far,
   );
   const meshResources: OfficeThreeMeshResource<TGeometry, TMaterial>[] = [];
+  const motionTargets: OfficeThreeMotionRuntimeTarget<TMesh>[] = [];
   const meshesByObjectId = new Map<string, TMesh>();
   let disposed = false;
   let animationFrameId: number | undefined;
@@ -181,6 +187,9 @@ export function createOfficeThreeRendererLifecycle<
     adapter.addToObject(root, mesh);
     meshResources.push({ geometry, material });
     meshesByObjectId.set(object.id, mesh);
+    if (officeThreeObjectCanMove(object)) {
+      motionTargets.push({ mesh, object });
+    }
   }
 
   const ambientLight = adapter.createAmbientLight("#f7efe0", 1.35);
@@ -188,6 +197,13 @@ export function createOfficeThreeRendererLifecycle<
   adapter.setPosition(directionalLight, officeThreeKeyLightPosition);
   adapter.addToScene(scene, ambientLight);
   adapter.addToScene(scene, directionalLight);
+  const motionRuntime = createOfficeThreeMotionRuntime({
+    mode: contract.scene.motion.mode,
+    onFrameDiagnostics: input.onFrameDiagnostics,
+    setPosition: adapter.setPosition,
+    setRotation: adapter.setRotation,
+    targets: motionTargets,
+  });
 
   function resize(size: OfficeThreeCanvasSize): void {
     if (disposed) return;
@@ -201,8 +217,9 @@ export function createOfficeThreeRendererLifecycle<
     adapter.render(renderer, scene, camera);
   }
 
-  function tick(): void {
+  function tick(time: number): void {
     if (disposed) return;
+    motionRuntime.apply(time);
     render();
     animationFrameId = animationFrame.request(tick);
   }
@@ -234,6 +251,7 @@ export function createOfficeThreeRendererLifecycle<
   return {
     camera,
     dispose,
+    getDiagnostics: motionRuntime.getDiagnostics,
     meshesByObjectId,
     render,
     renderer,

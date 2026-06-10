@@ -13,6 +13,7 @@ import {
 } from "./orchestrator-office-scene-data";
 import type { SpecialistId, TeamId } from "./orchestrator-office-teams";
 import { OrchestratorOfficeThreeView } from "./orchestrator-office-three-view";
+import type { OfficeThreeMotionMode } from "./orchestrator-office-three-types";
 
 export function OrchestratorOfficeScene({
   angle,
@@ -20,6 +21,7 @@ export function OrchestratorOfficeScene({
   onAngleDrag,
   orchestratorLabel,
   locale = "en",
+  motionMode,
   stationLabels,
   specialistLabels,
   specialists,
@@ -32,6 +34,7 @@ export function OrchestratorOfficeScene({
   readonly angle: number;
   readonly canvasChromeLabels: OfficeCanvasChromeLabels;
   readonly locale?: AppLocale;
+  readonly motionMode: OfficeThreeMotionMode;
   readonly onAngleDrag: (deltaX: number, deltaY: number) => void;
   readonly orchestratorLabel: string;
   readonly pitch?: number;
@@ -114,6 +117,7 @@ export function OrchestratorOfficeScene({
       </div>
       <OrchestratorOfficeThreeView
         locale={locale}
+        motionMode={motionMode}
         onAngleDrag={onAngleDrag}
         rotation={rotation}
         scene={canvasScene}

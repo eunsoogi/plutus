@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { officeCopy } from "./orchestrator-office-copy";
+import { officeMotionModeForRunStatus } from "./orchestrator-office-motion";
 import {
   OrchestratorOffice,
   sceneStageLabel,
@@ -35,12 +36,23 @@ describe("ui office rendering", () => {
     expect(sceneStageLabel("완료", "completed")).toBe("완료");
   });
 
+  it("derives office motion from raw run status instead of localized stage text", () => {
+    expect(officeMotionModeForRunStatus("executing")).toBe("active");
+    expect(officeMotionModeForRunStatus("running")).toBe("active");
+    expect(officeMotionModeForRunStatus("active")).toBe("active");
+    expect(officeMotionModeForRunStatus("queued")).toBe("idle");
+    expect(officeMotionModeForRunStatus("ready")).toBe("idle");
+    expect(officeMotionModeForRunStatus("planning")).toBe("idle");
+    expect(officeMotionModeForRunStatus("completed")).toBe("idle");
+  });
+
   it("localizes office station labels in Korean scenes", () => {
     const koreanOffice = officeCopy.ko;
     const markup = renderToStaticMarkup(
       createElement(OrchestratorOfficeScene, {
         angle: 0,
         canvasChromeLabels: koreanOffice.canvasChrome,
+        motionMode: "idle",
         onAngleDrag: () => {},
         orchestratorLabel: koreanOffice.orchestrator,
         rotation: "south-east",

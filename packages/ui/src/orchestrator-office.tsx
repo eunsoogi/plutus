@@ -11,6 +11,7 @@ import {
 } from "./orchestrator-office-canvas-geometry";
 import type { OfficeRotationDirection } from "./orchestrator-office-canvas-types";
 import { officeCopy } from "./orchestrator-office-copy";
+import { officeMotionModeForRunStatus } from "./orchestrator-office-motion";
 import { OrchestratorOfficeScene } from "./orchestrator-office-scene";
 import { slotFor } from "./orchestrator-office-scene-data";
 import {
@@ -125,6 +126,7 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
   const rotationLabel = text.rotation[rotation];
   const specialists = specialistsFor(activeTeam);
   const stage = stageFor(run, locale);
+  const motionMode = officeMotionModeForRunStatus(run.status);
   const teamRoster = specialists.map((specialist, index) => ({
     id: specialist,
     callSign: specialistCallSign(specialist),
@@ -202,6 +204,7 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
             angle={angle}
             canvasChromeLabels={text.canvasChrome}
             locale={locale}
+            motionMode={motionMode}
             orchestratorLabel={text.orchestrator}
             onAngleDrag={dragOfficeAngle}
             pitch={pitch}

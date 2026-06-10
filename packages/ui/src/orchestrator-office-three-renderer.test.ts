@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createOfficeThreeRendererContract } from "./orchestrator-office-three-types";
 import { createOfficeThreeRendererLifecycle } from "./orchestrator-office-three-renderer";
 import {
@@ -11,6 +11,16 @@ function officeContract() {
   return createOfficeThreeRendererContract({
     scene: {
       background: "#10100d",
+      objects: sceneObjects,
+    },
+  });
+}
+
+function officeContractWithMotion(mode: "active" | "idle") {
+  return createOfficeThreeRendererContract({
+    scene: {
+      background: "#10100d",
+      motion: { mode },
       objects: sceneObjects,
     },
   });
@@ -105,6 +115,61 @@ describe("office Three.js renderer lifecycle", () => {
     expect(renderer.renders).toHaveLength(1);
     expect(scheduler.canceled).toEqual([2]);
     expect(renderer.disposed).toEqual(["renderer"]);
+  });
+
+  it("animates agent mesh transforms during active motion frames", () => {
+    const { adapter } = fakeOfficeThreeAdapter();
+    const scheduler = fakeScheduler();
+    const diagnostics = vi.fn();
+    const lifecycle = createOfficeThreeRendererLifecycle({
+      adapter,
+      animationFrame: scheduler,
+      canvas: { clientHeight: 360, clientWidth: 640, height: 0, width: 0 },
+      contract: officeContractWithMotion("active"),
+      onFrameDiagnostics: diagnostics,
+    });
+
+    lifecycle.start();
+    scheduler.queued[0]?.callback(160);
+    scheduler.queued[1]?.callback(320);
+
+    const agent = lifecycle.meshesByObjectId.get("agent:orchestrator");
+    expect(agent?.position.calls).not.toEqual([[0, 0.8, 0]]);
+    expect(lifecycle.getDiagnostics()).toMatchObject({
+      motionFrame: 2,
+      motionMode: "active",
+      motionSampleObjectId: "agent:orchestrator",
+    });
+    expect(diagnostics).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        motionFrame: 2,
+        motionMode: "active",
+      }),
+    );
+  });
+
+  it("keeps agent mesh transforms stable during idle motion frames", () => {
+    const { adapter } = fakeOfficeThreeAdapter();
+    const scheduler = fakeScheduler();
+    const lifecycle = createOfficeThreeRendererLifecycle({
+      adapter,
+      animationFrame: scheduler,
+      canvas: { clientHeight: 360, clientWidth: 640, height: 0, width: 0 },
+      contract: officeContractWithMotion("idle"),
+    });
+
+    lifecycle.start();
+    scheduler.queued[0]?.callback(160);
+    scheduler.queued[1]?.callback(320);
+
+    expect(
+      lifecycle.meshesByObjectId.get("agent:orchestrator")?.position.calls,
+    ).toEqual([[0, 0.8, 0]]);
+    expect(lifecycle.getDiagnostics()).toMatchObject({
+      motionFrame: 0,
+      motionMode: "idle",
+      motionSample: "0.000",
+    });
   });
 
   it("disposes created mesh resources exactly once", () => {

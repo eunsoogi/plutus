@@ -18,6 +18,19 @@ export type OfficeThreeVector3 = readonly [number, number, number];
 
 export type OfficeThreeGeometryShape = "box" | "cylinder" | "sphere";
 
+export type OfficeThreeMotionMode = "active" | "idle";
+
+export type OfficeThreeMotionState = {
+  readonly mode: OfficeThreeMotionMode;
+};
+
+export type OfficeThreeRendererDiagnostics = {
+  readonly motionFrame: number;
+  readonly motionMode: OfficeThreeMotionMode;
+  readonly motionSample: string;
+  readonly motionSampleObjectId?: string;
+};
+
 export type OfficeThreeModelRole =
   | "agent-body"
   | "agent-badge"
@@ -111,6 +124,7 @@ export type OfficeThreeSceneObject =
 
 export type OfficeThreeSceneState = {
   readonly background: string;
+  readonly motion: OfficeThreeMotionState;
   readonly objects: readonly OfficeThreeSceneObject[];
 };
 
@@ -162,6 +176,7 @@ export type OfficeThreeRendererContractInput = {
   readonly interaction?: OfficeThreeInteractionState;
   readonly scene: {
     readonly background?: string;
+    readonly motion?: OfficeThreeMotionState;
     readonly objects: readonly OfficeThreeSceneObject[];
   };
 };
@@ -189,6 +204,10 @@ export const officeThreeInteractionDefaults = {
   },
 } satisfies OfficeThreeInteractionState;
 
+export const officeThreeMotionDefaults = {
+  mode: "idle",
+} satisfies OfficeThreeMotionState;
+
 export function createOfficeThreeRendererContract(
   input: OfficeThreeRendererContractInput,
 ): OfficeThreeRendererContract {
@@ -197,6 +216,7 @@ export function createOfficeThreeRendererContract(
     interaction: input.interaction ?? officeThreeInteractionDefaults,
     scene: {
       background: input.scene.background ?? "#10100d",
+      motion: input.scene.motion ?? officeThreeMotionDefaults,
       objects: input.scene.objects,
     },
     version: officeThreeRendererContractVersion,
