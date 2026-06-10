@@ -12,6 +12,7 @@ describe("ui office Three renderer", () => {
       createElement(OrchestratorOfficeScene, {
         angle: 0,
         canvasChromeLabels: englishOffice.canvasChrome,
+        motionMode: "active",
         onAngleDrag: () => {},
         orchestratorLabel: englishOffice.orchestrator,
         rotation: "south-east",
@@ -26,6 +27,7 @@ describe("ui office Three renderer", () => {
     expect(markup).toContain('data-testid="orchestrator-office-canvas"');
     expect(markup).toContain('aria-hidden="true"');
     expect(markup).toContain('data-office-renderer="three"');
+    expect(markup).toContain('data-office-motion-mode="active"');
     const meshCount = markup.match(/data-office-mesh-count="(?<meshCount>\d+)"/)
       ?.groups?.meshCount;
     expect(meshCount).toBeDefined();

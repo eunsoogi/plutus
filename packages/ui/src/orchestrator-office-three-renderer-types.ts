@@ -1,4 +1,7 @@
-import type { OfficeThreeRendererContract } from "./orchestrator-office-three-types";
+import type {
+  OfficeThreeRendererContract,
+  OfficeThreeRendererDiagnostics,
+} from "./orchestrator-office-three-types";
 import type { OfficeThreeVector3 } from "./orchestrator-office-three-types";
 
 export type OfficeThreeCanvasSize = {
@@ -91,6 +94,7 @@ export type OfficeThreeRendererLifecycle<
 > = {
   readonly camera: TCamera;
   readonly dispose: () => void;
+  readonly getDiagnostics: () => OfficeThreeRendererDiagnostics;
   readonly meshesByObjectId: ReadonlyMap<string, TMesh>;
   readonly render: () => void;
   readonly renderer: TRenderer;
@@ -126,5 +130,8 @@ export type OfficeThreeRendererLifecycleInput<
   readonly animationFrame: OfficeThreeAnimationFrameScheduler;
   readonly canvas: TCanvas;
   readonly contract: OfficeThreeRendererContract;
+  readonly onFrameDiagnostics?: (
+    diagnostics: OfficeThreeRendererDiagnostics,
+  ) => void;
   readonly pixelRatio?: number;
 };

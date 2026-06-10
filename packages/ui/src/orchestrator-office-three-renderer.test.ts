@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createOfficeThreeRendererContract } from "./orchestrator-office-three-types";
+import type { OfficeThreeSceneObject } from "./orchestrator-office-three-types";
+import { officeThreeMotionUpdateFor } from "./orchestrator-office-three-motion";
 import { createOfficeThreeRendererLifecycle } from "./orchestrator-office-three-renderer";
 import {
   fakeOfficeThreeAdapter,
@@ -14,6 +16,28 @@ function officeContract() {
       objects: sceneObjects,
     },
   });
+}
+
+function officeContractWithMotion(mode: "active" | "idle") {
+  return createOfficeThreeRendererContract({
+    scene: {
+      background: "#10100d",
+      motion: { mode },
+      objects: sceneObjects,
+    },
+  });
+}
+
+function normalizedBob(
+  object: OfficeThreeSceneObject,
+  time: number,
+  amplitude: number,
+): number {
+  return (
+    (officeThreeMotionUpdateFor(object, time).position[1] -
+      object.position[1]) /
+    amplitude
+  );
 }
 
 describe("office Three.js renderer lifecycle", () => {
@@ -105,6 +129,99 @@ describe("office Three.js renderer lifecycle", () => {
     expect(renderer.renders).toHaveLength(1);
     expect(scheduler.canceled).toEqual([2]);
     expect(renderer.disposed).toEqual(["renderer"]);
+  });
+
+  it("animates agent mesh transforms during active motion frames", () => {
+    const { adapter } = fakeOfficeThreeAdapter();
+    const scheduler = fakeScheduler();
+    const diagnostics = vi.fn();
+    const lifecycle = createOfficeThreeRendererLifecycle({
+      adapter,
+      animationFrame: scheduler,
+      canvas: { clientHeight: 360, clientWidth: 640, height: 0, width: 0 },
+      contract: officeContractWithMotion("active"),
+      onFrameDiagnostics: diagnostics,
+    });
+
+    lifecycle.start();
+    scheduler.queued[0]?.callback(160);
+    scheduler.queued[1]?.callback(320);
+
+    const agent = lifecycle.meshesByObjectId.get("agent:orchestrator");
+    expect(agent?.position.calls).not.toEqual([[0, 0.8, 0]]);
+    expect(lifecycle.getDiagnostics()).toMatchObject({
+      motionFrame: 2,
+      motionMode: "active",
+      motionSampleObjectId: "agent:orchestrator",
+    });
+    expect(diagnostics).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        motionFrame: 2,
+        motionMode: "active",
+      }),
+    );
+  });
+
+  it("keeps composite agent parts on one shared motion phase", () => {
+    const time = 640;
+    const agentHead = {
+      color: "#f2c9a7",
+      id: "agent:orchestrator",
+      kind: "agent",
+      label: "Research Orchestrator",
+      modelRole: "agent-head",
+      position: [0, 0.8, 0],
+      radius: 0.32,
+      shape: "sphere",
+    } satisfies OfficeThreeSceneObject;
+    const agentBody = {
+      color: "#64d1c8",
+      id: "agent-detail:orchestrator:body",
+      kind: "amenity",
+      label: "Research Orchestrator body",
+      modelRole: "agent-body",
+      position: [0, 0.24, 0],
+      scale: [0.42, 0.44, 0.27],
+      shape: "cylinder",
+    } satisfies OfficeThreeSceneObject;
+    const agentBadge = {
+      color: "#f8fafc",
+      id: "agent-detail:orchestrator:badge",
+      kind: "amenity",
+      label: "Research Orchestrator badge",
+      modelRole: "agent-badge",
+      position: [0, 0.28, 0.13],
+      scale: [0.13, 0.12, 0.02],
+    } satisfies OfficeThreeSceneObject;
+
+    const headBob = normalizedBob(agentHead, time, 0.035);
+
+    expect(normalizedBob(agentBody, time, 0.018)).toBeCloseTo(headBob);
+    expect(normalizedBob(agentBadge, time, 0.018)).toBeCloseTo(headBob);
+  });
+
+  it("keeps agent mesh transforms stable during idle motion frames", () => {
+    const { adapter } = fakeOfficeThreeAdapter();
+    const scheduler = fakeScheduler();
+    const lifecycle = createOfficeThreeRendererLifecycle({
+      adapter,
+      animationFrame: scheduler,
+      canvas: { clientHeight: 360, clientWidth: 640, height: 0, width: 0 },
+      contract: officeContractWithMotion("idle"),
+    });
+
+    lifecycle.start();
+    scheduler.queued[0]?.callback(160);
+    scheduler.queued[1]?.callback(320);
+
+    expect(
+      lifecycle.meshesByObjectId.get("agent:orchestrator")?.position.calls,
+    ).toEqual([[0, 0.8, 0]]);
+    expect(lifecycle.getDiagnostics()).toMatchObject({
+      motionFrame: 0,
+      motionMode: "idle",
+      motionSample: "0.000",
+    });
   });
 
   it("disposes created mesh resources exactly once", () => {

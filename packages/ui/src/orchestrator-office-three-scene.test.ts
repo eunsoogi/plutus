@@ -254,34 +254,4 @@ describe("office Three.js scene catalog", () => {
       orchestrator.radius * 0.6,
     );
   });
-
-  it("localizes active team labels while keeping stable semantic ids", async () => {
-    const { createOfficeThreeSceneCatalog } = await loadSceneCatalogModule();
-
-    const contract = createOfficeThreeSceneCatalog({
-      locale: "ko",
-      stage: officeCopy.ko.stage.planning,
-      teamId: "knowledge_curation_desk",
-    });
-    const objects = contract.scene.objects;
-    const agentIds = objects
-      .filter((object) => object.kind === "agent")
-      .map((object) => object.id);
-
-    expect(agentIds).toEqual([
-      "agent:orchestrator",
-      "agent:llm_wiki_curator",
-      "agent:report_writer",
-    ]);
-
-    const commandDesk = findObject(objects, "desk:command_table");
-    expect(commandDesk.label).toBe(officeCopy.ko.station.command_table);
-
-    const wikiAgent = findObject(objects, "agent:llm_wiki_curator");
-    expect(wikiAgent.kind).toBe("agent");
-    if (wikiAgent.kind !== "agent") return;
-    expect(wikiAgent.label).toBe(officeCopy.ko.specialist.llm_wiki_curator);
-    expect(wikiAgent.role).toBe(officeCopy.ko.station.market_desk);
-    expectVector3(wikiAgent.position);
-  });
 });

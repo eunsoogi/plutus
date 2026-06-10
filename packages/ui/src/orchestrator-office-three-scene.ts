@@ -17,6 +17,7 @@ import {
   createOfficeThreeRendererContract,
   type OfficeThreeAmenityObject,
   type OfficeThreeDeskObject,
+  type OfficeThreeMotionMode,
   type OfficeThreeRendererContract,
   type OfficeThreeRoomObject,
   type OfficeThreeSceneObject,
@@ -54,6 +55,7 @@ import { roomTrimObjects } from "./orchestrator-office-three-scene-room-details"
 
 export type OfficeThreeSceneCatalogInput = {
   readonly locale?: AppLocale;
+  readonly motionMode?: OfficeThreeMotionMode;
   readonly stage?: string;
   readonly teamId?: TeamId;
 };
@@ -228,7 +230,7 @@ export function createOfficeThreeSceneCatalog(
   ];
 
   return createOfficeThreeRendererContract({
-    scene: { objects },
+    scene: { motion: { mode: input.motionMode ?? "idle" }, objects },
   });
 }
 
