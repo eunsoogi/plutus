@@ -214,13 +214,17 @@ Before merging, inspect the latest Codex review on the PR head.
 
 Do not merge until required checks pass, the expected Codex review has completed, and every actionable Codex review comment is addressed or explicitly accepted by a human maintainer in the current thread.
 
+When the current task's PR satisfies the merge gates, finish the workflow by merging it. Do not leave completed work sitting as an open or draft PR unless a check is still pending, review is blocked, the user asked to stop before merge, or the latest user feedback means the PR no longer satisfies the requested outcome.
+
 When Codex review is expected, wait for it before merging. Treat a Codex review with actionable inline comments as blocking. Do not merge while actionable Codex review feedback remains unresolved or unaccepted by a human maintainer. Fix the feedback in the PR branch, push the follow-up commit, and request or wait for a fresh Codex review before merging. Passing means the latest reviewed head has no unresolved actionable Codex feedback; a thumbs-up/no-suggestion Codex result is acceptable.
 
 Use `gh pr merge --squash --delete-branch --auto` only when repository branch rules, required checks, or a merge queue define the requirements that GitHub should wait for. Pair merges with `--match-head-commit <sha>` using the reviewed PR head SHA when possible so a stale or newly-pushed head cannot be merged by accident.
 
+Use `--delete-branch` for every successful PR merge unless the human maintainer explicitly asks to keep the remote branch. After merge, verify that GitHub deleted the remote topic branch; if it still exists, delete the remote branch with `git push origin --delete <branch>` only after confirming the PR was merged and no dependent work needs that branch.
+
 `gh pr merge` does not have a standalone flag that means "Codex review passed." `--auto` only waits for requirements configured in GitHub, and `--admin` bypasses requirements; do not use `--admin` to skip Codex review, required checks, or review-thread cleanup.
 
-Merge completed work through pull requests. Use squash merge by default so `main` receives one reviewable commit per issue-sized outcome.
+Merge completed work through pull requests. Use squash merge by default so `main` receives one reviewable commit per issue-sized outcome, and treat the squash merge plus remote branch deletion as part of the done state for issue-sized Plutus work.
 
 Do not locally merge feature branches into the protected base branch as a substitute for the PR workflow.
 
@@ -230,7 +234,7 @@ After a PR is merged, update the main worktree:
 git pull --ff-only origin main
 ```
 
-Then rebase or recreate dependent topic branches from refreshed `main`, and retire merged branches/worktrees once no dependent work needs them.
+Then rebase or recreate dependent topic branches from refreshed `main`, and retire merged local branches/worktrees once no dependent work needs them. Report any local worktree that is intentionally kept because a dependent branch still needs it.
 
 ## Conflict Resolution
 
