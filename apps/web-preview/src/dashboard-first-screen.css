@@ -2,13 +2,13 @@
   .main-surface:has(> .dashboard-grid) {
     grid-template-rows: auto minmax(0, 1fr);
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: clip;
   }
 
   .page-header:has(> h2 + .pill-row) {
     gap: 6px;
-    min-height: 168px;
-    padding-bottom: 34px;
+    min-height: 118px;
+    padding: 14px 20px 24px;
   }
 
   .page-header:has(> h2 + .pill-row) h1,
@@ -19,57 +19,60 @@
   .main-surface > .dashboard-grid {
     align-items: stretch;
     grid-template-areas:
-      "office office office"
-      "stack artifact side"
-      "run run side";
-    grid-template-columns: minmax(248px, 0.96fr) minmax(320px, 1.12fr) minmax(
-        240px,
-        0.88fr
-      );
-    grid-template-rows: minmax(100%, auto) minmax(176px, auto) minmax(
-        176px,
-        auto
-      );
+      "office stack"
+      "office artifact"
+      "office run"
+      "office side";
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.42fr);
+    grid-template-rows: repeat(4, minmax(0, 1fr));
     height: 100%;
     min-height: 0;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: clip;
   }
 
   .dashboard-grid > .dashboard-stack:first-child {
     grid-area: stack;
     min-height: 0;
-    overflow: auto;
+    overflow: clip;
   }
 
   .dashboard-grid > .orchestrator-office {
     grid-area: office;
     min-height: 0;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: clip;
   }
 
   .dashboard-grid > .dashboard-span:not(.run-panel) {
     grid-area: artifact;
     min-height: 0;
-    overflow: auto;
+    overflow: clip;
   }
 
   .dashboard-grid > .dashboard-stack:not(:first-child) {
+    align-content: start;
+    gap: 8px;
     grid-area: side;
     min-height: 0;
-    overflow: auto;
+    overflow: clip;
+    padding: 12px;
+  }
+
+  .dashboard-grid > .dashboard-stack:not(:first-child):empty {
+    display: none;
   }
 
   .dashboard-grid > .run-panel.dashboard-span {
     grid-area: run;
     min-height: 0;
-    overflow: auto;
+    overflow: clip;
   }
 
   .orchestrator-office {
-    gap: 10px;
+    gap: 8px;
     grid-template-rows: auto minmax(0, 1fr) auto;
+    padding: 8px;
   }
 
   .orchestrator-office__header,
@@ -78,16 +81,168 @@
     gap: 8px;
   }
 
+  .orchestrator-office__header {
+    align-items: center;
+  }
+
+  .orchestrator-office__heading {
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+  }
+
+  .orchestrator-office__heading h2 {
+    margin-bottom: 4px;
+  }
+
+  .orchestrator-office__heading p {
+    line-height: 1.25;
+  }
+
+  .orchestrator-office__status {
+    justify-content: end;
+  }
+
+  .orchestrator-office__status-label,
+  .orchestrator-office__status .pill {
+    min-height: 30px;
+    padding-block: 5px;
+  }
+
   .orchestrator-office__experience {
     min-height: 0;
   }
 
   .orchestrator-office__scene {
-    min-height: 304px;
+    aspect-ratio: auto;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .orchestrator-office__scene-shell {
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+    overflow: clip;
+  }
+
+  .orchestrator-office__controls {
+    gap: 8px;
+    grid-template-columns: minmax(250px, 1fr) minmax(260px, auto);
+    padding: 6px;
+  }
+
+  .orchestrator-office__team-control,
+  .orchestrator-office__rotation-control {
+    align-items: center;
+    gap: 8px;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .orchestrator-office__team-control {
+    max-width: none;
+  }
+
+  .orchestrator-office__team-control select,
+  .orchestrator-office__rotation-buttons {
+    min-height: 34px;
+  }
+
+  .orchestrator-office__rotation-buttons button {
+    height: 26px;
+    min-height: 26px;
+    padding-inline: 8px;
   }
 
   .orchestrator-office__roster {
     max-height: 100%;
-    overflow: auto;
+    overflow: clip;
+  }
+
+  .dashboard-grid > .dashboard-stack:first-child,
+  .dashboard-grid > .dashboard-span:not(.run-panel),
+  .dashboard-grid > .run-panel.dashboard-span {
+    align-content: start;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .dashboard-grid > .dashboard-stack:first-child > .panel {
+    min-height: 0;
+    overflow: clip;
+    padding: 12px;
+  }
+
+  .dashboard-grid > .dashboard-stack:first-child > .panel .desk-table {
+    display: none;
+  }
+
+  .dashboard-grid h2 {
+    margin-bottom: 8px;
+  }
+
+  .dashboard-grid .metric {
+    font-size: 1.12rem;
+    line-height: 1.05;
+    margin-bottom: 0;
+  }
+
+  .dashboard-grid .panel p {
+    line-height: 1.25;
+    margin-bottom: 6px;
+  }
+
+  .dashboard-grid .desk-row {
+    gap: 8px;
+    min-height: 30px;
+    padding: 0 10px;
+  }
+
+  .dashboard-grid .desk-row.header {
+    min-height: 28px;
+  }
+
+  .dashboard-grid .chart,
+  .dashboard-grid .empty-canvas {
+    height: 76px;
+    min-height: 76px;
+    padding: 10px;
+  }
+
+  .dashboard-grid .chart {
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) 36px 36px 36px;
+  }
+
+  .dashboard-grid .run-panel ol {
+    gap: 3px;
+    padding-left: 18px;
+  }
+
+  .dashboard-grid .run-panel li {
+    font-size: 0.85rem;
+    line-height: 1.28;
+    padding-left: 2px;
+  }
+
+  .dashboard-grid .agent-lanes {
+    gap: 4px;
+  }
+
+  .dashboard-grid .agent-lane {
+    gap: 8px;
+    grid-template-columns: 54px minmax(0, 1fr) auto;
+    min-height: 29px;
+    padding: 4px 8px;
+  }
+
+  .dashboard-grid .agent-lane strong,
+  .dashboard-grid .agent-lane span {
+    font-size: 0.76rem;
+  }
+}
+
+@media (min-width: 1181px) and (max-height: 800px) {
+  .dashboard-grid > .dashboard-stack:not(:first-child) .agent-lane:nth-child(n + 3) {
+    display: none;
   }
 }

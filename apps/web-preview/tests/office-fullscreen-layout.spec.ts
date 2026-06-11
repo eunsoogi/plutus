@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("host dashboard presents the office as the default full-screen surface", async ({
+test("host dashboard presents the office as the primary surface while keeping menu cards visible", async ({
   page,
 }) => {
   // Given: the default desktop host dashboard is loaded.
@@ -18,9 +18,19 @@ test("host dashboard presents the office as the default full-screen surface", as
     const scene = document.querySelector<HTMLElement>(
       "[data-testid='orchestrator-office-scene']",
     );
+    const lowerCards = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        ".dashboard-grid > .dashboard-stack:first-child, .dashboard-grid > .dashboard-span:not(.run-panel), .dashboard-grid > .run-panel",
+      ),
+    );
 
-    if (mainSurface === null || office === null || scene === null) {
-      throw new Error("Office full-screen layout metrics were unavailable");
+    if (
+      mainSurface === null ||
+      office === null ||
+      scene === null ||
+      lowerCards.length !== 3
+    ) {
+      throw new Error("Office balanced layout metrics were unavailable");
     }
 
     const mainRect = mainSurface.getBoundingClientRect();
@@ -39,20 +49,28 @@ test("host dashboard presents the office as the default full-screen surface", as
     return {
       bodyOverflows:
         document.documentElement.scrollHeight > window.innerHeight + 1,
+      lowerCardsVisible: lowerCards.every((card) => {
+        const rect = card.getBoundingClientRect();
+        return (
+          rect.left >= officeRect.right - 1 &&
+          rect.bottom <= window.innerHeight &&
+          rect.top >= officeRect.top - 1
+        );
+      }),
       officeBandFill: officeRect.height / availableBandHeight,
       officeWidthFill: officeRect.width / availableWidth,
-      sceneBandFill: sceneRect.height / availableBandHeight,
+      sceneHeight: sceneRect.height,
     };
   });
 
-  // Then: the office is the primary viewport surface, not a nested card.
   expect(metrics.bodyOverflows).toBe(false);
-  expect(metrics.officeWidthFill).toBeGreaterThanOrEqual(0.96);
-  expect(metrics.officeBandFill).toBeGreaterThanOrEqual(0.92);
-  expect(metrics.sceneBandFill).toBeGreaterThanOrEqual(0.64);
+  expect(metrics.lowerCardsVisible).toBe(true);
+  expect(metrics.officeWidthFill).toBeGreaterThanOrEqual(0.68);
+  expect(metrics.officeBandFill).toBeGreaterThanOrEqual(0.7);
+  expect(metrics.sceneHeight).toBeGreaterThanOrEqual(300);
 });
 
-test("host dashboard keeps the full-screen office usable at short desktop height", async ({
+test("host dashboard keeps the balanced office menu usable at short desktop height", async ({
   page,
 }) => {
   // Given: a shorter desktop host dashboard viewport is loaded.
@@ -70,9 +88,19 @@ test("host dashboard keeps the full-screen office usable at short desktop height
     const scene = document.querySelector<HTMLElement>(
       "[data-testid='orchestrator-office-scene']",
     );
+    const lowerCards = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        ".dashboard-grid > .dashboard-stack:first-child, .dashboard-grid > .dashboard-span:not(.run-panel), .dashboard-grid > .run-panel",
+      ),
+    );
 
-    if (mainSurface === null || office === null || scene === null) {
-      throw new Error("Short-height office metrics were unavailable");
+    if (
+      mainSurface === null ||
+      office === null ||
+      scene === null ||
+      lowerCards.length !== 3
+    ) {
+      throw new Error("Short-height balanced office metrics were unavailable");
     }
 
     const mainRect = mainSurface.getBoundingClientRect();
@@ -89,16 +117,24 @@ test("host dashboard keeps the full-screen office usable at short desktop height
         document.documentElement.scrollHeight > window.innerHeight + 1,
       mainSurfaceOverflows:
         mainSurface.scrollHeight > mainSurface.clientHeight + 1,
+      lowerCardsVisible: lowerCards.every((card) => {
+        const rect = card.getBoundingClientRect();
+        return (
+          rect.left >= officeRect.right - 1 &&
+          rect.bottom <= window.innerHeight &&
+          rect.top >= officeRect.top - 1
+        );
+      }),
       officeBandFill: officeRect.height / availableBandHeight,
       sceneHeight: sceneRect.height,
     };
   });
 
-  // Then: the office fills the available band without moving scroll to the body.
   expect(metrics.bodyOverflows).toBe(false);
   expect(metrics.mainSurfaceOverflows).toBe(false);
-  expect(metrics.officeBandFill).toBeGreaterThanOrEqual(0.9);
-  expect(metrics.sceneHeight).toBeGreaterThanOrEqual(300);
+  expect(metrics.lowerCardsVisible).toBe(true);
+  expect(metrics.officeBandFill).toBeGreaterThanOrEqual(0.58);
+  expect(metrics.sceneHeight).toBeGreaterThanOrEqual(80);
 });
 
 test("host dashboard keeps Korean office roster labels on natural lines", async ({

@@ -83,59 +83,7 @@ test("host dashboard fits the first screen at 1440x960 without clipping the Kore
   expect(metrics.officeRect.top).toBeLessThan(metrics.viewportHeight - 120);
 });
 
-test("host dashboard keeps the side stack in the desktop side area with internal recovery scroll", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1440, height: 960 });
-  await page.goto("/dashboard?runtime=local&locale=ko");
-
-  const metrics = await page.evaluate(() => {
-    const mainSurface = document.querySelector<HTMLElement>(".main-surface");
-    const sideStack = document.querySelector<HTMLElement>(
-      ".dashboard-grid > .dashboard-stack:not(:first-child)",
-    );
-
-    if (mainSurface === null || sideStack === null) {
-      throw new Error("Side stack recovery metrics were unavailable");
-    }
-
-    const beforeStyle = window.getComputedStyle(sideStack);
-    for (let index = 0; index < 10; index += 1) {
-      const filler = document.createElement("article");
-      filler.className = "panel";
-      filler.textContent = `recovery filler ${index + 1}`;
-      filler.style.minHeight = "11rem";
-      sideStack.append(filler);
-    }
-
-    const afterStyle = window.getComputedStyle(sideStack);
-    const mainSurfaceScrollTopBefore = mainSurface.scrollTop;
-    sideStack.scrollTop = sideStack.scrollHeight;
-
-    return {
-      gridArea: beforeStyle.gridArea,
-      minHeight: beforeStyle.minHeight,
-      overflowY: afterStyle.overflowY,
-      sideHasOverflow: sideStack.scrollHeight > sideStack.clientHeight + 1,
-      sideScrolled: sideStack.scrollTop > 0,
-      mainSurfaceScrollTopBefore,
-      mainSurfaceScrollTopAfter: mainSurface.scrollTop,
-      mainSurfaceOverflows:
-        mainSurface.scrollHeight > mainSurface.clientHeight + 1,
-    };
-  });
-
-  expect(metrics.gridArea).toBe("side");
-  expect(metrics.minHeight).toBe("0px");
-  expect(["auto", "scroll"]).toContain(metrics.overflowY);
-  expect(metrics.sideHasOverflow).toBe(true);
-  expect(metrics.sideScrolled).toBe(true);
-  expect(metrics.mainSurfaceScrollTopBefore).toBe(0);
-  expect(metrics.mainSurfaceScrollTopAfter).toBe(0);
-  expect(metrics.mainSurfaceOverflows).toBe(false);
-});
-
-test("host dashboard keeps dashboard-grid recovery scroll when header pills wrap beyond the desktop fixture", async ({
+test("host dashboard keeps first-screen menu regions readable without nested scroll boxes", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
@@ -145,126 +93,227 @@ test("host dashboard keeps dashboard-grid recovery scroll when header pills wrap
     const mainSurface = document.querySelector<HTMLElement>(".main-surface");
     const dashboardGrid =
       document.querySelector<HTMLElement>(".dashboard-grid");
-    const header = document.querySelector<HTMLElement>(".page-header");
-    const pillRow = document.querySelector<HTMLElement>(
-      ".page-header .pill-row",
+    const office = document.querySelector<HTMLElement>(
+      "[data-testid='orchestrator-office']",
     );
-    const runPanel = document.querySelector<HTMLElement>(".run-panel");
+    const firstStack = document.querySelector<HTMLElement>(
+      ".dashboard-grid > .dashboard-stack:first-child",
+    );
+    const artifactPanel = document.querySelector<HTMLElement>(
+      ".dashboard-grid > .dashboard-span:not(.run-panel)",
+    );
+    const runPanel = document.querySelector<HTMLElement>(
+      ".dashboard-grid > .run-panel",
+    );
+    const sideStack = document.querySelector<HTMLElement>(
+      ".dashboard-grid > .dashboard-stack:not(:first-child)",
+    );
 
     if (
       mainSurface === null ||
       dashboardGrid === null ||
-      header === null ||
-      pillRow === null ||
-      runPanel === null
+      office === null ||
+      firstStack === null ||
+      artifactPanel === null ||
+      runPanel === null ||
+      sideStack === null
     ) {
-      throw new Error("Dashboard recovery metrics were unavailable");
+      throw new Error("Dashboard menu layout metrics were unavailable");
     }
 
-    for (let index = 0; index < 20; index += 1) {
-      const pill = document.createElement("span");
-      pill.className = "pill";
-      pill.style.minWidth = "20rem";
-      pill.textContent = `장기 포트폴리오 상태 ${index + 1} / 알림 확장 / 시장 감시 / 수익률 복구`;
-      pillRow.append(pill);
-    }
+    const scrollTargets = [
+      ["office", office],
+      ["stack", firstStack],
+      ["artifact", artifactPanel],
+      ["run", runPanel],
+    ] as const;
+    const scrollMetrics = scrollTargets.map(([name, element]) => {
+      const before = element.scrollTop;
+      element.scrollTop = element.scrollHeight;
+      return {
+        name,
+        overflowY: window.getComputedStyle(element).overflowY,
+        scrollTopAfterWrite: element.scrollTop,
+        scrollable: element.scrollHeight > element.clientHeight + 1,
+        scrollTopBeforeWrite: before,
+      };
+    });
 
-    header.style.minHeight = "30rem";
-
-    const overflowY = window.getComputedStyle(dashboardGrid).overflowY;
-    const scrollHeight = dashboardGrid.scrollHeight;
-    const clientHeight = dashboardGrid.clientHeight;
-    const runPanelBottomBeforeScroll = runPanel.getBoundingClientRect().bottom;
-
-    dashboardGrid.scrollTop = scrollHeight;
+    const officeRect = office.getBoundingClientRect();
+    const artifactRect = artifactPanel.getBoundingClientRect();
+    const runRect = runPanel.getBoundingClientRect();
+    const sideRect = sideStack.getBoundingClientRect();
+    const sideStyle = window.getComputedStyle(sideStack);
 
     return {
-      overflowY,
-      scrolled: dashboardGrid.scrollTop > 0,
-      hasVerticalOverflow: scrollHeight > clientHeight + 1,
-      mainSurfaceScrolled: mainSurface.scrollTop > 0,
-      runPanelBottomAfterScroll: runPanel.getBoundingClientRect().bottom,
-      runPanelBottomBeforeScroll,
+      dashboardOverflowY: window.getComputedStyle(dashboardGrid).overflowY,
+      mainSurfaceOverflows:
+        mainSurface.scrollHeight > mainSurface.clientHeight + 1,
+      scrollMetrics,
+      sideStack: {
+        display: sideStyle.display,
+        itemCount: sideStack.children.length,
+        rectHeight: sideRect.height,
+        rectWidth: sideRect.width,
+      },
+      verticalOrder: {
+        artifactTop: artifactRect.top,
+        officeRight: officeRect.right,
+        runTop: runRect.top,
+        stackLeft: firstStack.getBoundingClientRect().left,
+        stackTop: firstStack.getBoundingClientRect().top,
+        artifactLeft: artifactRect.left,
+        runLeft: runRect.left,
+      },
+    };
+  });
+
+  expect(metrics.dashboardOverflowY).not.toMatch(/auto|scroll/);
+  expect(metrics.mainSurfaceOverflows).toBe(false);
+  expect(metrics.sideStack).toEqual({
+    display: "none",
+    itemCount: 0,
+    rectHeight: 0,
+    rectWidth: 0,
+  });
+  expect(metrics.scrollMetrics).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        name: "office",
+        overflowY: expect.not.stringMatching(/auto|scroll/),
+        scrollTopAfterWrite: 0,
+      }),
+      expect.objectContaining({
+        name: "stack",
+        overflowY: expect.not.stringMatching(/auto|scroll/),
+        scrollTopAfterWrite: 0,
+      }),
+      expect.objectContaining({
+        name: "artifact",
+        overflowY: expect.not.stringMatching(/auto|scroll/),
+        scrollTopAfterWrite: 0,
+      }),
+      expect.objectContaining({
+        name: "run",
+        overflowY: expect.not.stringMatching(/auto|scroll/),
+        scrollTopAfterWrite: 0,
+      }),
+    ]),
+  );
+  expect(metrics.verticalOrder.stackLeft).toBeGreaterThanOrEqual(
+    metrics.verticalOrder.officeRight - 1,
+  );
+  expect(metrics.verticalOrder.artifactLeft).toBeGreaterThanOrEqual(
+    metrics.verticalOrder.officeRight - 1,
+  );
+  expect(metrics.verticalOrder.runLeft).toBeGreaterThanOrEqual(
+    metrics.verticalOrder.officeRight - 1,
+  );
+  expect(metrics.verticalOrder.stackTop).toBeLessThanOrEqual(
+    metrics.verticalOrder.artifactTop,
+  );
+  expect(metrics.verticalOrder.artifactTop).toBeLessThanOrEqual(
+    metrics.verticalOrder.runTop,
+  );
+});
+
+test("host dashboard keeps the office signal strip filled instead of rendering an empty lower-right box", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/dashboard?runtime=local&locale=ko");
+
+  const metrics = await page.evaluate(() => {
+    const signalCards = Array.from(
+      document.querySelectorAll<HTMLElement>(".orchestrator-office__signals > div"),
+    );
+    const emptySignalCards = signalCards.filter(
+      (card) => (card.textContent ?? "").trim().length === 0,
+    );
+    const lowerRightCard = signalCards
+      .map((card) => ({
+        rect: card.getBoundingClientRect(),
+        text: (card.textContent ?? "").replace(/\s+/g, " ").trim(),
+      }))
+      .sort((left, right) => right.rect.right - left.rect.right)[0];
+
+    return {
+      emptySignalCount: emptySignalCards.length,
+      lowerRightText: lowerRightCard?.text,
+      signalCount: signalCards.length,
+    };
+  });
+
+  expect(metrics.signalCount).toBe(2);
+  expect(metrics.emptySignalCount).toBe(0);
+  expect(metrics.lowerRightText?.length).toBeGreaterThan(0);
+});
+
+test("host dashboard places live activity in the right rail instead of a detached lower-right box", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/dashboard?runtime=local&locale=ko");
+
+  const metrics = await page.evaluate(() => {
+    const office = document.querySelector<HTMLElement>(
+      "[data-testid='orchestrator-office']",
+    );
+    const firstStack = document.querySelector<HTMLElement>(
+      ".dashboard-grid > .dashboard-stack:first-child",
+    );
+    const artifactPanel = document.querySelector<HTMLElement>(
+      ".dashboard-grid > .dashboard-span:not(.run-panel)",
+    );
+    const runPanel = document.querySelector<HTMLElement>(
+      ".dashboard-grid > .run-panel",
+    );
+    const sideStack = document.querySelector<HTMLElement>(
+      ".dashboard-grid > .dashboard-stack:not(:first-child)",
+    );
+
+    if (
+      office === null ||
+      firstStack === null ||
+      artifactPanel === null ||
+      runPanel === null ||
+      sideStack === null
+    ) {
+      throw new Error("Live activity rail metrics were unavailable");
+    }
+
+    const activity = document.createElement("article");
+    activity.className = "panel";
+    activity.textContent = "에이전트 활동";
+    sideStack.append(activity);
+
+    const officeRect = office.getBoundingClientRect();
+    const stackRect = firstStack.getBoundingClientRect();
+    const artifactRect = artifactPanel.getBoundingClientRect();
+    const runRect = runPanel.getBoundingClientRect();
+    const sideRect = sideStack.getBoundingClientRect();
+    const sideStyle = window.getComputedStyle(sideStack);
+    sideStack.scrollTop = sideStack.scrollHeight;
+
+    return {
+      sideDisplay: sideStyle.display,
+      sideLeft: sideRect.left,
+      sideTop: sideRect.top,
+      sideBottom: sideRect.bottom,
+      sideScrollTopAfterWrite: sideStack.scrollTop,
+      officeRight: officeRect.right,
+      stackTop: stackRect.top,
+      artifactTop: artifactRect.top,
+      runTop: runRect.top,
       viewportHeight: window.innerHeight,
     };
   });
 
-  expect(["auto", "scroll"]).toContain(metrics.overflowY);
-  expect(metrics.hasVerticalOverflow).toBe(true);
-  expect(metrics.scrolled).toBe(true);
-  expect(metrics.mainSurfaceScrolled).toBe(false);
-  expect(metrics.runPanelBottomBeforeScroll).toBeGreaterThan(
-    metrics.viewportHeight,
-  );
-  expect(metrics.runPanelBottomAfterScroll).toBeLessThanOrEqual(
-    metrics.viewportHeight,
-  );
-});
-
-test("host dashboard recovers clipped office content at 1280x800 with internal panel scroll", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto("/dashboard?runtime=local&locale=ko");
-
-  const metrics = await page.evaluate(() => {
-    const mainSurface = document.querySelector<HTMLElement>(".main-surface");
-    const office = document.querySelector<HTMLElement>(
-      "[data-testid='orchestrator-office']",
-    );
-    const officeSignals = document.querySelector<HTMLElement>(
-      ".orchestrator-office__signals",
-    );
-
-    if (mainSurface === null || office === null || officeSignals === null) {
-      throw new Error("Office recovery metrics were unavailable");
-    }
-
-    for (let index = 0; index < 12; index += 1) {
-      const signal = document.createElement("div");
-      const label = document.createElement("span");
-      const detail = document.createElement("strong");
-      label.textContent = `recovery signal ${index + 1}`;
-      detail.textContent = `office overflow ${index + 1}`;
-      signal.style.minHeight = "8rem";
-      signal.append(label, detail);
-      officeSignals.append(signal);
-    }
-
-    const officeRect = office.getBoundingClientRect();
-    const lastSignal = officeSignals.lastElementChild;
-    if (!(lastSignal instanceof HTMLElement)) {
-      throw new Error("Office recovery signal was unavailable");
-    }
-
-    const lastSignalBottomBeforeScroll =
-      lastSignal.getBoundingClientRect().bottom;
-    const officeOverflowY = window.getComputedStyle(office).overflowY;
-    office.scrollTop = office.scrollHeight;
-
-    return {
-      bodyOverflows:
-        document.documentElement.scrollHeight > window.innerHeight + 1,
-      mainSurfaceOverflows:
-        mainSurface.scrollHeight > mainSurface.clientHeight + 1,
-      officeOverflowY,
-      officeHasOverflow: office.scrollHeight > office.clientHeight + 1,
-      officeScrolled: office.scrollTop > 0,
-      lastSignalBottomAfterScroll: lastSignal.getBoundingClientRect().bottom,
-      lastSignalBottomBeforeScroll,
-      officeBottom: officeRect.bottom,
-    };
-  });
-
-  expect(metrics.bodyOverflows).toBe(false);
-  expect(metrics.mainSurfaceOverflows).toBe(false);
-  expect(["auto", "scroll"]).toContain(metrics.officeOverflowY);
-  expect(metrics.officeHasOverflow).toBe(true);
-  expect(metrics.lastSignalBottomBeforeScroll).toBeGreaterThan(
-    metrics.officeBottom,
-  );
-  expect(metrics.officeScrolled).toBe(true);
-  expect(metrics.lastSignalBottomAfterScroll).toBeLessThanOrEqual(
-    metrics.officeBottom - 8,
-  );
+  expect(metrics.sideDisplay).not.toBe("none");
+  expect(metrics.sideLeft).toBeGreaterThanOrEqual(metrics.officeRight - 1);
+  expect(metrics.stackTop).toBeLessThanOrEqual(metrics.artifactTop);
+  expect(metrics.artifactTop).toBeLessThanOrEqual(metrics.runTop);
+  expect(metrics.runTop).toBeLessThanOrEqual(metrics.sideTop);
+  expect(metrics.sideBottom).toBeLessThanOrEqual(metrics.viewportHeight);
+  expect(metrics.sideScrollTopAfterWrite).toBe(0);
 });
