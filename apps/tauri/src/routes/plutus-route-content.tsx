@@ -10,6 +10,7 @@ import {
   InstrumentDetailPage,
   MemoryPage,
   NotFoundPage,
+  OfficePage,
   PairPage,
   PortfolioDetailPage,
   PortfoliosPage,
@@ -79,6 +80,9 @@ export function renderPlutusRouteContent({
 
   if (path === "/" || path === "/dashboard") {
     return <HostDashboard scenario={resolvedScenario} />;
+  }
+  if (path === "/office") {
+    return <OfficePage scenario={resolvedScenario} />;
   }
   if (path === "/portfolios") {
     return (

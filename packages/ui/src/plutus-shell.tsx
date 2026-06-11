@@ -43,6 +43,7 @@ export function HostShell({ children }: HostShellProps) {
           <a href={routeHref("/dashboard", runtimeSearch)}>
             {t("nav.dashboard")}
           </a>
+          <a href={routeHref("/office", runtimeSearch)}>{t("nav.office")}</a>
           <a href={routeHref("/portfolios", runtimeSearch)}>
             {t("nav.portfolios")}
           </a>

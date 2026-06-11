@@ -3,6 +3,25 @@
   gap: 12px;
 }
 
+.main-surface:has(> .office-page) {
+  align-content: stretch;
+  grid-template-rows: minmax(0, 1fr);
+  overflow: clip;
+}
+
+.office-page {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+}
+
+.office-page > .orchestrator-office {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+  overflow: clip;
+}
+
 .orchestrator-office__header {
   align-items: start;
   display: flex;
@@ -130,6 +149,7 @@
   display: grid;
   gap: 8px;
   grid-template-columns: minmax(0, 3.6fr) minmax(210px, 0.6fr);
+  min-height: 0;
 }
 
 .orchestrator-office__scene-shell,
@@ -144,6 +164,8 @@
 .orchestrator-office__scene-shell {
   display: grid;
   gap: 6px;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
   padding: 6px;
 }
 
@@ -155,6 +177,12 @@
   overflow: hidden;
   position: relative;
   width: 100%;
+}
+
+.office-page .orchestrator-office__scene {
+  aspect-ratio: auto;
+  height: 100%;
+  min-height: 0;
 }
 
 .orchestrator-office__roster {

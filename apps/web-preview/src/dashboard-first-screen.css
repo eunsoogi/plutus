@@ -19,12 +19,10 @@
   .main-surface > .dashboard-grid {
     align-items: stretch;
     grid-template-areas:
-      "office stack"
-      "office artifact"
-      "office run"
-      "office side";
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.42fr);
-    grid-template-rows: repeat(4, minmax(0, 1fr));
+      "stack artifact"
+      "run side";
+    grid-template-columns: minmax(420px, 1fr) minmax(420px, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
     height: 100%;
     min-height: 0;
     overflow-x: hidden;
@@ -33,140 +31,34 @@
 
   .dashboard-grid > .dashboard-stack:first-child {
     grid-area: stack;
-    min-height: 0;
-    overflow: clip;
-  }
-
-  .dashboard-grid > .orchestrator-office {
-    grid-area: office;
-    min-height: 0;
-    overflow-x: hidden;
-    overflow-y: clip;
   }
 
   .dashboard-grid > .dashboard-span:not(.run-panel) {
     grid-area: artifact;
-    min-height: 0;
-    overflow: clip;
+  }
+
+  .dashboard-grid > .run-panel.dashboard-span {
+    grid-area: run;
   }
 
   .dashboard-grid > .dashboard-stack:not(:first-child) {
-    align-content: start;
-    gap: 8px;
     grid-area: side;
-    min-height: 0;
-    overflow: clip;
-    padding: 12px;
   }
 
   .dashboard-grid > .dashboard-stack:not(:first-child):empty {
     display: none;
   }
 
-  .dashboard-grid > .run-panel.dashboard-span {
-    grid-area: run;
-    min-height: 0;
-    overflow: clip;
-  }
-
-  .orchestrator-office {
-    gap: 8px;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    padding: 8px;
-  }
-
-  .orchestrator-office__header,
-  .orchestrator-office__heading,
-  .orchestrator-office__status {
-    gap: 8px;
-  }
-
-  .orchestrator-office__header {
-    align-items: center;
-  }
-
-  .orchestrator-office__heading {
-    align-items: center;
-    grid-template-columns: minmax(0, 1fr) auto;
-    width: 100%;
-  }
-
-  .orchestrator-office__heading h2 {
-    margin-bottom: 4px;
-  }
-
-  .orchestrator-office__heading p {
-    line-height: 1.25;
-  }
-
-  .orchestrator-office__status {
-    justify-content: end;
-  }
-
-  .orchestrator-office__status-label,
-  .orchestrator-office__status .pill {
-    min-height: 30px;
-    padding-block: 5px;
-  }
-
-  .orchestrator-office__experience {
-    min-height: 0;
-  }
-
-  .orchestrator-office__scene {
-    aspect-ratio: auto;
-    height: 100%;
-    min-height: 0;
-  }
-
-  .orchestrator-office__scene-shell {
-    grid-template-rows: auto minmax(0, 1fr);
-    min-height: 0;
-    overflow: clip;
-  }
-
-  .orchestrator-office__controls {
-    gap: 8px;
-    grid-template-columns: minmax(250px, 1fr) minmax(260px, auto);
-    padding: 6px;
-  }
-
-  .orchestrator-office__team-control,
-  .orchestrator-office__rotation-control {
-    align-items: center;
-    gap: 8px;
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .orchestrator-office__team-control {
-    max-width: none;
-  }
-
-  .orchestrator-office__team-control select,
-  .orchestrator-office__rotation-buttons {
-    min-height: 34px;
-  }
-
-  .orchestrator-office__rotation-buttons button {
-    height: 26px;
-    min-height: 26px;
-    padding-inline: 8px;
-  }
-
-  .orchestrator-office__roster {
-    max-height: 100%;
-    overflow: clip;
-  }
-
-  .dashboard-grid > .dashboard-stack:first-child,
-  .dashboard-grid > .dashboard-span:not(.run-panel),
-  .dashboard-grid > .run-panel.dashboard-span {
+  .dashboard-grid > .dashboard-stack,
+  .dashboard-grid > .dashboard-span {
     align-content: start;
     gap: 8px;
+    min-height: 0;
+    overflow: clip;
     padding: 12px;
   }
 
-  .dashboard-grid > .dashboard-stack:first-child > .panel {
+  .dashboard-grid > .dashboard-stack > .panel {
     min-height: 0;
     overflow: clip;
     padding: 12px;
@@ -203,8 +95,8 @@
 
   .dashboard-grid .chart,
   .dashboard-grid .empty-canvas {
-    height: 76px;
-    min-height: 76px;
+    height: 96px;
+    min-height: 96px;
     padding: 10px;
   }
 

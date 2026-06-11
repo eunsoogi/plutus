@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 const hostRoutes = [
   ["/dashboard", "Host Dashboard"],
+  ["/office", "Orchestrator Office"],
   ["/portfolios", "Portfolios"],
   ["/portfolios/portfolio-core", "No portfolio yet"],
   ["/watchlists", "Watchlists"],
@@ -49,6 +50,26 @@ test("sidebar navigation updates host routes without reloading the document", as
   await expect(
     page.getByRole("heading", { name: "Provider Settings" }),
   ).toBeVisible();
+  await expect(
+    page.evaluate(() => Reflect.get(window, "__plutusNavigationMarker")),
+  ).resolves.toBe("kept");
+});
+
+test("sidebar navigation opens the dedicated office route without reloading the document", async ({
+  page,
+}) => {
+  await page.goto("/dashboard?runtime=local");
+  await page.evaluate(() => {
+    Reflect.set(window, "__plutusNavigationMarker", "kept");
+  });
+
+  await page.getByRole("link", { name: "Office" }).click();
+
+  await expect(page).toHaveURL(/\/office\?runtime=local$/u);
+  await expect(
+    page.getByRole("heading", { name: "Orchestrator Office" }),
+  ).toBeVisible();
+  await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
   await expect(
     page.evaluate(() => Reflect.get(window, "__plutusNavigationMarker")),
   ).resolves.toBe("kept");

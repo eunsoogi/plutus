@@ -120,6 +120,42 @@
   color: #d8b4fe;
 }
 
+.orchestrator-office__agent-nameplates {
+  bottom: 58px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  left: 14px;
+  max-width: calc(100% - 28px);
+  pointer-events: none;
+  position: absolute;
+  z-index: 4;
+}
+
+.orchestrator-office__agent-nameplate {
+  align-items: center;
+  background: rgb(8 12 18 / 88%);
+  border: 1px solid rgb(159 210 234 / 24%);
+  border-radius: 4px;
+  box-shadow: 0 10px 20px rgb(0 0 0 / 20%);
+  color: #dbeafe;
+  display: inline-flex;
+  font-size: 0.66rem;
+  font-weight: 800;
+  gap: 6px;
+  max-width: 210px;
+  min-height: 26px;
+  padding: 5px 8px;
+  word-break: keep-all;
+}
+
+.orchestrator-office__agent-nameplate strong {
+  color: #7fe2f3;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
 .pixel-office__brand {
   color: #f5c65f;
 }

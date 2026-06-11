@@ -20,6 +20,7 @@ export { HostShell, MobileShell, RuntimeUnavailablePage } from "./plutus-shell";
 export {
   ArtifactList,
   HostDashboard,
+  OfficePage,
   PortfolioSummary,
   RiskChart,
   RiskWarning,

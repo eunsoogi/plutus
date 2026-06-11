@@ -114,14 +114,6 @@ export function HostDashboard({ scenario }: { scenario: PlutusScenario }) {
     (scenario.remoteDevice.name &&
       scenario.remoteDevice.name !== "No paired device"),
   );
-  const dashboardOfficeRun = hasRunActivity
-    ? scenario.run
-    : {
-        ...scenario.run,
-        id: "dashboard-office-planning",
-        status: "queued",
-        title: scenario.run.title || t("runs.noRunsYet"),
-      };
   return (
     <HostShell>
       <header className="page-header">
@@ -148,7 +140,6 @@ export function HostDashboard({ scenario }: { scenario: PlutusScenario }) {
             title={localizedScenarioText(scenario.watchlist.name, t)}
           />
         </div>
-        <OrchestratorOffice run={dashboardOfficeRun} />
         <article className="panel dashboard-span">
           <h2>{t("artifact.list")}</h2>
           <p data-testid="artifact-title">
@@ -179,6 +170,32 @@ export function HostDashboard({ scenario }: { scenario: PlutusScenario }) {
           <RunStageList />
         </article>
       </section>
+    </HostShell>
+  );
+}
+
+export function OfficePage({ scenario }: { scenario: PlutusScenario }) {
+  const { t } = useI18n();
+  const hasRunActivity = Boolean(
+    scenario.run.id ||
+      scenario.run.category ||
+      scenario.run.finalCard ||
+      scenario.run.artifacts.length,
+  );
+  const officeRun = hasRunActivity
+    ? scenario.run
+    : {
+        ...scenario.run,
+        id: "office-planning",
+        status: "queued",
+        title: scenario.run.title || t("runs.noRunsYet"),
+      };
+
+  return (
+    <HostShell>
+      <div className="office-page" data-testid="office-page">
+        <OrchestratorOffice run={officeRun} />
+      </div>
     </HostShell>
   );
 }

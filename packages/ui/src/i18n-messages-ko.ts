@@ -4,6 +4,7 @@ export const koMessages = {
   "aria.remoteNavigation": "원격 탐색",
   "aria.workspaceStatus": "작업공간 상태",
   "nav.dashboard": "대시보드",
+  "nav.office": "오피스",
   "nav.portfolios": "포트폴리오",
   "nav.watchlists": "관심종목",
   "nav.runs": "리서치",
