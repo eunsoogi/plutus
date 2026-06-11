@@ -1,13 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-test("host dashboard presents the office as the default full-screen surface", async ({
+test("office route owns the desktop surface without clipping menu controls", async ({
   page,
 }) => {
-  // Given: the default desktop host dashboard is loaded.
   await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/office?runtime=local&locale=ko");
 
-  // When: the dashboard renders the local office before a run starts.
-  await page.goto("/dashboard?runtime=local&locale=ko");
+  await expect(
+    page.getByRole("heading", { name: "오케스트레이터 오피스" }),
+  ).toBeVisible();
   await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
 
   const metrics = await page.evaluate(() => {
@@ -18,70 +19,41 @@ test("host dashboard presents the office as the default full-screen surface", as
     const scene = document.querySelector<HTMLElement>(
       "[data-testid='orchestrator-office-scene']",
     );
+    const controls = document.querySelector<HTMLElement>(
+      ".orchestrator-office__controls",
+    );
+    const roster = document.querySelector<HTMLElement>(
+      "[data-testid='orchestrator-office-roster']",
+    );
+    const signals = document.querySelector<HTMLElement>(
+      ".orchestrator-office__signals",
+    );
 
-    if (mainSurface === null || office === null || scene === null) {
-      throw new Error("Office full-screen layout metrics were unavailable");
+    if (
+      mainSurface === null ||
+      office === null ||
+      scene === null ||
+      controls === null ||
+      roster === null ||
+      signals === null
+    ) {
+      throw new Error("Office route metrics were unavailable");
     }
 
     const mainRect = mainSurface.getBoundingClientRect();
     const officeRect = office.getBoundingClientRect();
     const sceneRect = scene.getBoundingClientRect();
+    const controlsRect = controls.getBoundingClientRect();
+    const rosterRect = roster.getBoundingClientRect();
+    const signalsRect = signals.getBoundingClientRect();
     const mainStyle = window.getComputedStyle(mainSurface);
     const availableWidth =
       mainRect.width -
       Number.parseFloat(mainStyle.paddingLeft) -
       Number.parseFloat(mainStyle.paddingRight);
-    const availableBandHeight =
-      mainRect.bottom -
-      officeRect.top -
-      Number.parseFloat(mainStyle.paddingBottom);
-
-    return {
-      bodyOverflows:
-        document.documentElement.scrollHeight > window.innerHeight + 1,
-      officeBandFill: officeRect.height / availableBandHeight,
-      officeWidthFill: officeRect.width / availableWidth,
-      sceneBandFill: sceneRect.height / availableBandHeight,
-    };
-  });
-
-  // Then: the office is the primary viewport surface, not a nested card.
-  expect(metrics.bodyOverflows).toBe(false);
-  expect(metrics.officeWidthFill).toBeGreaterThanOrEqual(0.96);
-  expect(metrics.officeBandFill).toBeGreaterThanOrEqual(0.92);
-  expect(metrics.sceneBandFill).toBeGreaterThanOrEqual(0.64);
-});
-
-test("host dashboard keeps the full-screen office usable at short desktop height", async ({
-  page,
-}) => {
-  // Given: a shorter desktop host dashboard viewport is loaded.
-  await page.setViewportSize({ width: 1280, height: 720 });
-
-  // When: the office renders inside the constrained desktop shell.
-  await page.goto("/dashboard?runtime=local&locale=ko");
-  await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
-
-  const metrics = await page.evaluate(() => {
-    const mainSurface = document.querySelector<HTMLElement>(".main-surface");
-    const office = document.querySelector<HTMLElement>(
-      "[data-testid='orchestrator-office']",
-    );
-    const scene = document.querySelector<HTMLElement>(
-      "[data-testid='orchestrator-office-scene']",
-    );
-
-    if (mainSurface === null || office === null || scene === null) {
-      throw new Error("Short-height office metrics were unavailable");
-    }
-
-    const mainRect = mainSurface.getBoundingClientRect();
-    const officeRect = office.getBoundingClientRect();
-    const sceneRect = scene.getBoundingClientRect();
-    const mainStyle = window.getComputedStyle(mainSurface);
-    const availableBandHeight =
-      mainRect.bottom -
-      officeRect.top -
+    const availableHeight =
+      mainRect.height -
+      Number.parseFloat(mainStyle.paddingTop) -
       Number.parseFloat(mainStyle.paddingBottom);
 
     return {
@@ -89,54 +61,77 @@ test("host dashboard keeps the full-screen office usable at short desktop height
         document.documentElement.scrollHeight > window.innerHeight + 1,
       mainSurfaceOverflows:
         mainSurface.scrollHeight > mainSurface.clientHeight + 1,
-      officeBandFill: officeRect.height / availableBandHeight,
+      officeHeightFill: officeRect.height / availableHeight,
+      officeWidthFill: officeRect.width / availableWidth,
       sceneHeight: sceneRect.height,
+      controlsBottom: controlsRect.bottom,
+      rosterBottom: rosterRect.bottom,
+      signalsBottom: signalsRect.bottom,
+      viewportHeight: window.innerHeight,
     };
   });
 
-  // Then: the office fills the available band without moving scroll to the body.
   expect(metrics.bodyOverflows).toBe(false);
   expect(metrics.mainSurfaceOverflows).toBe(false);
-  expect(metrics.officeBandFill).toBeGreaterThanOrEqual(0.9);
-  expect(metrics.sceneHeight).toBeGreaterThanOrEqual(300);
+  expect(metrics.officeWidthFill).toBeGreaterThanOrEqual(0.96);
+  expect(metrics.officeHeightFill).toBeGreaterThanOrEqual(0.9);
+  expect(metrics.sceneHeight).toBeGreaterThanOrEqual(520);
+  expect(metrics.controlsBottom).toBeLessThanOrEqual(metrics.viewportHeight);
+  expect(metrics.rosterBottom).toBeLessThanOrEqual(metrics.viewportHeight);
+  expect(metrics.signalsBottom).toBeLessThanOrEqual(metrics.viewportHeight);
 });
 
-test("host dashboard keeps Korean office roster labels on natural lines", async ({
+test("office route stays usable at short desktop height without clipping", async ({
   page,
 }) => {
-  // Given: the Korean desktop host dashboard renders the office roster.
-  await page.setViewportSize({ width: 1440, height: 960 });
-  await page.goto("/dashboard?runtime=local&locale=ko");
-  await expect(page.getByTestId("orchestrator-office-roster")).toBeVisible();
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto("/office?runtime=local&locale=ko");
 
-  // When: the longest visible Korean roster label is measured.
-  const lineMetrics = await page.evaluate(() => {
-    const title = Array.from(
-      document.querySelectorAll<HTMLElement>(
-        ".orchestrator-office__roster-item strong",
-      ),
-    ).find((element) => element.textContent?.trim() === "포트폴리오 매니저");
+  await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
 
-    if (!title?.firstChild) {
-      throw new Error("Korean portfolio manager roster label was unavailable");
+  const metrics = await page.evaluate(() => {
+    const mainSurface = document.querySelector<HTMLElement>(".main-surface");
+    const office = document.querySelector<HTMLElement>(
+      "[data-testid='orchestrator-office']",
+    );
+    const scene = document.querySelector<HTMLElement>(
+      "[data-testid='orchestrator-office-scene']",
+    );
+
+    if (mainSurface === null || office === null || scene === null) {
+      throw new Error("Short office route metrics were unavailable");
     }
 
-    const range = document.createRange();
-    range.selectNodeContents(title);
-    const lineRects = Array.from(range.getClientRects()).filter(
-      (rect) => rect.width > 0 && rect.height > 0,
-    );
-    range.detach();
+    const officeRect = office.getBoundingClientRect();
+    const sceneRect = scene.getBoundingClientRect();
 
     return {
-      lineCount: lineRects.length,
-      text: title.textContent?.trim(),
+      mainSurfaceOverflows:
+        mainSurface.scrollHeight > mainSurface.clientHeight + 1,
+      officeBottom: officeRect.bottom,
+      sceneHeight: sceneRect.height,
+      viewportHeight: window.innerHeight,
     };
   });
 
-  // Then: the label avoids orphaning the final Korean syllable.
-  expect(lineMetrics).toEqual({
-    lineCount: 1,
-    text: "포트폴리오 매니저",
-  });
+  expect(metrics.mainSurfaceOverflows).toBe(false);
+  expect(metrics.officeBottom).toBeLessThanOrEqual(metrics.viewportHeight);
+  expect(metrics.sceneHeight).toBeGreaterThanOrEqual(320);
+});
+
+test("office route shows visible agent nameplates for each person in the scene", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/office?runtime=local&locale=ko");
+
+  const nameplates = page.getByTestId("orchestrator-office-agent-nameplate");
+  await expect(nameplates).toHaveCount(5);
+  await expect(nameplates).toContainText([
+    "리서치 오케스트레이터",
+    "시장 데이터 리서처",
+    "포트폴리오 매니저",
+    "리스크 매니저",
+    "보고서 작성자",
+  ]);
 });

@@ -4,6 +4,7 @@ export const enMessages = {
   "aria.remoteNavigation": "Remote navigation",
   "aria.workspaceStatus": "Workspace status",
   "nav.dashboard": "Dashboard",
+  "nav.office": "Office",
   "nav.portfolios": "Portfolios",
   "nav.watchlists": "Watchlists",
   "nav.runs": "Runs",

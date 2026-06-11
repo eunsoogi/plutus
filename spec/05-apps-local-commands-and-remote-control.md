@@ -26,6 +26,7 @@ macOS host routes:
 
 ```text
 /dashboard
+/office
 /portfolios
 /portfolios/:portfolioId
 /watchlists
@@ -170,6 +171,7 @@ macOS must support:
 
 - multi-pane research workspace;
 - portfolio dashboard;
+- dedicated full-screen orchestrator office surface with visible agent identity labels for the active research team;
 - watchlist and instrument detail;
 - agent run composer;
 - local run progress;

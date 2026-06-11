@@ -2,13 +2,13 @@
   .main-surface:has(> .dashboard-grid) {
     grid-template-rows: auto minmax(0, 1fr);
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: clip;
   }
 
   .page-header:has(> h2 + .pill-row) {
     gap: 6px;
-    min-height: 168px;
-    padding-bottom: 34px;
+    min-height: 118px;
+    padding: 14px 20px 24px;
   }
 
   .page-header:has(> h2 + .pill-row) h1,
@@ -19,75 +19,122 @@
   .main-surface > .dashboard-grid {
     align-items: stretch;
     grid-template-areas:
-      "office office office"
-      "stack artifact side"
-      "run run side";
-    grid-template-columns: minmax(248px, 0.96fr) minmax(320px, 1.12fr) minmax(
-        240px,
-        0.88fr
-      );
-    grid-template-rows: minmax(100%, auto) minmax(176px, auto) minmax(
-        176px,
-        auto
-      );
+      "stack artifact"
+      "run side";
+    grid-template-columns: minmax(420px, 1fr) minmax(420px, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
     height: 100%;
     min-height: 0;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: clip;
   }
 
   .dashboard-grid > .dashboard-stack:first-child {
     grid-area: stack;
-    min-height: 0;
-    overflow: auto;
-  }
-
-  .dashboard-grid > .orchestrator-office {
-    grid-area: office;
-    min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
   }
 
   .dashboard-grid > .dashboard-span:not(.run-panel) {
     grid-area: artifact;
-    min-height: 0;
-    overflow: auto;
-  }
-
-  .dashboard-grid > .dashboard-stack:not(:first-child) {
-    grid-area: side;
-    min-height: 0;
-    overflow: auto;
   }
 
   .dashboard-grid > .run-panel.dashboard-span {
     grid-area: run;
-    min-height: 0;
-    overflow: auto;
   }
 
-  .orchestrator-office {
-    gap: 10px;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+  .dashboard-grid > .dashboard-stack:not(:first-child) {
+    grid-area: side;
   }
 
-  .orchestrator-office__header,
-  .orchestrator-office__heading,
-  .orchestrator-office__status {
+  .dashboard-grid > .dashboard-stack:not(:first-child):empty {
+    display: none;
+  }
+
+  .dashboard-grid > .dashboard-stack,
+  .dashboard-grid > .dashboard-span {
+    align-content: start;
     gap: 8px;
-  }
-
-  .orchestrator-office__experience {
     min-height: 0;
+    overflow: clip;
+    padding: 12px;
   }
 
-  .orchestrator-office__scene {
-    min-height: 304px;
+  .dashboard-grid > .dashboard-stack > .panel {
+    min-height: 0;
+    overflow: clip;
+    padding: 12px;
   }
 
-  .orchestrator-office__roster {
-    max-height: 100%;
-    overflow: auto;
+  .dashboard-grid > .dashboard-stack:first-child > .panel .desk-table {
+    display: none;
+  }
+
+  .dashboard-grid h2 {
+    margin-bottom: 8px;
+  }
+
+  .dashboard-grid .metric {
+    font-size: 1.12rem;
+    line-height: 1.05;
+    margin-bottom: 0;
+  }
+
+  .dashboard-grid .panel p {
+    line-height: 1.25;
+    margin-bottom: 6px;
+  }
+
+  .dashboard-grid .desk-row {
+    gap: 8px;
+    min-height: 30px;
+    padding: 0 10px;
+  }
+
+  .dashboard-grid .desk-row.header {
+    min-height: 28px;
+  }
+
+  .dashboard-grid .chart,
+  .dashboard-grid .empty-canvas {
+    height: 96px;
+    min-height: 96px;
+    padding: 10px;
+  }
+
+  .dashboard-grid .chart {
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) 36px 36px 36px;
+  }
+
+  .dashboard-grid .run-panel ol {
+    gap: 3px;
+    padding-left: 18px;
+  }
+
+  .dashboard-grid .run-panel li {
+    font-size: 0.85rem;
+    line-height: 1.28;
+    padding-left: 2px;
+  }
+
+  .dashboard-grid .agent-lanes {
+    gap: 4px;
+  }
+
+  .dashboard-grid .agent-lane {
+    gap: 8px;
+    grid-template-columns: 54px minmax(0, 1fr) auto;
+    min-height: 29px;
+    padding: 4px 8px;
+  }
+
+  .dashboard-grid .agent-lane strong,
+  .dashboard-grid .agent-lane span {
+    font-size: 0.76rem;
+  }
+}
+
+@media (min-width: 1181px) and (max-height: 800px) {
+  .dashboard-grid > .dashboard-stack:not(:first-child) .agent-lane:nth-child(n + 3) {
+    display: none;
   }
 }

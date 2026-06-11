@@ -151,7 +151,12 @@ function OrchestratorOfficeContent({ run }: { run: OrchestratorOfficeRun }) {
             </p>
           </div>
           <div className="orchestrator-office__status">
-            <span className="orchestrator-office__status-label">{stage}</span>
+            <span
+              className="orchestrator-office__status-label"
+              data-testid="orchestrator-office-stage"
+            >
+              {stage}
+            </span>
             <span className="pill">{text.safety}</span>
           </div>
         </div>

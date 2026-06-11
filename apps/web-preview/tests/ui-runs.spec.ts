@@ -141,16 +141,18 @@ test("browser local runtime queues a research run only after real portfolio stat
   await expect(page.getByTestId("run-progress")).toContainText("queued");
 });
 
-test("dashboard renders the orchestrator office before a research run starts", async ({
+test("office route renders the orchestrator office before a research run starts", async ({
   page,
 }) => {
   await page.addInitScript(() => {
     localStorage.removeItem("plutus.localRuntime.v1");
   });
 
-  await page.goto("/dashboard?runtime=local");
+  await page.goto("/office?runtime=local");
 
-  await expect(page.getByTestId("run-progress")).toContainText("planning");
+  await expect(page.getByTestId("orchestrator-office-stage")).toContainText(
+    "Planning",
+  );
   await expect(page.getByTestId("orchestrator-office")).toBeVisible();
   await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
 });

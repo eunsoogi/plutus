@@ -2,6 +2,7 @@ import { artifactRoute, oneSegmentRoute } from "./plutus-route-matchers";
 
 export const hostRoutePaths = [
   "/dashboard",
+  "/office",
   "/portfolios",
   "/portfolios/:portfolioId",
   "/watchlists",
@@ -41,6 +42,7 @@ export function isKnownHostRoute(path: string): boolean {
   return (
     path === "/" ||
     path === "/dashboard" ||
+    path === "/office" ||
     path === "/portfolios" ||
     oneSegmentRoute(path, "portfolios") ||
     path === "/watchlists" ||

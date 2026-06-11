@@ -33,7 +33,7 @@ test("office keeps a non-WebGL canvas and semantic mirror when WebGL is unavaila
     };
   });
 
-  await page.goto("/dashboard?runtime=local");
+  await page.goto("/office?runtime=local");
 
   const officeCanvas = page.getByTestId("orchestrator-office-canvas");
   await expect(officeCanvas).toBeVisible();

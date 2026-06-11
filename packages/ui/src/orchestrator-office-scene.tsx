@@ -124,6 +124,22 @@ export function OrchestratorOfficeScene({
         stage={stage}
         teamId={teamId}
       />
+      <div
+        className="orchestrator-office__agent-nameplates"
+        aria-label="Visible office agent labels"
+      >
+        {agents.map((agent) => (
+          <span
+            className="orchestrator-office__agent-nameplate"
+            data-agent-id={agent.id}
+            data-testid="orchestrator-office-agent-nameplate"
+            key={agent.id}
+          >
+            <strong>{agent.shortLabel}</strong>
+            {agent.label}
+          </span>
+        ))}
+      </div>
       <ul
         className="orchestrator-office__scene-mirror"
         data-testid="orchestrator-office-canvas-mirror"
