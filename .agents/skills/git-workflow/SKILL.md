@@ -22,7 +22,7 @@ Use local `git` for local worktree inspection, checkout, worktree creation, diff
 3. For non-trivial work, start local goal-mode and keep the plan updated as evidence changes.
 4. Keep `main` as protected integration. Do not implement feature, fix, cleanup, or UX work directly on `main`.
 5. Create a branch only after the issue, PRD, SPEC, or explicit sub-scope exists. Use an isolated worktree and the `eunsoogi/` branch prefix unless the user requests another naming scheme.
-6. Use an issue title that summarizes the user-visible problem or needed work. Do not use Conventional Commit prefixes such as `feat(...)` for issue titles.
+6. Use an issue title that summarizes the user-visible problem or needed work in plain English prose. Issue titles must start with an uppercase letter and must not use Conventional Commit prefixes such as `feat(...)`.
 7. Write a structured issue body in English or Korean to match the existing issue context. Do not create placeholder, one-line, or notes-only issue bodies.
 8. Keep the branch scope aligned with the issue. Do not touch files outside the requested scope.
 
@@ -149,7 +149,7 @@ Create or confirm a GitHub issue before opening a pull request. Do not open a pu
 
 Split PRs by task thread or issue-sized scope by default. Do not bundle unrelated thread outputs into one PR unless a human maintainer explicitly requests a combined PR.
 
-PR title and body must be written clearly in English or Korean to match the issue context. PR titles use Conventional Commit style:
+PR title and body must be written clearly in English or Korean to match the issue context. PR titles must use Conventional Commit style:
 
 ```text
 feat(scope): summary
@@ -219,6 +219,8 @@ When the current task's PR satisfies the merge gates, finish the workflow by mer
 When Codex review is expected, wait for it before merging. Treat a Codex review with actionable inline comments as blocking. Do not merge while actionable Codex review feedback remains unresolved or unaccepted by a human maintainer. Fix the feedback in the PR branch, push the follow-up commit, and request or wait for a fresh Codex review before merging. Passing means the latest reviewed head has no unresolved actionable Codex feedback; a thumbs-up/no-suggestion Codex result is acceptable.
 
 Use `gh pr merge --squash --delete-branch --auto` only when repository branch rules, required checks, or a merge queue define the requirements that GitHub should wait for. Pair merges with `--match-head-commit <sha>` using the reviewed PR head SHA when possible so a stale or newly-pushed head cannot be merged by accident.
+
+Squash merge commit subjects must use Conventional Commit style and append the PR number in parentheses, for example `feat(workflow): message (#123)`. When using `gh pr merge`, pass `--subject "<conventional subject> (#<pr-number>)"` so the squash commit on `main` keeps both the conventional subject and PR traceability.
 
 Use `--delete-branch` for every successful PR merge unless the human maintainer explicitly asks to keep the remote branch. After merge, verify that GitHub deleted the remote topic branch; if it still exists, delete the remote branch with `git push origin --delete <branch>` only after confirming the PR was merged and no dependent work needs that branch.
 
