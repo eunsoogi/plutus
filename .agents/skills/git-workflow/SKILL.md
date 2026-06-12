@@ -220,7 +220,7 @@ When Codex review is expected, wait for it before merging. Treat a Codex review 
 
 Use `gh pr merge --squash --delete-branch --auto` only when repository branch rules, required checks, or a merge queue define the requirements that GitHub should wait for. Pair merges with `--match-head-commit <sha>` using the reviewed PR head SHA when possible so a stale or newly-pushed head cannot be merged by accident.
 
-Squash merge commit subjects must use Conventional Commit style and append the PR number in parentheses, for example `feat(workflow): message (#123)`. When using `gh pr merge`, pass `--subject "<conventional subject> (#<pr-number>)"` so the squash commit on `main` keeps both the conventional subject and PR traceability.
+Squash merge commit subjects must use Conventional Commit style and append the PR number in parentheses, for example `feat(workflow): message (#123)`. Before running `gh pr merge`, derive the PR number from `gh pr view <pr> --json number,headRefOid` or the PR URL, then pass `--subject "<conventional subject> (#<pr-number>)"` so the squash commit on `main` keeps both the conventional subject and PR traceability. Do not rely on the PR body, commit body, or GitHub defaults to add this suffix.
 
 Use `--delete-branch` for every successful PR merge unless the human maintainer explicitly asks to keep the remote branch. After merge, verify that GitHub deleted the remote topic branch; if it still exists, delete the remote branch with `git push origin --delete <branch>` only after confirming the PR was merged and no dependent work needs that branch.
 
@@ -237,6 +237,14 @@ git pull --ff-only origin main
 ```
 
 Then rebase or recreate dependent topic branches from refreshed `main`, and retire merged local branches/worktrees once no dependent work needs them. Report any local worktree that is intentionally kept because a dependent branch still needs it.
+
+After the main worktree is refreshed, verify the latest `main` commit subject with:
+
+```sh
+git log -1 --pretty=%s
+```
+
+The subject must end with `(#<merged-pr-number>)`. If it does not, report the miss immediately; do not claim the merge workflow is complete.
 
 ## Conflict Resolution
 
@@ -266,3 +274,4 @@ After resolving, stage only the resolved files and run the verification relevant
 - PR body has structured sections and ends with exactly one `Fixes #<issue-number>` line only when a matching issue exists.
 - Expected Codex review completed on the latest PR head, and no unresolved actionable Codex feedback remains.
 - Merge is squash merge through the PR workflow.
+- The final squash merge subject passed to `gh pr merge --subject` ends with the PR number, and the refreshed `main` commit subject still ends with that same `(#<pr-number>)` suffix.
