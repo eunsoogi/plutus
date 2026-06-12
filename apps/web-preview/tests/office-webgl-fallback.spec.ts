@@ -39,6 +39,10 @@ test("office keeps a non-WebGL canvas and semantic mirror when WebGL is unavaila
   await expect(officeCanvas).toBeVisible();
   await expect(officeCanvas).toHaveAttribute("data-office-renderer", "canvas");
   await expect(officeCanvas).toHaveAttribute(
+    "data-office-model-source",
+    "legacy-canvas",
+  );
+  await expect(officeCanvas).toHaveAttribute(
     "data-office-rotation",
     "south-east",
   );

@@ -53,6 +53,8 @@ import { fixtureDetailObjects } from "./orchestrator-office-three-scene-fixture-
 import { plantLeafObjects } from "./orchestrator-office-three-scene-plant-details";
 import { roomTrimObjects } from "./orchestrator-office-three-scene-room-details";
 
+export { officeThreeKenneyFurnitureKit } from "./orchestrator-office-three-kenney-assets";
+
 export type OfficeThreeSceneCatalogInput = {
   readonly locale?: AppLocale;
   readonly motionMode?: OfficeThreeMotionMode;

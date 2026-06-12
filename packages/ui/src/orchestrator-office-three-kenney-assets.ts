@@ -1,0 +1,20 @@
+export const officeThreeKenneyFurnitureKit = {
+  assetPageUrl: "https://kenney.nl/assets/furniture-kit",
+  category: "3D",
+  files: 140,
+  license: "Creative Commons CC0",
+  name: "Kenney Furniture Kit",
+  referencedAssets: [
+    "desk",
+    "chairDesk",
+    "computerScreen",
+    "computerKeyboard",
+    "computerMouse",
+    "bookcaseOpen",
+    "coatRackStanding",
+    "lampSquareFloor",
+    "plantSmall1",
+    "rugRectangle",
+    "cardboardBoxClosed",
+  ],
+} as const;

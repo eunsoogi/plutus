@@ -179,6 +179,16 @@
   width: 100%;
 }
 
+@media (max-width: 460px) {
+  .orchestrator-office {
+    gap: 6px;
+  }
+
+  .office-page .orchestrator-office__roster {
+    display: none;
+  }
+}
+
 .office-page .orchestrator-office__scene {
   aspect-ratio: auto;
   height: 100%;

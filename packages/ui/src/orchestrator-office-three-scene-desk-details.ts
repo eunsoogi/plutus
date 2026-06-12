@@ -11,6 +11,7 @@ import {
   deskFidelityDetailObjects,
   type DeskFacing,
 } from "./orchestrator-office-three-scene-desk-fidelity-details";
+import { kenneyDeskDetailObjects } from "./orchestrator-office-three-scene-kenney-details";
 import {
   rectPosition,
   rectScale,
@@ -138,6 +139,7 @@ function deskDetailObjects(
       }),
     ),
     ...deskFidelityDetailObjects(id, label, rect, facing),
+    ...kenneyDeskDetailObjects(id, label, rect, facing),
     detailObject({
       color: "#344256",
       id: `desk-detail:${id}:monitor-stand`,
@@ -202,7 +204,12 @@ function deskDetailObjects(
         id: `desk-detail:${id}:chair-leg-${index + 1}`,
         label: `${label} chair leg ${index + 1}`,
         modelRole: "chair-leg",
-        position: detailPosition(rect, chairX + xOffset, 0.13, chairZ + zOffset),
+        position: detailPosition(
+          rect,
+          chairX + xOffset,
+          0.13,
+          chairZ + zOffset,
+        ),
         scale: vector3(0.045, 0.26, 0.045),
       }),
     ),
