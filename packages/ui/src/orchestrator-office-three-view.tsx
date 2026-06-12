@@ -123,6 +123,7 @@ export function OrchestratorOfficeThreeView({
   const yaw = serializeOfficeNumber(normalizeOfficeYaw(scene.angle ?? 0));
   const camera = serializeOfficeVector(cameraPosition);
   const meshCount = contract.scene.objects.length.toString();
+  const modelSource = "kenney-furniture-kit";
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -205,6 +206,7 @@ export function OrchestratorOfficeThreeView({
       camera={camera}
       canvasRef={canvasRef}
       meshCount={meshCount}
+      modelSource={modelSource}
       motionMode={contract.scene.motion.mode}
       onAngleDrag={onAngleDrag}
       pitch={pitch}

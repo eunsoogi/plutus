@@ -29,9 +29,11 @@ function serializeOfficePitch(pitch: number | undefined): string {
 }
 
 export function OrchestratorOfficeCanvas({
+  modelSource,
   onAngleDrag,
   scene,
 }: {
+  readonly modelSource?: string;
   readonly onAngleDrag: (deltaX: number, deltaY: number) => void;
   readonly scene: OfficeCanvasScene;
 }) {
@@ -88,6 +90,7 @@ export function OrchestratorOfficeCanvas({
     <canvas
       aria-hidden="true"
       className="orchestrator-office__canvas"
+      data-office-model-source={modelSource ?? "legacy-canvas"}
       data-office-pitch={pitch}
       data-office-renderer="canvas"
       data-office-rotation={scene.rotation}

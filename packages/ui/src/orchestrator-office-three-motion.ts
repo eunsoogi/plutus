@@ -65,6 +65,17 @@ function roleCanMove(role: OfficeThreeModelRole | undefined): boolean {
     case "desk-lip":
     case "desk-surface":
     case "fixture-body":
+    case "kenney-bookcase-open":
+    case "kenney-coat-rack":
+    case "kenney-computer-keyboard":
+    case "kenney-computer-mouse":
+    case "kenney-computer-screen":
+    case "kenney-desk":
+    case "kenney-desk-chair":
+    case "kenney-floor-lamp":
+    case "kenney-plant-small":
+    case "kenney-rug-rectangle":
+    case "kenney-storage-box":
     case "monitor-screen":
     case "monitor-stand":
     case "partition-panel":

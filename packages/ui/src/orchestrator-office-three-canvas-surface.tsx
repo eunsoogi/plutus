@@ -9,6 +9,7 @@ type OfficeThreeCanvasSurfaceProps = {
   readonly camera: string;
   readonly canvasRef: RefObject<HTMLCanvasElement | null>;
   readonly meshCount: string;
+  readonly modelSource: string;
   readonly motionMode: "active" | "idle";
   readonly onAngleDrag: (deltaX: number, deltaY: number) => void;
   readonly pitch: string;
@@ -30,6 +31,7 @@ export function OrchestratorOfficeThreeCanvasSurface({
   camera,
   canvasRef,
   meshCount,
+  modelSource,
   motionMode,
   onAngleDrag,
   pitch,
@@ -47,6 +49,7 @@ export function OrchestratorOfficeThreeCanvasSurface({
       data-dragging={isDragging ? "true" : "false"}
       data-office-camera={camera}
       data-office-mesh-count={meshCount}
+      data-office-model-source={modelSource}
       data-office-motion-frame="0"
       data-office-motion-mode={motionMode}
       data-office-motion-sample="0.000"

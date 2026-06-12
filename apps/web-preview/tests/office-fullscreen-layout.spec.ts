@@ -10,6 +10,10 @@ test("office route owns the desktop surface without clipping menu controls", asy
     page.getByRole("heading", { name: "오케스트레이터 오피스" }),
   ).toBeVisible();
   await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
+  await expect(page.getByTestId("orchestrator-office-canvas")).toHaveAttribute(
+    "data-office-model-source",
+    "kenney-furniture-kit",
+  );
 
   const metrics = await page.evaluate(() => {
     const mainSurface = document.querySelector<HTMLElement>(".main-surface");
@@ -134,4 +138,50 @@ test("office route shows visible agent nameplates for each person in the scene",
     "리스크 매니저",
     "보고서 작성자",
   ]);
+});
+
+test("office route keeps the Kenney model visible on mobile without page scroll", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/office?runtime=local&locale=ko");
+
+  await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
+  await expect(page.getByTestId("orchestrator-office-canvas")).toHaveAttribute(
+    "data-office-model-source",
+    "kenney-furniture-kit",
+  );
+
+  const metrics = await page.evaluate(() => {
+    const office = document.querySelector<HTMLElement>(
+      "[data-testid='orchestrator-office']",
+    );
+    const scene = document.querySelector<HTMLElement>(
+      "[data-testid='orchestrator-office-scene']",
+    );
+    const controls = document.querySelector<HTMLElement>(
+      ".orchestrator-office__controls",
+    );
+
+    if (office === null || scene === null || controls === null) {
+      throw new Error("Mobile office route metrics were unavailable");
+    }
+
+    const sceneRect = scene.getBoundingClientRect();
+    const controlsRect = controls.getBoundingClientRect();
+
+    return {
+      bodyOverflows:
+        document.documentElement.scrollHeight > window.innerHeight + 1,
+      controlsBottom: controlsRect.bottom,
+      sceneMinHeight: window.getComputedStyle(scene).minHeight,
+      sceneHeight: sceneRect.height,
+      viewportHeight: window.innerHeight,
+    };
+  });
+
+  expect(metrics.bodyOverflows).toBe(false);
+  expect(metrics.controlsBottom).toBeLessThanOrEqual(metrics.viewportHeight);
+  expect(metrics.sceneMinHeight).toBe("360px");
+  expect(metrics.sceneHeight).toBeGreaterThanOrEqual(300);
 });
