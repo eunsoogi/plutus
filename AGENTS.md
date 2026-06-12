@@ -5,7 +5,7 @@
 - Keep `main` as the protected integration branch. Do not implement feature, fix, cleanup, or UX work directly on `main`.
 - Start each task in an isolated git worktree with a topic branch. Use the `eunsoogi/` branch prefix unless the user requests another naming scheme.
 - Make conventional commits on the topic branch, push the branch, and open a pull request for review/merge. Reference the matching issue in the PR body when one exists.
-- Merge completed work through pull requests. Use squash merge by default so `main` keeps one reviewable commit per issue.
+- Merge completed work through pull requests. Use squash merge by default so `main` keeps one reviewable commit per issue. Squash merge commit subjects on `main` must keep Conventional Commit style and end with the pull request number in parentheses, for example `feat(ui): add provider search (#123)`.
 - After a PR is merged, update local integration state with `git pull --ff-only origin main` in the main worktree, then rebase or recreate dependent topic branches from the refreshed `main`.
 - Push directly to `origin/main` only for explicit repository-wide process updates that must be visible before parallel work starts.
 - When coordinating multiple agents, give each agent its own worktree and branch, and include the task scope in the branch name.
