@@ -4,11 +4,6 @@ import type {
   OfficeThreeVector3,
 } from "./orchestrator-office-three-types";
 
-const assetBaseUrl = new URL(
-  "./assets/kenney-furniture-kit/isometric/",
-  import.meta.url,
-).href;
-
 type KenneySpriteDefinition = {
   readonly fileName: string;
   readonly id: string;
@@ -125,9 +120,26 @@ const spriteDefinitions = [
   },
 ] as const satisfies readonly KenneySpriteDefinition[];
 
+function assetUrlFor(fileName: string): string {
+  return new URL(
+    `./assets/kenney-furniture-kit/isometric/${fileName}`,
+    import.meta.url,
+  ).href;
+}
+
+export const kenneyOfficeOverlaySprites = spriteDefinitions.map((sprite) => ({
+  id: sprite.id,
+  imageUrl: assetUrlFor(sprite.fileName),
+  label: sprite.label,
+})) as readonly {
+  readonly id: string;
+  readonly imageUrl: string;
+  readonly label: string;
+}[];
+
 export function kenneySpriteObjects(): readonly OfficeThreeAmenityObject[] {
   return spriteDefinitions.map((sprite) => ({
-    assetImageUrl: `${assetBaseUrl}${sprite.fileName}`,
+    assetImageUrl: assetUrlFor(sprite.fileName),
     color: "#ffffff",
     id: sprite.id,
     kind: "amenity",

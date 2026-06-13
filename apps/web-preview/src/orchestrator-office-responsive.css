@@ -63,6 +63,10 @@
   .pixel-office__side-tabs {
     display: none;
   }
+
+  .pixel-office__kenney-assets img:nth-child(n + 8) {
+    display: none;
+  }
 }
 
 @media (max-width: 460px) {

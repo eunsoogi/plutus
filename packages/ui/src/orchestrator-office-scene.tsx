@@ -13,6 +13,7 @@ import {
 } from "./orchestrator-office-scene-data";
 import type { SpecialistId, TeamId } from "./orchestrator-office-teams";
 import { OrchestratorOfficeThreeView } from "./orchestrator-office-three-view";
+import { kenneyOfficeOverlaySprites } from "./orchestrator-office-three-kenney-sprites";
 import type { OfficeThreeMotionMode } from "./orchestrator-office-three-types";
 
 export function OrchestratorOfficeScene({
@@ -94,6 +95,7 @@ export function OrchestratorOfficeScene({
     >
       <div className="pixel-office__status-strip" aria-hidden="true">
         <span className="pixel-office__brand">PLUTUS OFFICE</span>
+        <span className="pixel-office__source">KENNEY CC0 ASSETS</span>
         <span className="pixel-office__focus">{teamLabel}</span>
         <span>{stage}</span>
       </div>
@@ -124,6 +126,15 @@ export function OrchestratorOfficeScene({
         stage={stage}
         teamId={teamId}
       />
+      <div
+        aria-hidden="true"
+        className="pixel-office__kenney-assets"
+        data-testid="orchestrator-office-kenney-assets"
+      >
+        {kenneyOfficeOverlaySprites.map((sprite) => (
+          <img alt="" key={sprite.id} src={sprite.imageUrl} />
+        ))}
+      </div>
       <div
         className="orchestrator-office__agent-nameplates"
         aria-label="Visible office agent labels"
