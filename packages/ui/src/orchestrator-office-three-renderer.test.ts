@@ -89,6 +89,38 @@ describe("office Three.js renderer lifecycle", () => {
     ).toBe("cylinder");
   });
 
+  it("renders downloaded Kenney assets as transparent plane textures", () => {
+    const spriteObject = {
+      assetImageUrl: "/assets/kenney-furniture-kit/isometric/desk_SE.png",
+      color: "#ffffff",
+      id: "kenney-real:desk",
+      kind: "amenity",
+      label: "Kenney desk sprite",
+      modelRole: "kenney-desk",
+      position: [0, 1, 0],
+      scale: [1.8, 1.2, 1],
+      shape: "plane",
+    } satisfies OfficeThreeSceneObject;
+    const { adapter } = fakeOfficeThreeAdapter();
+    const lifecycle = createOfficeThreeRendererLifecycle({
+      adapter,
+      animationFrame: fakeScheduler(),
+      canvas: { clientHeight: 540, clientWidth: 960, height: 0, width: 0 },
+      contract: createOfficeThreeRendererContract({
+        scene: {
+          background: "#10100d",
+          objects: [spriteObject],
+        },
+      }),
+    });
+    const spriteMesh = lifecycle.meshesByObjectId.get("kenney-real:desk");
+
+    expect(spriteMesh?.geometry.kind).toBe("plane");
+    expect(spriteMesh?.material.assetImageUrl).toBe(
+      "/assets/kenney-furniture-kit/isometric/desk_SE.png",
+    );
+  });
+
   it("resizes without mutating canvas styles and renders the current scene", () => {
     const { adapter, renderer } = fakeOfficeThreeAdapter();
     const lifecycle = createOfficeThreeRendererLifecycle({

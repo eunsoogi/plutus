@@ -34,6 +34,11 @@ describe("ui office Three renderer", () => {
     expect(Number(meshCount)).toBeGreaterThanOrEqual(20);
     expect(markup).toContain("data-office-camera=");
     expect(markup).toContain('data-office-rotation="south-east"');
+    expect(markup).toContain(
+      'data-testid="orchestrator-office-kenney-assets"',
+    );
+    expect(markup).toContain("KENNEY CC0 ASSETS");
+    expect(markup).toContain("/assets/kenney-furniture-kit/isometric/");
     expect(markup).toContain("Market Data Researcher");
     expect(markup).toContain("Research Orchestrator");
     expect(markup).not.toContain("<svg");

@@ -82,6 +82,8 @@ function geometryForObject<
       return adapter.createBoxGeometry();
     case "cylinder":
       return adapter.createCylinderGeometry();
+    case "plane":
+      return adapter.createPlaneGeometry();
     case "sphere":
       if (object.kind === "agent") {
         return adapter.createSphereGeometry(object.radius);
@@ -175,6 +177,7 @@ export function createOfficeThreeRendererLifecycle<
   for (const object of contract.scene.objects) {
     const geometry = geometryForObject(adapter, object);
     const material = adapter.createMaterial({
+      assetImageUrl: object.assetImageUrl,
       color: object.color,
       opacity: object.opacity ?? 1,
     });

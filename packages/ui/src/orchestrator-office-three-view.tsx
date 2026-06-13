@@ -123,7 +123,10 @@ export function OrchestratorOfficeThreeView({
   const yaw = serializeOfficeNumber(normalizeOfficeYaw(scene.angle ?? 0));
   const camera = serializeOfficeVector(cameraPosition);
   const meshCount = contract.scene.objects.length.toString();
-  const modelSource = "kenney-furniture-kit";
+  const modelSource = "kenney-furniture-kit-real-assets";
+  const hasAssetImages = contract.scene.objects.some(
+    (object) => object.assetImageUrl !== undefined,
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -162,6 +165,12 @@ export function OrchestratorOfficeThreeView({
     };
 
     resizeAndRender();
+    const assetRenderTimeouts = hasAssetImages
+      ? [
+          window.setTimeout(resizeAndRender, 250),
+          window.setTimeout(resizeAndRender, 1000),
+        ]
+      : [];
     if (shouldStartOfficeThreeAnimationLoop(contract.scene.motion.mode)) {
       lifecycle.start();
     }
@@ -169,6 +178,9 @@ export function OrchestratorOfficeThreeView({
     if (typeof ResizeObserver === "undefined") {
       window.addEventListener("resize", resizeAndRender);
       return () => {
+        for (const timeoutId of assetRenderTimeouts) {
+          window.clearTimeout(timeoutId);
+        }
         window.removeEventListener("resize", resizeAndRender);
         if (lifecycleRef.current === lifecycle) {
           lifecycleRef.current = null;
@@ -180,13 +192,16 @@ export function OrchestratorOfficeThreeView({
     const observer = new ResizeObserver(resizeAndRender);
     observer.observe(canvas);
     return () => {
+      for (const timeoutId of assetRenderTimeouts) {
+        window.clearTimeout(timeoutId);
+      }
       observer.disconnect();
       if (lifecycleRef.current === lifecycle) {
         lifecycleRef.current = null;
       }
       lifecycle.dispose();
     };
-  }, [animationFrame, contract]);
+  }, [animationFrame, contract, hasAssetImages]);
 
   useEffect(() => {
     const lifecycle = lifecycleRef.current;

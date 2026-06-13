@@ -1,0 +1,75 @@
+{
+  "name": "Kenney Furniture Kit",
+  "assetPageUrl": "https://kenney.nl/assets/furniture-kit",
+  "downloadUrl": "https://kenney.nl/media/pages/assets/furniture-kit/440e0608a4-1677580847/kenney_furniture-kit.zip",
+  "downloadedArchiveSha256": "e67652d0932cee41683f74711c03d3e192a2af9979ef8e6b237711f5482d46b0",
+  "license": "Creative Commons CC0",
+  "sourceArchiveEntryRoot": "Isometric/",
+  "files": [
+    {
+      "path": "isometric/bookcaseOpen_SE.png",
+      "archivePath": "Isometric/bookcaseOpen_SE.png",
+      "sha256": "ee13eb6a6225bfbe77828916ca68f185f73bd8155b3d8360070b374f944f3479"
+    },
+    {
+      "path": "isometric/cardboardBoxClosed_SE.png",
+      "archivePath": "Isometric/cardboardBoxClosed_SE.png",
+      "sha256": "53ef06a906f9bc7eb4fa1f76f0cc350cb4c87b5ce83de449d89639b4685a647f"
+    },
+    {
+      "path": "isometric/chairDesk_SE.png",
+      "archivePath": "Isometric/chairDesk_SE.png",
+      "sha256": "6d5974278e6d3f0c7f712c3d9403359931a807aad01742f4a465cfd98c0014f6"
+    },
+    {
+      "path": "isometric/computerKeyboard_SE.png",
+      "archivePath": "Isometric/computerKeyboard_SE.png",
+      "sha256": "1c382f8461489313befc593b024f37fe897346169184adb0515e0aec0d1c592e"
+    },
+    {
+      "path": "isometric/computerMouse_SE.png",
+      "archivePath": "Isometric/computerMouse_SE.png",
+      "sha256": "6b54ed7e77a89f640d68955e872217a6c7fd59e32ebf77487d8872175eaa7691"
+    },
+    {
+      "path": "isometric/computerScreen_SE.png",
+      "archivePath": "Isometric/computerScreen_SE.png",
+      "sha256": "cee5aeea8203af2a7c1d1b5eb964ee7185bcf0428dcc737d7e5829e7acfb2367"
+    },
+    {
+      "path": "isometric/desk_SE.png",
+      "archivePath": "Isometric/desk_SE.png",
+      "sha256": "1887b506b8f09d03327bfd5ef2f7eeb28fdddd101ae7aa65faa220bbe15115c3"
+    },
+    {
+      "path": "isometric/floorFull_SE.png",
+      "archivePath": "Isometric/floorFull_SE.png",
+      "sha256": "7b7a86fd6f60786ff9a8adf6c832f5926c82dd6105e029ba9ec84b3e1ca6506d"
+    },
+    {
+      "path": "isometric/lampSquareFloor_SE.png",
+      "archivePath": "Isometric/lampSquareFloor_SE.png",
+      "sha256": "23bd05db41d6484249ad94cb241e52c0fcbc4f55bfa8c798e07902b38af5042d"
+    },
+    {
+      "path": "isometric/plantSmall1_SE.png",
+      "archivePath": "Isometric/plantSmall1_SE.png",
+      "sha256": "d6956779d93ceefc69a3646012176bc2f6f7b9f0acaf9061a465fc4efe8280da"
+    },
+    {
+      "path": "isometric/rugRectangle_SE.png",
+      "archivePath": "Isometric/rugRectangle_SE.png",
+      "sha256": "793c14d9413d5b72766348061516181bded8859ee06680d34432c352e4261ebf"
+    },
+    {
+      "path": "isometric/tableCoffee_SE.png",
+      "archivePath": "Isometric/tableCoffee_SE.png",
+      "sha256": "b8df0078f5f0d66e6110ae55b2633a6810c5d0461f1d4d095667e87a8a1a8600"
+    },
+    {
+      "path": "isometric/wall_SE.png",
+      "archivePath": "Isometric/wall_SE.png",
+      "sha256": "62e34712a65c5b9174079833f0fed8c1df912aa1e87ea7a6d5359b6795193ac0"
+    }
+  ]
+}

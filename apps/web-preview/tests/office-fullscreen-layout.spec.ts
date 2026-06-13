@@ -12,7 +12,7 @@ test("office route owns the desktop surface without clipping menu controls", asy
   await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
   await expect(page.getByTestId("orchestrator-office-canvas")).toHaveAttribute(
     "data-office-model-source",
-    "kenney-furniture-kit",
+    "kenney-furniture-kit-real-assets",
   );
 
   const metrics = await page.evaluate(() => {
@@ -149,7 +149,7 @@ test("office route keeps the Kenney model visible on mobile without page scroll"
   await expect(page.getByTestId("orchestrator-office-scene")).toBeVisible();
   await expect(page.getByTestId("orchestrator-office-canvas")).toHaveAttribute(
     "data-office-model-source",
-    "kenney-furniture-kit",
+    "kenney-furniture-kit-real-assets",
   );
 
   const metrics = await page.evaluate(() => {

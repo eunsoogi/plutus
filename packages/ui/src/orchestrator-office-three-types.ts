@@ -16,7 +16,7 @@ export type OfficeThreeRendererContractVersion =
 
 export type OfficeThreeVector3 = readonly [number, number, number];
 
-export type OfficeThreeGeometryShape = "box" | "cylinder" | "sphere";
+export type OfficeThreeGeometryShape = "box" | "cylinder" | "plane" | "sphere";
 
 export type OfficeThreeMotionMode = "active" | "idle";
 
@@ -87,6 +87,7 @@ export type OfficeThreeModelRole =
   | "wall-trim";
 
 type OfficeThreeSceneObjectBase = {
+  readonly assetImageUrl?: string;
   readonly color: string;
   readonly id: string;
   readonly label: string;

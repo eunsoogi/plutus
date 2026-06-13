@@ -120,6 +120,114 @@
   color: #d8b4fe;
 }
 
+.pixel-office__source {
+  background: rgb(245 198 95 / 12%);
+  border: 1px solid rgb(245 198 95 / 32%);
+  border-radius: 999px;
+  color: #ffe08a;
+  padding: 3px 7px;
+}
+
+.pixel-office__kenney-assets {
+  background:
+    linear-gradient(180deg, rgb(3 6 9 / 88%), rgb(13 17 22 / 68%)) right
+      42px top 64px / 172px 68% no-repeat;
+  border-right: 1px solid rgb(245 198 95 / 34%);
+  bottom: 56px;
+  pointer-events: none;
+  right: 0;
+  top: 0;
+  width: 225px;
+  position: absolute;
+  z-index: 3;
+}
+
+.pixel-office__kenney-assets img {
+  filter: drop-shadow(0 14px 12px rgb(0 0 0 / 42%));
+  height: auto;
+  image-rendering: auto;
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.pixel-office__kenney-assets img:nth-child(1) {
+  left: 128px;
+  top: 138px;
+  width: 132px;
+}
+
+.pixel-office__kenney-assets img:nth-child(2) {
+  left: 128px;
+  top: 230px;
+  width: 132px;
+}
+
+.pixel-office__kenney-assets img:nth-child(3) {
+  left: 128px;
+  top: 320px;
+  width: 130px;
+}
+
+.pixel-office__kenney-assets img:nth-child(4) {
+  left: 82px;
+  top: 410px;
+  width: 78px;
+}
+
+.pixel-office__kenney-assets img:nth-child(5) {
+  left: 158px;
+  top: 410px;
+  width: 78px;
+}
+
+.pixel-office__kenney-assets img:nth-child(6) {
+  left: 82px;
+  top: 498px;
+  width: 74px;
+}
+
+.pixel-office__kenney-assets img:nth-child(7) {
+  left: 158px;
+  top: 498px;
+  width: 52px;
+}
+
+.pixel-office__kenney-assets img:nth-child(8) {
+  left: 128px;
+  top: 592px;
+  width: 112px;
+}
+
+.pixel-office__kenney-assets img:nth-child(9) {
+  left: 74px;
+  top: 684px;
+  width: 72px;
+}
+
+.pixel-office__kenney-assets img:nth-child(10) {
+  left: 158px;
+  top: 684px;
+  width: 72px;
+}
+
+.pixel-office__kenney-assets img:nth-child(11) {
+  left: 92px;
+  top: 768px;
+  width: 92px;
+}
+
+.pixel-office__kenney-assets img:nth-child(12) {
+  left: 166px;
+  top: 768px;
+  width: 80px;
+}
+
+.pixel-office__kenney-assets img:nth-child(13) {
+  left: 128px;
+  top: 842px;
+  width: 72px;
+}
+
 .orchestrator-office__agent-nameplates {
   bottom: 58px;
   display: flex;

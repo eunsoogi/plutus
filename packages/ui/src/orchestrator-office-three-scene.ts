@@ -50,6 +50,7 @@ import {
 } from "./orchestrator-office-three-scene-agents";
 import { deskDetailObjectsFor } from "./orchestrator-office-three-scene-desk-details";
 import { fixtureDetailObjects } from "./orchestrator-office-three-scene-fixture-details";
+import { kenneySpriteObjects } from "./orchestrator-office-three-kenney-sprites";
 import { plantLeafObjects } from "./orchestrator-office-three-scene-plant-details";
 import { roomTrimObjects } from "./orchestrator-office-three-scene-room-details";
 
@@ -208,6 +209,7 @@ function amenityObjects(
     ...deskDetailObjectsFor(specialists, stationLabels),
     ...officeFurnitureRects.map((_, index) => furnitureObject(index)),
     ...furnitureDetailObjects(),
+    ...kenneySpriteObjects(),
     ...officeCuboids.map((_, index) => fixtureCuboidObject(index)),
     ...fixtureDetailObjects(),
     ...officeThreePlanterLocations.map((_, index) => planterObject(index)),

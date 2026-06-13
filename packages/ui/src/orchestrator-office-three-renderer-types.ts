@@ -20,6 +20,7 @@ export type OfficeThreeAnimationFrameScheduler = {
 };
 
 export type OfficeThreeMaterialInput = {
+  readonly assetImageUrl?: string;
   readonly color: string;
   readonly opacity: number;
 };
@@ -44,6 +45,7 @@ export type OfficeThreeRendererAdapter<
   readonly createDirectionalLight: (color: string, intensity: number) => TNode;
   readonly createMaterial: (input: OfficeThreeMaterialInput) => TMaterial;
   readonly createMesh: (geometry: TGeometry, material: TMaterial) => TMesh;
+  readonly createPlaneGeometry: () => TGeometry;
   readonly createPerspectiveCamera: (
     fov: number,
     aspect: number,
