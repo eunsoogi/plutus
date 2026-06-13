@@ -77,6 +77,10 @@ describe("office Three.js Kenney furniture kit remodel", () => {
     const roles: readonly (string | undefined)[] = contract.scene.objects.map(
       (object) => object.modelRole,
     );
+    const nonSpriteRoles: readonly (string | undefined)[] =
+      contract.scene.objects
+        .filter((object) => !object.id.startsWith("kenney-real:"))
+        .map((object) => object.modelRole);
     const runtimeUrls = contract.scene.objects
       .flatMap((object) => [object.id, object.label])
       .filter((value) => value.includes("http"));
@@ -99,12 +103,41 @@ describe("office Three.js Kenney furniture kit remodel", () => {
         "kenney-storage-box",
       ]),
     );
-    expect(roles.filter((role) => role === "kenney-desk")).toHaveLength(
-      deskCount,
-    );
     expect(
-      roles.filter((role) => role === "kenney-computer-keyboard"),
+      nonSpriteRoles.filter((role) => role === "kenney-desk"),
+    ).toHaveLength(deskCount);
+    expect(
+      nonSpriteRoles.filter((role) => role === "kenney-computer-keyboard"),
     ).toHaveLength(deskCount);
     expect(runtimeUrls).toEqual([]);
+  });
+
+  it("adds visible downloaded Kenney sprite assets to the office renderer contract", () => {
+    const contract = createOfficeThreeSceneCatalog({
+      locale: "en",
+      stage: "Executing",
+      teamId: "portfolio_review_committee",
+    });
+    const assetObjects = contract.scene.objects.filter(
+      (object) => "assetImageUrl" in object,
+    );
+
+    expect(assetObjects).toHaveLength(13);
+    expect(
+      assetObjects.map((object) => object.modelRole),
+    ).toEqual(
+      expect.arrayContaining([
+        "kenney-desk",
+        "kenney-desk-chair",
+        "kenney-computer-screen",
+        "kenney-bookcase-open",
+        "kenney-plant-small",
+      ]),
+    );
+    const serializedAssets = JSON.stringify(assetObjects);
+    expect(serializedAssets).toContain('"shape":"plane"');
+    expect(serializedAssets).toContain(
+      "/assets/kenney-furniture-kit/isometric/",
+    );
   });
 });

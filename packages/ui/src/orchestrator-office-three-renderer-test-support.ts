@@ -52,6 +52,7 @@ export type FakeGeometry = {
 };
 
 export type FakeMaterial = {
+  readonly assetImageUrl?: string;
   readonly color: string;
   readonly disposed: string[];
   readonly opacity: number;
@@ -168,10 +169,12 @@ export function fakeOfficeThreeAdapter() {
     createDirectionalLight: (color: string, intensity: number) =>
       fakeNode("directionalLight", `${color}:${intensity}`),
     createMaterial: (input: {
+      readonly assetImageUrl?: string;
       readonly color: string;
       readonly opacity: number;
     }) => {
       const material = {
+        assetImageUrl: input.assetImageUrl,
         color: input.color,
         disposed: [],
         opacity: input.opacity,
@@ -200,6 +203,11 @@ export function fakeOfficeThreeAdapter() {
       ...fakeNode("scene", "office-scene"),
       background: "",
     }),
+    createPlaneGeometry: () => {
+      const geometry: FakeGeometry = { disposed: [], kind: "plane" };
+      geometries.push(geometry);
+      return geometry;
+    },
     createSphereGeometry: (radius: number) => {
       const geometry: FakeGeometry = { disposed: [], kind: `sphere:${radius}` };
       geometries.push(geometry);

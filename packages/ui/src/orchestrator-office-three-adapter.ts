@@ -6,10 +6,13 @@ import {
   DirectionalLight,
   Mesh,
   MeshStandardMaterial,
+  MeshBasicMaterial,
   Object3D,
   PerspectiveCamera,
+  PlaneGeometry,
   Scene,
   SphereGeometry,
+  TextureLoader,
   WebGLRenderer,
   type BufferGeometry,
   type Material,
@@ -35,11 +38,18 @@ export const officeThreeRendererAdapter = {
   createDirectionalLight: (color: string, intensity: number) =>
     new DirectionalLight(color, intensity),
   createMaterial: (input: OfficeThreeMaterialInput) =>
-    new MeshStandardMaterial({
-      color: input.color,
-      opacity: input.opacity,
-      transparent: input.opacity < 1,
-    }),
+    input.assetImageUrl === undefined
+      ? new MeshStandardMaterial({
+          color: input.color,
+          opacity: input.opacity,
+          transparent: input.opacity < 1,
+        })
+      : new MeshBasicMaterial({
+          alphaTest: 0.01,
+          map: new TextureLoader().load(input.assetImageUrl),
+          opacity: input.opacity,
+          transparent: true,
+        }),
   createMesh: (geometry: BufferGeometry, material: Material) =>
     new Mesh(geometry, material),
   createPerspectiveCamera: (
@@ -59,11 +69,18 @@ export const officeThreeRendererAdapter = {
     }),
   createRoot: () => new Object3D(),
   createScene: () => new Scene(),
+  createPlaneGeometry: () => new PlaneGeometry(1, 1),
   createSphereGeometry: (radius: number) => new SphereGeometry(radius, 32, 16),
   disposeGeometry: (geometry: BufferGeometry) => {
     geometry.dispose();
   },
   disposeMaterial: (material: Material) => {
+    if (
+      material instanceof MeshBasicMaterial ||
+      material instanceof MeshStandardMaterial
+    ) {
+      material.map?.dispose();
+    }
     material.dispose();
   },
   disposeRenderer: (renderer: WebGLRenderer) => {
